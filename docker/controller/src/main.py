@@ -150,7 +150,10 @@ def await_children(export_params) -> None:
 
                 if process["handle"].metrics_client.file_path:
                     target_file = export_path / f"metrics_ue{process['handle'].ue_index}.csv" 
-                    shutil.copy(process["handle"].metrics_client.file_path, target_file)
+                    try:
+                        shutil.copy(process["handle"].metrics_client.file_path, target_file)
+                    except FileNotFoundError as e:
+                        logging.error(f"UE metrics file {process['handle'].metrics_client.file_path} not found")
         time.sleep(1)
 
 

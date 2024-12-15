@@ -13,6 +13,7 @@ from Ping import Ping
 from Metrics import Metrics
 from utils import kill_subprocess, send_command, start_subprocess
 
+asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
 
 # UE process manager class:
 # subprocesses: srsRAN UE, Iperf, Ping, Metrics monitor
@@ -111,10 +112,10 @@ class Ue:
         """Run the WebSocket server for sending logs."""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        time.sleep(2)
 
         try:
-            start_server = websockets.serve(self.websocket_handler, "localhost", 8765 + self.ue_index)
-            loop.run_until_complete(start_server)
+            loop.run_until_complete(websockets.serve(self.websocket_handler, "0.0.0.0", 8765 + self.ue_index))
             loop.run_forever()
         except Exception as e:
             logging.error(f"Failed to run WebSocket server: {e}")
@@ -203,7 +204,8 @@ class Ue:
         self.iperf_client.start(
             ["-c", "10.53.1.1", "-i", "1", "-t","36000", "-u", "-b", "100M", "-R"]
             , process_type="client",
-            ue_index=self.ue_index
+            ue_index=self.ue_index,
+            docker_container=self.docker_container,
         )
         self.ping_client.start(["10.45.1.1"])
         self.metrics_client.start(self.ue_config, self.docker_container)
@@ -217,8 +219,13 @@ class Ue:
 
             if self.docker_enabled:
                 line = next(self.docker_logs, None)
-            else:
-                line = self.process.stdout.readline().strip()
+                if line:
+                    line = line.strip()
+
+            if self.process:
+                line = self.process.stdout.readline()
+                if line:
+                    line = line.strip()
 
             if isinstance(line, bytes):
                 line = line.decode('utf-8', errors='replace')

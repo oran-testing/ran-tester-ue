@@ -36,12 +36,12 @@ services:
     container_name: controller
     image: controller
     volumes:
+      # Pass in the docker soket for starting srsue
       - /var/run/docker.sock:/var/run/docker.sock
       # Allow results writing to host machine
       - /tmp:/tmp
     environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - CONFIG=${UE_CONTROLLER_CONFIG}
+      - CONFIG=${UE_CONTROLLER_CONFIG:-configs/basic_ue_zmq.yaml}
     privileged: true
     build:
       context: controller

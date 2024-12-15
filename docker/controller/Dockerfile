@@ -29,4 +29,4 @@ RUN poetry install --only main
 
 WORKDIR /app/
 
-CMD ["poetry", "run", "python3", "main.py", "--config", "${CONFIG}", "--docker", "1"]
+CMD poetry run python3 main.py --config $CONFIG --docker 1
