@@ -85,7 +85,7 @@ class Ue:
 
         return unwritten_output
 
-    async def websocket_handler(self, websocket, path):
+    async def websocket_handler(self, websocket, path=""):
         """Handle incoming WebSocket connection and stream logs to the client."""
         self.websocket_client = websocket
         try:
@@ -114,9 +114,13 @@ class Ue:
         asyncio.set_event_loop(loop)
         time.sleep(2)
 
+        async def server_coroutine():
+            server = await websockets.serve(self.websocket_handler, "0.0.0.0", 8765 + self.ue_index)
+            logging.debug(f"Started server on port {8765 + self.ue_index}")
+            await server.wait_closed()
+
         try:
-            loop.run_until_complete(websockets.serve(self.websocket_handler, "0.0.0.0", 8765 + self.ue_index))
-            loop.run_forever()
+            loop.run_until_complete(server_coroutine())
         except Exception as e:
             logging.error(f"Failed to run WebSocket server: {e}")
         finally:
