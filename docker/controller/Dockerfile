@@ -9,11 +9,10 @@ RUN apt-get update && \
         python3 \
         python3-pip \
         python3-venv \
-        build-essential \
-        git \
         iperf3 \
         iproute2 \
-        inetutils-ping
+        inetutils-ping \
+        docker.io
 
 
 WORKDIR /app
@@ -29,4 +28,4 @@ RUN poetry install --only main
 
 WORKDIR /app/
 
-CMD poetry run python3 main.py --config $CONFIG --docker 1
+CMD ["/bin/bash", "entrypoint.sh"]

@@ -41,6 +41,7 @@ services:
       # Allow results writing to host machine
       - /tmp:/tmp
     environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
       - CONFIG=${UE_CONTROLLER_CONFIG:-configs/basic_ue_zmq.yaml}
     privileged: true
     build:
@@ -48,6 +49,9 @@ services:
     env_file:
       - .env
     network_mode: "host"
+
+    profiles:
+      - system
 
   webui:
     container_name: webui
@@ -61,6 +65,9 @@ services:
     network_mode: "host"
     depends_on:
       - controller
+
+    profiles:
+      - system
 
 volumes:
   ue-storage:
