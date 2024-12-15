@@ -14,4 +14,4 @@ COPY --chown=node:node . .
 
 EXPOSE 8080
 
-CMD [ "node", "server.js" ]
+CMD sh -c "sleep 10 && node server.js"
