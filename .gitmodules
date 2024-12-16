@@ -1,0 +1,7 @@
+[submodule "Attacks"]
+	path = Attacks
+	url = https://github.com/oran-testing/Attacks
+[submodule "Components"]
+	path = Components
+	url = https://github.com/oran-testing/Components
+

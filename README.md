@@ -28,6 +28,15 @@ Testing can be done with one machine (ZMQ) or two. Each command should be run in
 
 Before installing, clone the soft-t-ue repo and the srsRAN_Project repo.
 
+```bash
+git clone https://github.com/oran-testing/soft-t-ue && git submodule update --init --recursive
+```
+
+```bash
+git clone https://github.com/srsran/srsRAN_Project
+```
+
+
 To install the UE, run (Machine A):
 
 ```bash
