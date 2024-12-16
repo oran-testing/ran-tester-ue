@@ -20,34 +20,61 @@ services:
       - /usr/share/uhd/images:/usr/share/uhd/images
       # Store logs in /tmp
       - ue-storage:/tmp
+
     environment:
-      - CONFIG=${UE_CONFIG_PATH:-configs/zmq/ue_zmq.conf}
+      - CONFIG=${UE_CONFIG_PATH:-configs/zmq/ue_zmq_docker.conf}
       - ARGS=${UE_ARGS}
+
     # Allow network connection for ZMQ
     ports:
-      -  2000:2000/tcp
-      -  2001:2001/tcp
-    network_mode: host
+       -  2000:2000/tcp
+       -  2001:2001/tcp
+    networks:
+      -  srsue_network
 
   controller:
     container_name: controller
     image: controller
+    volumes:
+      # Pass in the docker soket for starting srsue
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Allow results writing to host machine
+      - /tmp:/tmp
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - CONFIG=${UE_CONTROLLER_CONFIG:-configs/basic_ue_zmq.yaml}
+    privileged: true
     build:
       context: controller
     env_file:
       - .env
+    network_mode: "host"
+
+    profiles:
+      - system
+
+  webui:
+    container_name: webui
+    image: webui
+    build:
+      context: webui
+    env_file:
+      - .env
     environment:
-      - CONFIG=${UE_CONTROLLER_CONFIG}
-    ports:
-      - 5050:${UE_CONTROLLER_PORT}/tcp
-    networks:
-      controller:
-        ipv4_address: 172.19.1.4
+      - PORT=${WEBUI_PORT}
+    network_mode: "host"
+    depends_on:
+      - controller
+
+    profiles:
+      - system
 
 volumes:
   ue-storage:
 
 networks:
+  srsue_network:
+    driver: bridge
   controller:
     ipam:
       driver: default

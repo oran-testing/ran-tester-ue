@@ -8,13 +8,14 @@ from utils import kill_subprocess, start_subprocess
 
 
 class Ping:
-    def __init__(self):
+    def __init__(self, send_message_callback):
         self.isRunning = False
         self.process = None
         self.output = []
         self.initialized = False
         self.name = "Ping -- Stopped"
         self.process_type = ""
+        self.send_callback = send_message_callback
 
     def start(self, args):
         # Construct the ping command
@@ -45,6 +46,7 @@ class Ping:
                             ((datetime.now() - self.start_time).total_seconds(),
                             float(latency[0]) * 1000)
                         )
+                        self.send_callback("latency", latency[0])
 
             else:
                 self.output.append(0.0)

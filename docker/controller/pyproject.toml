@@ -16,6 +16,8 @@ python-dotenv = "^1.0.1"
 influxdb-client = "^1.46.0"
 psutil = "^6.0.0"
 docker = "^7.1.0"
+mypy = "^1.13.0"
+websockets = "^14.0"
 
 [tool.poetry.dev-dependencies]
 

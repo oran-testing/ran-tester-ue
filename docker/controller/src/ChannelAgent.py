@@ -1,4 +1,6 @@
+# NOTE: this software is still under development, use with caution, do not include in the main system
 import threading
+
 
 from utils import kill_subprocess, start_subprocess
 
@@ -12,7 +14,7 @@ class ChannelAgent:
         self.name = "NTIA User to User interface Agent"
 
     def start(self, config_file):
-        self.process = start_subprocess(["sudo", "uuagent", config_file])
+        self.process = start_subprocess(["uuagent", config_file])
         self.isRunning = True
 
         self.log_thread = threading.Thread(target=self.collect_logs,

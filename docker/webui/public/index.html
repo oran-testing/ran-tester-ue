@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UE Logs</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+		<link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div id="ueLogs"></div>
+    <script>
+        const ws = new WebSocket(`ws://${window.location.host}`);
+
+        ws.onopen = () => {
+            console.log("Connected to Node.js WebSocket server");
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const ueId = data.ueId;
+            const log = data.text + '\n';
+            const messageType = data.type;
+
+            let ueDiv = document.getElementById(ueId);
+            if (!ueDiv) {
+                // Create a new div for each UE if it doesn't exist
+                ueDiv = document.createElement("div");
+                ueDiv.id = ueId;
+                ueDiv.className = "main";
+                ueDiv.innerHTML = `
+                    <div class="ue-container">
+                    <div class="log-wrapper">
+                    <div class="log-container">
+                      <div class="ue-header">UE${parseInt(ueId.slice(3)) - 8765}</div>
+                      <div class="log" id="${ueId}-log"></div>
+                    </div>
+                    <div class="log-container">
+                      <div class="extra-info">
+                        <ul class="info-list">
+                          <li>CPU load: <ul class="cpu-info"></ul></li>
+                          <li>earfcn: <span id="earfcn"></span></li>
+                          <li>system memory: <span id="sys_mem"></span></li>
+                          <li>thread count: <span id="thread_count"></span></li>
+                          <li>pci: <span id="pci"></span></li>
+                        </ul>
+
+                      </div>
+                    </div>
+                    </div>
+                    <div class="graph-wrapper">
+                    <div class="graph-container">
+                        <canvas id="${ueId}-graph"></canvas>
+                    </div>
+                    <div class="graph-container">
+                        <canvas id="${ueId}-channel"></canvas>
+                    </div>
+                    </div>
+                    </div>
+                    `;
+                document.getElementById("ueLogs").appendChild(ueDiv);
+            }
+
+            const logDiv = document.getElementById(`${ueId}-log`);
+            const graphCanvas = document.getElementById(`${ueId}-graph`);
+            let chart = graphCanvas.chart;
+
+            const channelCanvas = document.getElementById(`${ueId}-channel`);
+            let channelChart = channelCanvas.chart;
+
+            if (messageType === "command") {
+                const header = ueDiv.querySelector(".ue-header");
+                header.innerHTML = `UE${parseInt(ueId.slice(3)) - 8765} - <span class="command-text">${log}<span>`;
+            } else if (messageType === "log") {
+                logDiv.innerText += log;
+                logDiv.scrollTop = logDiv.scrollHeight;
+            } else if (messageType === "brate" || messageType == "latency") {
+                if (!chart) {
+                    chart = new Chart(graphCanvas, {
+                        type: 'line',
+                        data: {
+                            labels: [],
+                            datasets: [{
+                                label: 'Iperf Throughput\n(MBits/sec)',
+                                data: [],
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Ping Latency\n(microseconds)',
+                                data: [],
+                                backgroundColor: 'rgba(192, 75, 75, 0.2)',
+                                borderColor: 'rgba(192, 75, 75, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            animation: false,
+                            elements: {
+                              point:{
+                                pointStyle: "star",
+                                radius: 3,
+                                hoverBorderWidth: 5,
+                              },
+                              line: {
+                                tension: 0.3,
+                              }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                      font: {
+                                        size: 18,
+                                        family: "ubuntu mono"
+                                      }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: { type: 'linear', position: 'bottom' },
+                                y: { min: 0, max: 100 }
+                            },
+                        }
+                    });
+                    graphCanvas.chart = chart;
+                    chart.canvas.parentNode.style.height = '600px';
+                }
+
+                const floatValue = parseFloat(data.text);
+                const currentTime = chart.data.labels.length > 0 ? chart.data.labels[chart.data.labels.length - 1] + 1 : 0;
+                chart.data.labels.push(currentTime);
+                if(messageType == "brate"){
+                  chart.data.datasets[0].data.push(floatValue);
+                }
+                else {
+                  chart.data.datasets[1].data.push(floatValue * 1000);
+                }
+                if (chart.data.labels.length > 50) {
+                    while(chart.data.labels.length >= 50){
+                      chart.data.labels.shift();
+                    }
+
+                    while(chart.data.datasets[0].length >= 50){
+                      chart.data.datasets[0].shift();
+                    }
+
+                    while(chart.data.datasets[1].length >= 50){
+                      chart.data.datasets[1].shift();
+                    }
+                }
+                chart.update();  // Update the chart with new data
+            } else if (messageType === "dl_brate" || messageType == "rsrp" || messageType == "dl_mcs" || messageType == "dl_snr") {
+                if (!channelChart) {
+                    channelChart = new Chart(channelCanvas, {
+                        type: 'line',
+                        data: {
+                            labels: [],
+                            datasets: [
+                            {
+                                label: 'DL brate\n(MBits/sec)',
+                                data: [],
+                                backgroundColor: 'rgba(75, 192, 75, 0.2)',
+                                borderColor: 'rgba(75, 192, 75, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'RSRP',
+                                data: [],
+                                backgroundColor: 'rgba(75, 75, 75, 0.2)',
+                                borderColor: 'rgba(75, 75, 150, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'DL MCS',
+                                data: [],
+                                backgroundColor: 'rgba(150, 0, 150, 0.2)',
+                                borderColor: 'rgba(150, 0, 150, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'DL SNR (dBm)',
+                                data: [],
+                                backgroundColor: 'rgba(0, 150, 150, 0.2)',
+                                borderColor: 'rgba(0, 150, 150, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                        },
+                        options: {
+                            animation: false,
+                            elements: {
+                              point:{
+                                pointStyle: "star",
+                                radius: 3,
+                                hoverBorderWidth: 5,
+                              },
+                              line: {
+                                tension: 0.3,
+                              }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                labels: {
+                                font: {
+                                    size: 18,
+                                    family: "ubuntu mono"
+                                }
+                              }
+                            }
+                            },
+                            scales: {
+                                x: { type: 'linear', position: 'bottom' },
+                                y: { min: 0, max: 100 }
+                            },
+                        }
+                    });
+                    channelCanvas.chart = channelChart;
+                    channelChart.canvas.parentNode.style.height = '600px';
+                }
+
+                const floatValue = parseFloat(data.text);
+                const currentTime = channelChart.data.labels.length > 0 ? channelChart.data.labels[channelChart.data.labels.length - 1] + 1 : 0;
+
+                channelChart.data.labels.push(currentTime);
+                if(messageType == "dl_brate"){
+                      channelChart.data.datasets[0].data.push(floatValue * 1e-6);
+                } else if (messageType == "rsrp"){
+                      channelChart.data.datasets[1].data.push(floatValue);
+                } else if (messageType == "dl_mcs"){
+                      channelChart.data.datasets[2].data.push(floatValue);
+                } else if (messageType == "dl_snr"){
+                      channelChart.data.datasets[3].data.push(floatValue);
+                }
+
+                if (channelChart.data.labels.length > 50) {
+                    while(channelChart.data.labels.length >= 50){
+                      channelChart.data.labels.shift();
+                    }
+
+                    while(channelChart.data.datasets[0].length >= 50){
+                      channelChart.data.datasets[0].shift();
+                    }
+
+                    while(channelChart.data.datasets[1].length >= 50){
+                      channelChart.data.datasets[1].shift();
+                    }
+
+                    while(channelChart.data.datasets[2].length >= 50){
+                      channelChart.data.datasets[2].shift();
+                    }
+
+                    while(channelChart.data.datasets[3].length >= 50){
+                      channelChart.data.datasets[3].shift();
+                    }
+                }
+                chart.update();  // Update the chart with new data
+            }
+        };
+
+        ws.onclose = () => {
+            console.log("Disconnected from Node.js WebSocket server");
+        };
+    </script>
+</body>
+</html>

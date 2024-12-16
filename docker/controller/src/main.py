@@ -1,131 +1,171 @@
-import argparse
+#!/usr/bin/python3
+
 import os
-os.environ["KIVY_NO_ARGS"] = "1"
-import pathlib
-import sys
 import time
+import sys
+import shutil
+from datetime import datetime
+
 import uuid
+import argparse
+import pathlib
 import yaml
+import logging
+from typing import List, Dict, Union
 
-from MainApp import MainApp
-from SharedState import SharedState
+# Configuration data class
+from Config import Config
+
+# UE subprocess manager
 from Ue import Ue
-from ChannelAgent import ChannelAgent
-
-from utils import send_command
 
 
-def parse():
+logger = logging.getLogger(__name__)
+
+
+def configure() -> None:
+    """
+    Reads in CLI arguments
+    Parses YAML config
+    Configures logging
+    """
     script_dir = pathlib.Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(
         description="Run an srsRAN gNB and Open5GS, then send metrics to the ue_controller")
     parser.add_argument(
         "--config",
         type=pathlib.Path,
-        default=script_dir.parent.parent / "configs" / "basic_ue_zmq.yaml",
-        help="Path of the controller config file")
-    parser.add_argument(
-        "--gnb_config",
-        type=pathlib.Path,
-        default=script_dir.parent.parent / "configs" / "zmq" / "gnb_zmq.yaml",
-        help="Path of the controller config file")
-    parser.add_argument('--ip', type=str, help='IP address of the gNB', default="127.0.0.1")
-    parser.add_argument('--port', type=int, help='Port of the gNB', default="5000")
-    return parser.parse_args()
+        required=True,
+        help="Path of YAML config for the controller")
+    parser.add_argument("--log-level",
+                    default="DEBUG",
+                    help="Set the logging level. Options: DEBUG, INFO, WARNING, ERROR, CRITICAL")
+    parser.add_argument("--docker",
+                    type=bool,
+                    default=False,
+                    help="Start all processes as docker containers")
+    args = parser.parse_args()
+    Config.log_level = getattr(logging, args.log_level.upper(), 1)
 
+    if not isinstance(Config.log_level, int):
+        raise ValueError(f"Invalid log level: {args.log_level}")
 
+    logging.basicConfig(level=Config.log_level,
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+    logging.getLogger("selectors").setLevel(logging.WARNING)
 
-def main():
-    os.system("kill -9 $(ps aux | awk '/srsue/ && !/main/{print $2}') > /dev/null 2>&1")
-    args = parse()
-
-
-    options = None
+    Config.filename = args.config
+    Config.enable_docker = args.docker
     with open(str(args.config), 'r') as file:
-        options = yaml.safe_load(file)
-    if options.get("gnb", False):
-        args.ip = options.get("gnb")["ip"]
-        args.port = int(options.get("gnb")["port"])
-        args.gnb_config = options.get("gnb")["config"]
+        Config.options = yaml.safe_load(file)
 
-    SharedState.cli_args = args
-    SharedState.ue_index = 1
-    send_command(args.ip, args.port,
-                    {"target": "core",
-                     "action": "start",
-                     "rebuild": True
-                    })
-    send_command(args.ip, args.port,
-                    {"target": "metrics",
-                     "action": "start",
-                     "rebuild": True
-                    })
-    send_command(args.ip, args.port,
-                    {"target": "gnb",
-                    "action": "start",
-                    "config": str(args.gnb_config)
-                    })
 
-    for namespace in options.get("namespaces", []):
-        os.system(f"ip netns add {namespace['name']} > /dev/null 2>&1")
+def kill_existing(process_names : List[str]) -> None:
+    """
+    Finds and kills any stray processes that might interfere with the system
+    """
+    for name in process_names:
+        os.system("kill -9 $(ps aux | awk '/{" + name + "}/{print $2}')")
 
-    time.sleep(0.5)
+def start_processes() -> List[Dict[str, Union[str, Ue, int]]]:
+    """
+    Starts any necessary processes using Config
+    Starts ping and iperf if specified
+    """
+    process_list: List[Dict[str, Union[str, Ue, int]]] = []
 
-    for process in options.get("processes", []):
-        if process["type"] == "tester" or process["type"] == "clean":
-            ue = process
-            if not os.path.exists(ue["config_file"]):
-                print(f"Error: File not found {ue['config_file']}")
-                return 1
-            new_ue = Ue(SharedState.ue_index)
-            if ue['type'] == "tester":
-                new_ue.start([ue["config_file"]] + ue["args"].split(" "))
+    ue_index = 1
+
+    if Config.options is None:
+        raise ValueError("Config.options is None. Please check the configuration.")
+
+
+    for process_config in Config.options.get("processes", []):
+        if process_config["type"] == "srsue":
+            new_ue = Ue(Config.enable_docker, ue_index)
+            if "args" in process_config.keys():
+                new_ue.start([process_config["config_file"]] + process_config["args"].split(" "))
             else:
-                new_ue.start([ue["config_file"]])
-            SharedState.process_list.append({
+                new_ue.start([process_config["config_file"]])
+            process_list.append({
                 'id': str(uuid.uuid4()),
-                'type': ue['type'],
-                'config': ue['config_file'],
+                'type': process_config['type'],
+                'config': process_config['config_file'],
                 'handle': new_ue,
-                'index': SharedState.ue_index
+                'index': ue_index
             })
-            SharedState.ue_index += 1
-            print("STARTED:", new_ue)
-        else:
-            channel = process
-            new_channel = None
-            channel_config = ""
-            if "config_file" in channel.keys():
-                new_channel = ChannelAgent(config_file=channel["config_file"])
-                channel_config = channel["config_file"]
-            else:
-                new_channel = ChannelAgent()
+            ue_index += 1
+            logger.debug(f"STARTED: {new_ue}")
 
-            if channel["type"] == "listener":
-                new_channel.sense()
-            elif channel["type"] == "jam_fixed":
-                new_channel.jam_fixed()
-            elif channel["type"] == "jam_sequential":
-                new_channel.jam_sequential()
-            elif channel["type"] == "jam_random":
-                new_channel.jam_random()
+    return process_list
 
-            SharedState.process_list.append({
-                'id': str(uuid.uuid4()),
-                'type': channel['type'],
-                'config': channel_config,
-                'handle': new_channel,
-                'index': SharedState.channel_index
-            })
-            SharedState.channel_index += 1
+def await_children(export_params) -> None:
+    """
+    Wait for all child processes to stop
+    """
+    export_data = False
+    export_path = None
+
+    # Handle export parameters
+    if export_params:
+        export_dir = pathlib.Path(export_params["output_directory"])
+        if not export_dir.exists():
+            raise ValueError(f"Directory does not exist: {export_dir}")
+        export_data = True
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Format: YYYYMMDD_HHMMSS
+        export_path = export_dir / f"test_run_{timestamp}"
+        export_path.mkdir(parents=True, exist_ok=True)
+
+    process_running = True
+    while process_running:
+        process_running = False
+        for process in process_list:
+            if process["handle"].isRunning:
+                process_running = True
+
+            if export_data:
+                for filename, output in process["handle"].get_unwritten_output().items():
+                    file_path = export_path / f"{filename}.csv"
+                    with file_path.open("a") as f:
+                        f.write("\n" + '\n'.join(output))
+
+                # Export main output
+                output_filename = export_path / process["handle"].get_output_filename()
+                with output_filename.open("a") as f:
+                    f.write("\n" + '\n'.join(process["handle"].output))
+                process["handle"].output = []
+                for pcap_key, pcap_file in process["handle"].pcap_data.items():
+                    if pcap_file:
+                        pcap_path = pathlib.Path(pcap_file)
+                        if pcap_path.is_file():
+                            target_file = export_path / pcap_path.name
+                            shutil.copy(pcap_path, target_file)
 
 
+                if process["handle"].metrics_client.file_path:
+                    target_file = export_path / f"metrics_ue{process['handle'].ue_index}.csv" 
+                    try:
+                        shutil.copy(process["handle"].metrics_client.file_path, target_file)
+                    except FileNotFoundError as e:
+                        logging.error(f"UE metrics file {process['handle'].metrics_client.file_path} not found")
+        time.sleep(1)
 
-
-    print(f"Running as: {os.getlogin()}")
-    MainApp().run()
-    return 0
 
 if __name__ == '__main__':
-    rc = main()
-    sys.exit(rc)
+    if os.geteuid() != 0:
+        logger.error("The Soft-T-UE controller must be run as root. Exiting.")
+        sys.exit(1)
+
+    kill_existing(["srsue", "gnb", "iperf3"])
+    configure()
+
+    process_list = start_processes()
+
+    export_params = Config.options.get("data_export", False)
+
+    await_children(export_params)
+
+
+

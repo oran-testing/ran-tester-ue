@@ -6,7 +6,7 @@ ARG NUM_CORES=""
 
 FROM ubuntu:$OS_VERSION
 
-ENV CONFIG="./configs/zmq/ue_zmq.conf"
+ENV CONFIG="configs/zmq/ue_zmq_docker.conf"
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get upgrade -y && \
@@ -29,7 +29,9 @@ RUN apt-get update && apt-get upgrade -y && \
     git \
     libxcb-cursor0 \
     libgles2-mesa-dev \
-    gr-osmosdr
+    gr-osmosdr \
+    iproute2
+
 
 COPY . /app
 
@@ -47,4 +49,4 @@ RUN cmake ../ && \
 
 WORKDIR /app
 
-CMD /usr/local/bin/srsue "${CONFIG}" $ARGS
+CMD [ "sh", "-c", "/usr/local/bin/srsue \"${CONFIG}\" $ARGS" ]
