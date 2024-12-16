@@ -81,7 +81,10 @@ class Iperf:
 
             if self.docker_enabled:
                 line = next(self.docker_stdout_stream, None)
-                if line:
+
+                if isinstance(line, tuple):
+                    line = line[0].strip()
+                else:
                     line = line.strip()
 
             if isinstance(line, bytes):

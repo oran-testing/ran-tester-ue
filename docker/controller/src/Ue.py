@@ -224,7 +224,10 @@ class Ue:
             if self.docker_enabled:
                 line = next(self.docker_logs, None)
                 if line:
-                    line = line.strip()
+                    if isinstance(line, tuple):
+                        line = line[0].strip()
+                    else:
+                        line = line.strip()
 
             if self.process:
                 line = self.process.stdout.readline()

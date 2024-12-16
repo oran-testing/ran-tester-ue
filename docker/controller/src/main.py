@@ -83,13 +83,9 @@ def start_processes() -> List[Dict[str, Union[str, Ue, int]]]:
 
 
     for process_config in Config.options.get("processes", []):
-        if process_config["type"] in ["tester", "clean"]:
-            if not os.path.exists(process_config["config_file"]):
-                raise ValueError(f"Error initializing processes: UE config file not found {process_config['config_file']}")
+        if process_config["type"] == "srsue":
             new_ue = Ue(Config.enable_docker, ue_index)
-            if process_config['type'] == "tester":
-                if "args" not in process_config.keys():
-                    raise ValueError(f"Error initializing processes: Tester UE requires arguments")
+            if "args" in process_config.keys():
                 new_ue.start([process_config["config_file"]] + process_config["args"].split(" "))
             else:
                 new_ue.start([process_config["config_file"]])
@@ -164,8 +160,6 @@ if __name__ == '__main__':
 
     kill_existing(["srsue", "gnb", "iperf3"])
     configure()
-    for namespace in Config.options.get("namespaces", []):
-        os.system("ip netns add " + namespace["name"])
 
     process_list = start_processes()
 

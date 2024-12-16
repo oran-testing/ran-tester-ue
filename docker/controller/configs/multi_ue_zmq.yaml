@@ -1,14 +1,9 @@
-namespaces:
-  - name: "ue1"
-  - name: "ue2"
-  - name: "ue3"
-
 processes:
-  - type: "clean"
+  - type: "srsue"
     config_file: "configs/zmq/multi/ue1_zmq.conf"
-  - type: "clean"
+  - type: "srsue"
     config_file: "configs/zmq/multi/ue2_zmq.conf"
-  - type: "clean"
+  - type: "srsue"
     config_file: "configs/zmq/multi/ue3_zmq.conf"
 
 data_export:
