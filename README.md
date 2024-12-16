@@ -37,10 +37,10 @@ git clone https://github.com/srsran/srsRAN_Project
 ```
 
 
-To install the UE, run (Machine A):
+To build the UE controller and web GUI, run (Machine A):
 
 ```bash
-sudo ./soft-t-ue/scripts/install-ue.sh
+cd docker && docker compose build
 ```
 
 To install the 5gs, run (Machine B):
@@ -55,18 +55,26 @@ To install the gNB run (Machine B):
 sudo ./soft-t-ue/scripts/install-gnb.sh
 ```
 
-When configuring the iperf3, choose yes:
-
-![Soft-T-UE-System.png](docs/images/configuring_iperf3_yes.png)
-
 ## Running
 
-**To run the UE, run (Machine A):**
+**To run the UE with the controller, run (Machine A):**
 
 ```bash
-cd soft-t-ue/docker
-sudo docker compose up srsue
+cd docker
+docker compose up controller webui
 ```
+
+To run the srsue only (Machine A):
+```bash
+mkdir -p build && cd build
+cmake ../
+make -j$(nproc)
+sudo make install
+cd ..
+sudo srsue ./configs/zmq/ue_zmq.conf
+```
+
+To see the metrics open http://localhost:3000 in the browser
 
 **To run the 5gs, run (Machine B):**
 
@@ -83,9 +91,10 @@ Otherwise, gnB will not work.
 **To run the gNB run (Machine B):**
 
 ```bash
-sudo gnb -c ./soft-t-ue/configs/zmq/gnb_zmq.yaml
+sudo gnb -c ./soft-t-ue/configs/zmq/gnb_zmq_docker.yaml
 ```
+Note: If running with docker compose use gnb_zmq_docker.yaml otherwise use gnb_zmq.yaml
 
 ## System Architecture
 
-![Soft-T-UE-System.png](docs/images/Soft-T-UE-System.png)
+![Soft-T-UE-System.png](docs/images/soft-t-ue-system-v2.png)
