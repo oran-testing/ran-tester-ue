@@ -1,7 +1,8 @@
 #!/bin/bash
 
 kill_ue_containers() {
-	UE_IMG_IDS=$(docker ps | awk '/srsran\/ue/{print $1}')
+	UE_IMG_IDS=$(docker ps --filter "ancestor=srsran/ue" -q)
+
 	for IMG in $UE_IMG_IDS; do
 		docker kill $IMG
 	done

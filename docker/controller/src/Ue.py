@@ -141,29 +141,28 @@ class Ue:
             try:
                 # Check if the container already exists
                 # V
-                containers = self.docker_client.containers.list(all=True, filters={"name": container_name})
+                containers = self.docker_client.containers.list(all=True, filters={"ancestor": "srsran/ue"})
                 if containers:
-                    self.docker_container = containers[0]
-                    self.docker_container.start()  # Restart if stopped
-                    logging.debug(f"Restarted existing Docker container {container_name}")
-                else:
-                    network_name = "docker_srsue_network"
-                    self.docker_network = self.docker_client.networks.get(network_name)
-                    self.docker_container = self.docker_client.containers.run(
-                        image="srsran/ue",
-                        name=container_name,
-                        environment=environment,
-                        volumes={
-                            "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
-                            "/usr/share/uhd/images": {"bind": "/usr/share/uhd/images", "mode": "ro"},
-                            "ue-storage": {"bind": "/tmp", "mode": "rw"}
-                        },
-                        privileged=True,
-                        cap_add=["SYS_NICE", "SYS_PTRACE"],
-                        network=network_name,
-                        detach=True,
-                    )
-                    logging.debug(f"Started new Docker container {container_name}")
+                    containers[0].stop()
+                    containers[0].remove()
+                    logging.debug(f"Removed existing container")
+                network_name = "docker_srsue_network"
+                self.docker_network = self.docker_client.networks.get(network_name)
+                self.docker_container = self.docker_client.containers.run(
+                    image="srsran/ue",
+                    name=container_name,
+                    environment=environment,
+                    volumes={
+                        "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
+                        "/usr/share/uhd/images": {"bind": "/usr/share/uhd/images", "mode": "ro"},
+                        "ue-storage": {"bind": "/tmp", "mode": "rw"}
+                    },
+                    privileged=True,
+                    cap_add=["SYS_NICE", "SYS_PTRACE"],
+                    network=network_name,
+                    detach=True,
+                )
+                logging.debug(f"Started new Docker container {container_name}")
 
 
                 self.docker_logs = self.docker_container.logs(stream=True, follow=True)

@@ -1,4 +1,10 @@
-FROM ubuntu:22.04
+ARG OS_VERSION=24.04
+ARG LIB=uhd
+ARG LIB_VERSION=4.7.0.0
+ARG MARCH=native
+ARG NUM_CORES=""
+
+FROM ubuntu:$OS_VERSION
 
 ENV CONFIG="configs/basic_ue_zmq.yaml"
 ENV DEBIAN_FRONTEND=noninteractive
@@ -21,7 +27,7 @@ COPY pyproject.toml .
 COPY ./src .
 COPY ./configs configs
 
-RUN pip3 install --no-cache-dir poetry
+RUN pip3 install --break-system-packages --no-cache-dir poetry
 
 RUN poetry install --only main
 
