@@ -34,4 +34,5 @@ RUN poetry install --only main
 
 WORKDIR /app/
 
-CMD ["/bin/bash", "entrypoint.sh"]
+CMD poetry run python3 main.py --config $CONFIG --docker 1
+

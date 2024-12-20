@@ -11,6 +11,7 @@ import argparse
 import pathlib
 import yaml
 import logging
+import signal
 from typing import List, Dict, Union
 
 # Configuration data class
@@ -21,6 +22,19 @@ from Ue import Ue
 
 
 logger = logging.getLogger(__name__)
+global process_list
+process_list = []
+
+def handle_signal(signum, frame):
+    global process_list
+    for process in process_list:
+        process["handle"].stop()
+        logging.debug(f"Killed process {process['id']}")
+    process_list= []
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, handle_signal)
+signal.signal(signal.SIGTERM, handle_signal)
 
 
 def configure() -> None:
