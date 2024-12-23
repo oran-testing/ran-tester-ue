@@ -19,7 +19,7 @@ services:
       # Access UHD images
       - /usr/share/uhd/images:/usr/share/uhd/images
       # Store logs in /tmp
-      - ue-storage:/tmp
+      - /tmp:/tmp
 
     environment:
       - CONFIG=${UE_CONFIG_PATH:-configs/zmq/ue_zmq_docker.conf}

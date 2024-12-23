@@ -155,7 +155,7 @@ class Ue:
                     volumes={
                         "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
                         "/usr/share/uhd/images": {"bind": "/usr/share/uhd/images", "mode": "ro"},
-                        "ue-storage": {"bind": "/tmp", "mode": "rw"}
+                        "/tmp": {"bind": "/tmp", "mode": "rw"}
                     },
                     privileged=True,
                     cap_add=["SYS_NICE", "SYS_PTRACE"],

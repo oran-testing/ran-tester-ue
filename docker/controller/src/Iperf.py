@@ -79,8 +79,11 @@ class Iperf:
                 if line:
                     line = line.strip()
 
+            logging.debug(f"IPERF DOCKER ENABLED {self.docker_enabled}")
             if self.docker_enabled:
                 line = next(self.docker_stdout_stream, None)
+
+                logging.debug(f"IPERF {line}")
 
                 if isinstance(line, tuple):
                     line = line[0].strip()
