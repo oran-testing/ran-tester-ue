@@ -205,8 +205,7 @@ class Ue:
 
     def start_metrics(self):
         self.iperf_client.start(
-            ["-c", "10.53.1.1", "-i", "1", "-t","36000", "-u", "-b", "100M", "-R"]
-            , process_type="client",
+            ["-c", "10.53.1.1", "-i", "1", "-t","36000", "-u", "-b", "100M", "-R"],
             ue_index=self.ue_index,
             docker_container=self.docker_container,
         )

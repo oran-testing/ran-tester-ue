@@ -17,21 +17,14 @@ class Iperf:
         self.output = []
         self.initialized = False
         self.name = "Iperf -- Stopped"
-        self.process_type = ""
         self.send_callback = send_message_callback
         self.docker_enabled = False
 
-    def start(self, args, process_type="server", ue_index=1, docker_container=None):
+    def start(self, args, ue_index=1, docker_container=None):
         self.docker_container = docker_container
         if not self.docker_container:
             command = []
-            if process_type == "server":
-                command = ["stdbuf","-oL","-eL","iperf3"] + args
-            elif process_type == "client":
-                command = ["ip", "netns","exec", f"ue{ue_index}", "stdbuf", "-oL", "-eL", "iperf3"] + args
-            else:
-                raise logging.error("Invalid Process Type")
-                return
+            command = ["ip", "netns","exec", f"ue{ue_index}", "stdbuf", "-oL", "-eL", "iperf3"] + args
             os.system(f"ip netns exec ue{ue_index} ip ro add default via 10.45.1.1 dev tun_srsue > /dev/null 2>&1")
             time.sleep(2)
             self.process = start_subprocess(command)
@@ -47,7 +40,6 @@ class Iperf:
             iperf_exec_result = self.docker_container.exec_run(
                 iperf_command,
                 stream=True,
-                demux=True
             )
 
             self.docker_enabled = True
@@ -58,13 +50,12 @@ class Iperf:
                 return
 
         self.isRunning = True
-        self.name = f"Iperf -- {process_type}"
+        self.name = f"Iperf -- Started"
         self.start_time = datetime.now()
 
         self.log_thread = threading.Thread(target=self.collect_logs, daemon=True)
         self.log_thread.start()
         self.initialized = True
-        self.process_type = process_type
 
     def stop(self):
         kill_subprocess(self.process)
@@ -78,25 +69,6 @@ class Iperf:
                 line = self.process.stdout.readline()
                 if line:
                     line = line.strip()
-
-            logging.debug(f"IPERF DOCKER ENABLED {self.docker_enabled}")
-            if self.docker_enabled:
-                line = next(self.docker_stdout_stream, None)
-
-                logging.debug(f"IPERF {line}")
-
-                if isinstance(line, tuple):
-                    line = line[0].strip()
-                else:
-                    line = line.strip()
-
-            if isinstance(line, bytes):
-                line = line.decode('utf-8', errors='replace')
-
-            if line:
-                if self.process_type == "server":
-                    self.output.append(line)
-                else:
                     bitrate = bitrate_pattern.findall(line)
                     if len(bitrate) > 0:
                         self.output.append(
@@ -105,10 +77,25 @@ class Iperf:
                         )
                         self.send_callback("brate", bitrate[0])
 
-            else:
-                self.output.append(0.0)
-                self.isRunning = False
-                break
+            if self.docker_enabled:
+                line = next(self.docker_stdout_stream, None)
+
+                logging.debug(f"IPERF {line}")
+
+                if isinstance(line, bytes):
+                    line = line.decode('utf-8', errors='replace')
+
+                for l in line.split("\n"):
+                    l.strip()
+                    bitrate = bitrate_pattern.findall(l)
+                    if len(bitrate) > 0:
+                        self.output.append(
+                            ((datetime.now() - self.start_time).total_seconds(),
+                            float(bitrate[0]))
+                        )
+                        self.send_callback("brate", bitrate[0])
+
+        self.isRunning = False
 
     def __repr__(self):
         return f"Iperf Process Object, running: {self.isRunning}"
