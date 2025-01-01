@@ -32,6 +32,21 @@ services:
     networks:
       -  srsue_network
 
+  influxdb:
+    container_name: influxdb
+    image: influxdb:${DOCKER_INFLUXDB_VERSION}
+    volumes:
+      - influxdb-storage:/var/lib/influxdb2:rw
+    env_file:
+      - .env
+    restart: on-failure:10
+    # Uncomment port section to access InfluxDB from outside the docker network
+    # ports:
+    #   - 8086:${DOCKER_INFLUXDB_INIT_PORT}
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.5
+
   controller:
     container_name: controller
     image: controller
@@ -71,11 +86,12 @@ services:
 
 volumes:
   ue-storage:
+  influxdb-storage:
 
 networks:
   srsue_network:
     driver: bridge
-  controller:
+  metrics:
     ipam:
       driver: default
       config:
