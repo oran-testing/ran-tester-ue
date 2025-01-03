@@ -128,8 +128,8 @@ def await_children(export_params) -> None:
         if not export_dir.exists():
             raise ValueError(f"Directory does not exist: {export_dir}")
         export_data = True
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Format: YYYYMMDD_HHMMSS
-        export_path = export_dir / f"test_run_{timestamp}"
+        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M,%S")
+        export_path = export_dir / f"soft_t_ue_run_{timestamp}"
         export_path.mkdir(parents=True, exist_ok=True)
 
     process_running = True

@@ -2,6 +2,9 @@ import json
 import socket
 import subprocess
 
+from http.client import RemoteDisconnected
+from influxdb_client import InfluxDBClient, WriteApi
+
 
 def start_subprocess(command):
     process = subprocess.Popen(command,
@@ -76,3 +79,14 @@ def send_command(ip, port, cmd_json):
 
     except Exception as e:
         print(f"(send_command) An error occurred: {e}")
+
+
+def influx_push(write_api: WriteApi, *args, **kwargs) -> None:
+    while True:
+        try:
+            write_api.write(*args, **kwargs)
+            break
+        except (RemoteDisconnected, ConnectionRefusedError):
+            logging.warning("Error pushing data. Retrying...")
+            sleep(1)
+
