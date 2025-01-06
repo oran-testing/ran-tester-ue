@@ -6,7 +6,7 @@ import uuid
 import configparser
 import docker
 import logging
-from datetime import datetime, UTC
+from datetime import datetime
 
 from Iperf import Iperf
 from Ping import Ping
@@ -28,7 +28,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 class Ue:
     def __init__(self, enable_docker, ue_index):
         self.influxdb_client = InfluxDBClient(
-            "http://influxdb:8086",
+            "http://influxdb:8086" if enable_docker else "http://0.0.0.0:8086",
             org="srs",
             token="605bc59413b7d5457d181ccf20f9fda15693f81b068d70396cc183081b264f3b"
         )
@@ -157,8 +157,8 @@ class Ue:
 
         with self.influxdb_client.write_api(write_options=SYNCHRONOUS) as write_api:
             try:
-                timestr = datetime.now().strftime("%Y%m%d_%H%M%S")
-                timestamp = datetime.fromtimestamp(timestr, UTC).isoformat()
+                utc_timestamp = datetime.utcnow()
+                formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
                 influx_push(write_api, bucket='srsran', record_time_key="time", 
                             record={
                                 "measurement": "ue_info",
@@ -168,7 +168,7 @@ class Ue:
                                     "testbed": "testing",
                                 },
                             "fields": {"type": message_type, "text": message_text},
-                            "time": timestamp,
+                            "time": formatted_timestamp,
                             },
                             )
                 logging.info("Sent message text")
@@ -182,7 +182,7 @@ class Ue:
                                         "testbed": "testing",
                                     },
                                 "fields": {"type": "command", "text": " ".join(self.ue_command)},
-                                "time": timestamp,
+                                "time": utc_timestamp,
                                 },
                                 )
                     self.ue_command = []
