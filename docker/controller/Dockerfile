@@ -25,11 +25,10 @@ WORKDIR /app
 
 COPY ./src .
 COPY ./configs configs
+COPY requirements.txt .
 
+RUN python3 -m venv .
+RUN ./bin/pip3 install -r requirements.txt
 
-
-
-WORKDIR /app/
-
-CMD python3 main.py --config $CONFIG --docker 1
+CMD ./bin/python3 main.py --config $CONFIG --docker 1
 
