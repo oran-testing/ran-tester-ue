@@ -1,6 +1,6 @@
 processes:
   - type: "srsue"
-    config_file: "../../configs/uhd/ue_uhd.conf"
+    config_file: "configs/uhd/ue_uhd.conf"
 
 data_export:
   output_directory: "/tmp/"
