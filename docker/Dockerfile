@@ -30,7 +30,9 @@ RUN apt-get update && apt-get upgrade -y && \
     libxcb-cursor0 \
     libgles2-mesa-dev \
     gr-osmosdr \
-    iproute2
+    iproute2 \
+    uhd-host \
+    libuhd-dev
 
 
 COPY . /app

@@ -23,16 +23,12 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY pyproject.toml .
 COPY ./src .
 COPY ./configs configs
+COPY requirements.txt .
 
-RUN pip3 install --break-system-packages --no-cache-dir poetry
+RUN python3 -m venv .
+RUN ./bin/pip3 install -r requirements.txt
 
-RUN poetry install --only main
-
-
-WORKDIR /app/
-
-CMD poetry run python3 main.py --config $CONFIG --docker 1
+CMD ./bin/python3 main.py --config $CONFIG --docker 1
 
