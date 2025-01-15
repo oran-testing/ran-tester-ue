@@ -21,7 +21,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # Collects data from UE then sends them to the webui
 
 class Ue:
-    def __init__(self, ue_index):
+    def __init__(self):
         self.influxdb_client = InfluxDBClient(
             "http://0.0.0.0:8086",
             org="srs",
@@ -29,8 +29,6 @@ class Ue:
         )
         self.docker_client = docker.from_env()
         self.docker_container = None
-
-        self.ue_index = ue_index
 
         self.ue_config = ""
         self.isRunning = False
@@ -45,9 +43,6 @@ class Ue:
 
         self.usim_data = {}
         self.pcap_data = {}
-
-    def get_output_filename(self):
-        return f"srsue_{self.ue_config.split('/')[-1]}_{self.ue_index}.log"
 
     def get_info_from_config(self):
         config = configparser.ConfigParser()
@@ -68,18 +63,17 @@ class Ue:
             "imei": config.get("usim", "imei", fallback=None)
         }
 
-    def start(self, args):
-        for argument in args:
-            if ".conf" in argument:
-                self.ue_config = argument
-                self.get_info_from_config()
+    def start(self, config_path, args=[]):
+        self.ue_config = config_path
+        self.get_info_from_config()
 
         container_name = f"srsran_ue_{str(uuid.uuid4())}"
         environment = {
             "CONFIG": self.ue_config,
-            "ARGS": " ".join(args[1:]),
+            "ARGS": " ".join(args),
         }
-        try:
+
+        try
             # Check if the container already exists
             # V
             containers = self.docker_client.containers.list(all=True, filters={"ancestor": "srsran/ue"})
@@ -207,6 +201,3 @@ class Ue:
                 logging.error(f"Failed to stop Docker container: {e}")
         self.stop_thread.set()
         self.isRunning = False
-
-    def __repr__(self):
-        return f"srsRAN UE{self.ue_index} object, running: {self.isRunning}"

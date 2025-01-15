@@ -12,18 +12,17 @@ import pathlib
 import yaml
 import logging
 import signal
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional, Any
 
-# Configuration data class
-from Config import Config
+class Config:
+    filename : str = ""
+    options : Optional[Dict[str,Any]] = None
+    log_level : int = logging.DEBUG
 
 # UE subprocess manager
 from Ue import Ue
 
 
-logger = logging.getLogger(__name__)
-global process_list
-process_list = []
 
 def handle_signal(signum, frame):
     global process_list
@@ -63,8 +62,6 @@ def configure() -> None:
     logging.basicConfig(level=Config.log_level,
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
-    logging.getLogger("asyncio").setLevel(logging.WARNING)
-    logging.getLogger("selectors").setLevel(logging.WARNING)
 
     Config.filename = args.config
     with open(str(args.config), 'r') as file:
@@ -82,33 +79,32 @@ def start_processes() -> List[Dict[str, Union[str, Ue, int]]]:
     """
     Starts any necessary processes using Config
     Starts ping and iperf if specified
+    Returns a list of metadata for each process
     """
-    process_list: List[Dict[str, Union[str, Ue, int]]] = []
-
-    ue_index = 1
+    process_metadata: List[Dict[str, Union[str, Ue]]] = []
 
     if Config.options is None:
-        raise ValueError("Config.options is None. Please check the configuration.")
-
+        logging.error("Config is None: parsing failed... Exiting")
+        sys.exit(1)
 
     for process_config in Config.options.get("processes", []):
         if process_config["type"] == "srsue":
-            new_ue = Ue(ue_index)
-            if "args" in process_config.keys():
-                new_ue.start([process_config["config_file"]] + process_config["args"].split(" "))
-            else:
-                new_ue.start([process_config["config_file"]])
-            process_list.append({
+            new_ue = Ue()
+            new_ue.start(
+                process_config["config_file"],
+                args=process_config["args"].split(" ") if "args" in process_config.keys() else []
+            )
+
+            process_metadata.append({
                 'id': str(uuid.uuid4()),
                 'type': process_config['type'],
                 'config': process_config['config_file'],
                 'handle': new_ue,
-                'index': ue_index
             })
-            ue_index += 1
-            logger.debug(f"STARTED: {new_ue}")
+        else:
+            logging.error(f"Invalid process type: {process_config['type']}")
 
-    return process_list
+    return process_metadata
 
 def await_children(export_params) -> None:
     """
@@ -134,42 +130,27 @@ def await_children(export_params) -> None:
             if process["handle"].isRunning:
                 process_running = True
 
-            if export_data:
-                # Export main output
-                output_filename = export_path / process["handle"].get_output_filename()
-                with output_filename.open("a") as f:
-                    f.write("\n" + '\n'.join(process["handle"].output))
-                process["handle"].output = []
-                for pcap_key, pcap_file in process["handle"].pcap_data.items():
-                    if pcap_file:
-                        pcap_path = pathlib.Path(pcap_file)
-                        if pcap_path.is_file():
-                            target_file = export_path / pcap_path.name
-                            shutil.copy(pcap_path, target_file)
-
-
-                if process["handle"].metrics_client.file_path:
-                    target_file = export_path / f"metrics_ue{process['handle'].ue_index}.csv" 
-                    try:
-                        shutil.copy(process["handle"].metrics_client.file_path, target_file)
-                    except FileNotFoundError as e:
-                        logging.error(f"UE metrics file {process['handle'].metrics_client.file_path} not found")
         time.sleep(1)
 
 
 if __name__ == '__main__':
     if os.geteuid() != 0:
-        logger.error("The Soft-T-UE controller must be run as root. Exiting.")
+        logging.error("The Soft-T-UE controller must be run as root. Exiting.")
         sys.exit(1)
+
+    global process_list
+    process_list = []
 
     kill_existing(["srsue", "gnb", "iperf3"])
     configure()
 
+    global process_list
     process_list = start_processes()
 
     export_params = Config.options.get("data_export", False)
 
     await_children(export_params)
+    sys.exit(0)
 
 
 
