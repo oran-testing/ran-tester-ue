@@ -5,4 +5,3 @@ class Config:
     filename : str = ""
     options : Optional[Dict[str,Any]] = None
     log_level : int = logging.DEBUG
-    enable_docker : bool = False

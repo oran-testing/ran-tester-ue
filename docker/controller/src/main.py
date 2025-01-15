@@ -54,10 +54,6 @@ def configure() -> None:
     parser.add_argument("--log-level",
                     default="DEBUG",
                     help="Set the logging level. Options: DEBUG, INFO, WARNING, ERROR, CRITICAL")
-    parser.add_argument("--docker",
-                    type=bool,
-                    default=False,
-                    help="Start all processes as docker containers")
     args = parser.parse_args()
     Config.log_level = getattr(logging, args.log_level.upper(), 1)
 
@@ -71,7 +67,6 @@ def configure() -> None:
     logging.getLogger("selectors").setLevel(logging.WARNING)
 
     Config.filename = args.config
-    Config.enable_docker = args.docker
     with open(str(args.config), 'r') as file:
         Config.options = yaml.safe_load(file)
 
@@ -81,7 +76,7 @@ def kill_existing(process_names : List[str]) -> None:
     Finds and kills any stray processes that might interfere with the system
     """
     for name in process_names:
-        os.system("kill -9 $(ps aux | awk '/{" + name + "}/{print $2}')")
+        os.system("kill -9 $(ps aux | awk '/" + name + "/{print $2}')")
 
 def start_processes() -> List[Dict[str, Union[str, Ue, int]]]:
     """
@@ -98,7 +93,7 @@ def start_processes() -> List[Dict[str, Union[str, Ue, int]]]:
 
     for process_config in Config.options.get("processes", []):
         if process_config["type"] == "srsue":
-            new_ue = Ue(Config.enable_docker, ue_index)
+            new_ue = Ue(ue_index)
             if "args" in process_config.keys():
                 new_ue.start([process_config["config_file"]] + process_config["args"].split(" "))
             else:
@@ -140,11 +135,6 @@ def await_children(export_params) -> None:
                 process_running = True
 
             if export_data:
-                for filename, output in process["handle"].get_unwritten_output().items():
-                    file_path = export_path / f"{filename}.csv"
-                    with file_path.open("a") as f:
-                        f.write("\n" + '\n'.join(output))
-
                 # Export main output
                 output_filename = export_path / process["handle"].get_output_filename()
                 with output_filename.open("a") as f:

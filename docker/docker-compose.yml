@@ -68,21 +68,7 @@ services:
     profiles:
       - system
 
-  webui:
-    container_name: webui
-    image: webui
-    build:
-      context: webui
-    env_file:
-      - .env
-    environment:
-      - PORT=${WEBUI_PORT}
-    network_mode: "host"
-    depends_on:
-      - controller
 
-    profiles:
-      - system
 
 volumes:
   ue-storage:

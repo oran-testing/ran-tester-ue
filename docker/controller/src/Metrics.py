@@ -7,8 +7,6 @@ import time
 import csv
 from datetime import datetime
 
-from utils import kill_subprocess, start_subprocess
-
 
 class Metrics:
     def __init__(self, send_message_callback):
