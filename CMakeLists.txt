@@ -19,17 +19,17 @@
 #
 
 
-########################################################################
+# # # #####################################################################
 # Prevent in-tree builds
-########################################################################
+# # # #####################################################################
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
-    message(FATAL_ERROR "Prevented in-tree build. This is bad practice.")
+  message(FATAL_ERROR "Prevented in-tree build. This is bad practice.")
 endif(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 
 
-########################################################################
+# # # #####################################################################
 # Project setup
-########################################################################
+# # # #####################################################################
 cmake_minimum_required(VERSION 3.5)
 project( SRSRAN )
 message( STATUS "CMAKE_SYSTEM: " ${CMAKE_SYSTEM} )
@@ -48,8 +48,8 @@ configure_file(
     IMMEDIATE @ONLY)
 
 if(NOT CMAKE_BUILD_TYPE)
-   set(CMAKE_BUILD_TYPE Release)
-   message(STATUS "Build type not specified: defaulting to Release.")
+  set(CMAKE_BUILD_TYPE Release)
+  message(STATUS "Build type not specified: defaulting to Release.")
 endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
@@ -59,9 +59,9 @@ configure_file(
   ${CMAKE_BINARY_DIR}/SRSRANbuildinfo.cmake
 )
 
-########################################################################
+# # # #####################################################################
 # Options
-########################################################################
+# # # #####################################################################
 option(ENABLE_SRSUE          "Build srsUE application"                  ON)
 option(ENABLE_SRSENB         "Build srsENB application"                 ON)
 option(ENABLE_SRSEPC         "Build srsEPC application"                 ON)
@@ -140,12 +140,12 @@ endif()
 # Test for Atomics
 include(CheckAtomic)
 if(NOT HAVE_CXX_ATOMICS_WITHOUT_LIB OR NOT HAVE_CXX_ATOMICS64_WITHOUT_LIB)
-    set(ATOMIC_LIBS "atomic")
+  set(ATOMIC_LIBS "atomic")
 endif()
 
-########################################################################
+# # # #####################################################################
 # Find dependencies
-########################################################################
+# # # #####################################################################
 
 # Enable ccache if not already enabled
 find_program(CCACHE_EXECUTABLE ccache)
@@ -254,7 +254,7 @@ endif(ENABLE_ZEROMQ)
 
 # TimeProf
 if(ENABLE_TIMEPROF)
-    add_definitions(-DENABLE_TIMEPROF)
+  add_definitions(-DENABLE_TIMEPROF)
 endif(ENABLE_TIMEPROF)
 
 if(BLADERF_FOUND OR UHD_FOUND OR SOAPYSDR_FOUND OR ZEROMQ_FOUND OR SKIQ_FOUND)
@@ -325,17 +325,17 @@ if(Backward_FOUND)
   endif()
 endif()
 
-########################################################################
+# # # #####################################################################
 # Install Dirs
-########################################################################
+# # # #####################################################################
 if (NOT CMAKE_INSTALL_LIBDIR)
-    include(GNUInstallDirs)
+  include(GNUInstallDirs)
 endif (NOT CMAKE_INSTALL_LIBDIR)
 
 # Fall back to just "lib" if the item provided by GNUInstallDirs doesn't exist
 if (NOT EXISTS "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-    message(STATUS "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} does not exist. Defaulting install location to ${CMAKE_INSTALL_PREFIX}/lib.")
-    set(CMAKE_INSTALL_LIBDIR lib)
+  message(STATUS "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR} does not exist. Defaulting install location to ${CMAKE_INSTALL_PREFIX}/lib.")
+  set(CMAKE_INSTALL_LIBDIR lib)
 endif()
 
 set(RUNTIME_DIR bin)
@@ -354,23 +354,23 @@ install(PROGRAMS ${CMAKE_BINARY_DIR}/srsran_install_configs.sh DESTINATION ${RUN
 # Disables the project to build when calling "make install"
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
-########################################################################
+# # # #####################################################################
 # Compiler specific setup
-########################################################################
+# # # #####################################################################
 macro(ADD_CXX_COMPILER_FLAG_IF_AVAILABLE flag have)
-    include(CheckCXXCompilerFlag)
-    check_cxx_compiler_flag(${flag} ${have})
-    if(${have})
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
-    endif(${have})
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag(${flag} ${have})
+  if(${have})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}")
+  endif(${have})
 endmacro(ADD_CXX_COMPILER_FLAG_IF_AVAILABLE)
 
 macro(ADD_C_COMPILER_FLAG_IF_AVAILABLE flag have)
-    include(CheckCCompilerFlag)
-    check_c_compiler_flag(${flag} ${have})
-    if(${have})
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flag}")
-    endif(${have})
+  include(CheckCCompilerFlag)
+  check_c_compiler_flag(${flag} ${have})
+  if(${have})
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flag}")
+  endif(${have})
 endmacro(ADD_C_COMPILER_FLAG_IF_AVAILABLE)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -527,8 +527,8 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
 endif(CMAKE_C_COMPILER_ID MATCHES "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-   # The following is needed for weak linking to work under OS X
-   set(CMAKE_SHARED_LINKER_FLAGS "-undefined dynamic_lookup")
+  # The following is needed for weak linking to work under OS X
+  set(CMAKE_SHARED_LINKER_FLAGS "-undefined dynamic_lookup")
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 # Add colored output when using the Ninja generator
@@ -563,9 +563,9 @@ message(STATUS "CMAKE_C_FLAGS is ${CMAKE_C_FLAGS}")
 message(STATUS "CMAKE_CXX_FLAGS is ${CMAKE_CXX_FLAGS}")
 
 
-########################################################################
+# # # #####################################################################
 # clang-tidy check
-########################################################################
+# # # #####################################################################
 if(ENABLE_TIDY)
   find_program(
           CLANG_TIDY_BIN
@@ -580,9 +580,9 @@ if(ENABLE_TIDY)
   endif()
 endif(ENABLE_TIDY)
 
-########################################################################
+# # # #####################################################################
 # Create uninstall targets
-########################################################################
+# # # #####################################################################
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
@@ -591,26 +591,26 @@ configure_file(
 add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
-########################################################################
+# # # #####################################################################
 # Create optional target to build osmo-gsm-tester trial
-########################################################################
+# # # #####################################################################
 add_custom_target(trial
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build_trial.sh)
 
-########################################################################
+# # # #####################################################################
 # Add -fPIC property to all targets
-########################################################################
+# # # #####################################################################
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-########################################################################
+# # # #####################################################################
 # Print summary
-########################################################################
+# # # #####################################################################
 message(STATUS "Using install prefix: ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "Building for version: ${VERSION}")
 
-########################################################################
+# # # #####################################################################
 # Ctest function helpers
-########################################################################
+# # # #####################################################################
 
 function(add_lte_test)
   add_test(${ARGN})
@@ -642,28 +642,28 @@ function(add_nr_advanced_test)
   set_tests_properties(${TNAME} PROPERTIES LABELS "nr;${CTEST_LABELS}")
 endfunction()
 
-########################################################################
+# # # #####################################################################
 # Add general includes and dependencies
-########################################################################
+# # # #####################################################################
 include_directories(${PROJECT_BINARY_DIR}/lib/include)
 include_directories(${PROJECT_SOURCE_DIR}/lib/include)
 
-########################################################################
+# # # #####################################################################
 # Add headers to cmake project (useful for IDEs)
-########################################################################
+# # # #####################################################################
 set(HEADERS_ALL "")
 file(GLOB headers *)
 foreach(_header ${headers})
-    if(IS_DIRECTORY ${_header})
-        file(GLOB_RECURSE tmp "${_header}/*.h")
-        list(APPEND HEADERS_ALL ${tmp})
-    endif(IS_DIRECTORY ${_header})
+  if(IS_DIRECTORY ${_header})
+    file(GLOB_RECURSE tmp "${_header}/*.h")
+    list(APPEND HEADERS_ALL ${tmp})
+  endif(IS_DIRECTORY ${_header})
 endforeach()
 add_custom_target(add_srsran_headers SOURCES ${HEADERS_ALL})
 
-########################################################################
+# # # #####################################################################
 # Add the subdirectories
-########################################################################
+# # # #####################################################################
 add_subdirectory(lib)
 
 if(RF_FOUND)
@@ -676,8 +676,6 @@ if(RF_FOUND)
 
   if(ENABLE_SRSENB)
     message(STATUS "Building with srsENB/srsGNB")
-    add_subdirectory(srsenb)
-    add_subdirectory(srsgnb)
   else(ENABLE_SRSENB)
     message(STATUS "srsENB/srsGNB build disabled")
   endif(ENABLE_SRSENB)
@@ -692,4 +690,3 @@ else(ENABLE_SRSEPC)
   message(STATUS "srsEPC build disabled")
 endif(ENABLE_SRSEPC)
 
-add_subdirectory(test)
