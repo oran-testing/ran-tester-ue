@@ -72,6 +72,12 @@ typedef struct {
   std::string metrics_csv_filename;
   bool        metrics_json_enable;
   std::string metrics_json_filename;
+  bool        metrics_influxdb_enable;
+  std::string metrics_influxdb_url;
+  uint32_t    metrics_influxdb_port;
+  std::string metrics_influxdb_org;
+  std::string metrics_influxdb_token;
+  std::string metrics_influxdb_bucket;
   bool        tracing_enable;
   std::string tracing_filename;
   std::size_t tracing_buffcapacity;

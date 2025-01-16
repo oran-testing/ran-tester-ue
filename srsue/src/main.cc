@@ -38,6 +38,7 @@
 #include <boost/program_options.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <csignal>
+#include <cstdint>
 #include <iostream>
 #include <pthread.h>
 #include <stdio.h>
@@ -487,6 +488,30 @@ static int parse_args(all_args_t* args, int argc, char* argv[])
     ("general.metrics_json_filename",
      bpo::value<string>(&args->general.metrics_json_filename)->default_value("/tmp/ue_metrics.json"),
      "Metrics JSON filename")
+
+    ("general.metrics_influxdb_enable",
+     bpo::value<bool>(&args->general.metrics_influxdb_enable)->default_value(false),
+     "Write UE metrics to an influxdb instance")
+
+    ("general.metrics_influxdb_url",
+     bpo::value<string>(&args->general.metrics_influxdb_url)->default_value("127.0.0.1"),
+     "Influxdb server url")
+
+    ("general.metrics_influxdb_port",
+     bpo::value<uint32_t>(&args->general.metrics_influxdb_port)->default_value(8086),
+     "Influxdb server port")
+
+    ("general.metrics_influxdb_org",
+     bpo::value<string>(&args->general.metrics_influxdb_org)->default_value("srs"),
+     "Influxdb org")
+
+    ("general.metrics_influxdb_token",
+     bpo::value<string>(&args->general.metrics_influxdb_token)->default_value(""),
+     "Influxdb token")
+
+    ("general.metrics_influxdb_bucket",
+     bpo::value<string>(&args->general.metrics_influxdb_bucket)->default_value("srsan"),
+     "Influxdb bucket name")
 
     ("general.tracing_enable",
            bpo::value<bool>(&args->general.tracing_enable)->default_value(false),
