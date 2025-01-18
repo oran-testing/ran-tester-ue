@@ -1,7 +1,0 @@
-[logging]
-  level = "debug"
-  format = "auto" # or "logfmt" / "json"
-
-[http]
-  access-log-enabled = true
-
