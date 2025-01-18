@@ -31,7 +31,7 @@ if (RPATH)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif (RPATH)
 
-add_executable(srsue main.cc ue.cc metrics_stdout.cc metrics_csv.cc metrics_json.cc)
+add_executable(srsue main.cc ue.cc metrics_stdout.cc metrics_csv.cc metrics_json.cc metrics_influxdb.cc)
 
 set(SRSUE_SOURCES srsue_phy srsue_stack srsue_upper srsue_mac srsue_rrc srslog system)
 set(SRSRAN_SOURCES srsran_common srsran_mac srsran_phy srsran_radio srsran_gtpu srsran_rlc srsran_pdcp rrc_asn1 srslog support system)
@@ -49,14 +49,14 @@ if (RPATH)
   set_target_properties(srsue PROPERTIES INSTALL_RPATH ".")
 endif (RPATH)
 
-########################################################################
+# #######################################################################
 # UE initialization test
-########################################################################
+# #######################################################################
 
 if(NOT SRSGUI_FOUND)
-# Make sure srsue returns 0 and it does not leak
-add_test(srsue_version srsue --version)
-add_test(srsue_help srsue --help)
+  # Make sure srsue returns 0 and it does not leak
+  add_test(srsue_version srsue --version)
+  add_test(srsue_help srsue --help)
 endif(NOT SRSGUI_FOUND)
 
 # Checks that ue.conf.example is valid and it does not leak memory if RF fails
@@ -66,9 +66,9 @@ if (ZEROMQ_FOUND)
   add_test(ue_rf_failure_exceeds_channels srsue ${CMAKE_SOURCE_DIR}/srsue/ue.conf.example --rf.device_name=zmq --rf.nof_antennas=5 --rat.eutra.nof_carriers=5)
 endif(ZEROMQ_FOUND)
 
-########################################################################
+# #######################################################################
 # Option to run command after build (useful for remote builds)
-########################################################################
+# #######################################################################
 if (NOT ${BUILDUE_CMD} STREQUAL "")
   message(STATUS "Added custom post-build-UE command: ${BUILDUE_CMD}")
   add_custom_command(TARGET srsue POST_BUILD COMMAND ${BUILDUE_CMD})

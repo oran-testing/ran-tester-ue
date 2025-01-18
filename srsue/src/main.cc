@@ -32,6 +32,7 @@
 #include "srsran/support/signal_handler.h"
 #include "srsran/version.h"
 #include "srsue/hdr/metrics_csv.h"
+#include "srsue/hdr/metrics_influxdb.h"
 #include "srsue/hdr/metrics_json.h"
 #include "srsue/hdr/metrics_stdout.h"
 #include "srsue/hdr/ue.h"
@@ -816,6 +817,15 @@ int main(int argc, char* argv[])
       metrics_file.set_flush_period((uint32_t)args.general.metrics_csv_flush_period_sec);
     }
   }
+
+  metrics_influxdb influxdb_handle(args.general.metrics_influxdb_url,
+                                   args.general.metrics_influxdb_port,
+                                   args.general.metrics_influxdb_org,
+                                   args.general.metrics_influxdb_token,
+                                   args.general.metrics_influxdb_bucket);
+
+  if (args.general.metrics_influxdb_enable)
+    metricshub.add_listener(&influxdb_handle);
 
   // Set up the JSON log channel used by metrics.
   srslog::sink& json_sink =
