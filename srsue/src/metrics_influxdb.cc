@@ -51,16 +51,7 @@ void metrics_influxdb::stop() {}
 
 void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t period_usec)
 {
-
-
-  float dl_rate_sum = 0.0, ul_rate_sum = 0.0;
-  for (size_t i = 0; i < metrics.stack.rrc.ues.size(); i++) {
-    dl_rate_sum += metrics.stack.mac.ues[i].tx_brate / (metrics.stack.mac.ues[i].nof_tti * 1e-3);
-    ul_rate_sum += metrics.stack.mac.ues[i].rx_brate / (metrics.stack.mac.ues[i].nof_tti * 1e-3);
-  }
-
   const srsran::sys_metrics_t& m = metrics.sys;
-
   // Make POST request to influxdb with all metrics
   std::string response_text;
   influxdb_cpp::builder()
@@ -69,19 +60,18 @@ void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t p
                    .tag("rnti", "test")
                    .tag("testbed", "default")
 
-                   .field("nof_ue", metrics.stack.rrc.ues.size())
-                   .field("dl_brate", SRSRAN_MAX(0.0f, (float)dl_rate_sum))
-                   .field("ul_brate", SRSRAN_MAX(0.0f, (float)ul_rate_sum))
-                   .field("proc_rmem", m.process_realmem)
-                   .field("proc_rmem_kB", m.process_realmem_kB)
-                   .field("proc_vmem", m.process_virtualmem)
-                   .field("proc_vmem_kB", m.process_virtualmem_kB)
-                   .field("sys_mem", m.system_mem)
-                   .field("system_load", m.process_cpu_usage)
+                   .field("rf_o", (long long)metrics.rf.rf_o)
+                   .field("rf_u", (long long)metrics.rf.rf_u)
+                   .field("rf_l", (long long)metrics.rf.rf_l)
+                   .field("proc_rmem", (long long)m.process_realmem)
+                   .field("proc_rmem_kB", (long long)m.process_realmem_kB)
+                   .field("proc_vmem_kB", (long long)m.process_virtualmem_kB)
+                   .field("sys_mem", (long long)m.system_mem)
+                   .field("system_load", (long long)m.process_cpu_usage)
 
                    .timestamp(get_timestamp())
                    .post_http(influx_server_info, &response_text);
-  if(response_text.length > 0){
+  if(response_text.length() > 0){
     cout << "Recieved error from influxdb: " << response_text << "\n";
   }
 }
