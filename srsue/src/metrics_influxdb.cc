@@ -40,6 +40,7 @@ metrics_influxdb::metrics_influxdb(std::string influxdb_url,
                                    std::string influxdb_bucket) :
   influx_server_info(influxdb_url, influxdb_port, influxdb_org, influxdb_token, influxdb_bucket)
 {
+  metrics_init_time_nsec = get_epoch_time_nsec();
 }
 
 metrics_influxdb::~metrics_influxdb()
@@ -49,47 +50,56 @@ metrics_influxdb::~metrics_influxdb()
 
 void metrics_influxdb::stop() {}
 
+// metrics carrier:
+// phy and phy_nr
+// stack -> mac metrics_t
 void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t period_usec)
 {
-  const srsran::sys_metrics_t& m = metrics.sys;
-  // Make POST request to influxdb with all metrics
+  metrics_init_time_nsec += period_usec * 1000;
+
+  if (!post_metics_carrier_independent(metrics, (uint64_t)metrics_init_time_nsec)){
+    cout << "Failed to post metrics carrier independent\n";
+    return;
+  }
+
+}
+
+bool metrics_influxdb::post_metics_carrier_independent(
+    const ue_metrics_t& metrics,
+    const uint64_t current_time_nsec){
+
   std::string response_text;
   influxdb_cpp::builder()
-                   .meas("ue_info")
-                   .tag("pci", "test")
+                   .meas("srsue_info")
                    .tag("rnti", "test")
                    .tag("testbed", "default")
 
                    .field("rf_o", (long long)metrics.rf.rf_o)
                    .field("rf_u", (long long)metrics.rf.rf_u)
                    .field("rf_l", (long long)metrics.rf.rf_l)
-                   .field("proc_rmem", (long long)m.process_realmem)
-                   .field("proc_rmem_kB", (long long)m.process_realmem_kB)
-                   .field("proc_vmem_kB", (long long)m.process_virtualmem_kB)
-                   .field("sys_mem", (long long)m.system_mem)
-                   .field("system_load", (long long)m.process_cpu_usage)
 
-                   .timestamp(get_timestamp())
+                   .field("proc_rmem", (long long)metrics.sys.process_realmem)
+                   .field("proc_rmem_kB", (long long)metrics.sys.process_realmem_kB)
+                   .field("proc_vmem_kB", (long long)metrics.sys.process_virtualmem_kB)
+                   .field("sys_mem", (long long)metrics.sys.system_mem)
+                   .field("system_load", (long long)metrics.sys.process_cpu_usage)
+
+                   .timestamp(current_time_nsec)
                    .post_http(influx_server_info, &response_text);
   if(response_text.length() > 0){
     cout << "Recieved error from influxdb: " << response_text << "\n";
+    return false;
   }
+  return true;
+
 }
 
-std::string metrics_influxdb::float_to_string(float f, int digits)
-{
-  std::ostringstream os;
-  const int          precision = (f == 0.0) ? digits - 1 : digits - log10f(fabs(f)) - 2 * DBL_EPSILON;
-  os << std::fixed << std::setprecision(precision) << f;
-  return os.str();
-}
 
-unsigned long long metrics_influxdb::get_timestamp()
+unsigned long long metrics_influxdb::get_epoch_time_nsec()
 {
   struct timespec ts;
   clock_gettime(CLOCK_REALTIME, &ts);
   unsigned long long timestamp = (unsigned long long)ts.tv_sec * 1000000000 + ts.tv_nsec;
   return timestamp;
 }
-
-} // namespace srsue
+}

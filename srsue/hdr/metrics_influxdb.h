@@ -54,16 +54,14 @@ public:
   void stop();
 
 private:
-  std::string        float_to_string(float f, int digits);
-  unsigned long long get_timestamp();
+  unsigned long long get_epoch_time_nsec();
+  bool post_metics_carrier_independent(
+      const ue_metrics_t& metrics,
+      const uint64_t current_time_nsec);
+  //void post_metrics_carrier();
 
   influxdb_cpp::server_info influx_server_info;
-  ue_metrics_interface*     ue               = nullptr;
-  uint32_t                  n_reports        = 0;
-  std::mutex                mutex            = {};
-  uint32_t                  flush_period_sec = 0;
-  uint32_t                  flush_time_ms    = 0;
-  uint64_t                  time_ms          = 0;
+  unsigned long long metrics_init_time_nsec;
 };
 
 } // namespace srsue
