@@ -117,30 +117,28 @@ class srsue:
                                 "measurement": "ue_info",
                                 "tags": {
                                     "pci": "test",
-                                    "rnti": f"{self.rnti}",
+                                    "ue_data_identifier": f"{self.ue_data_identifier}",
                                     "testbed": "testing",
                                 },
                             "fields": {"srsue_stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )
-                logging.debug(f"Sent message text {message_text}")
+                logging.debug(f"Sent message text: {message_text}")
             except Exception as e:
                 logging.error(f"send_message failed with error: {e}")
-                message_str = '{ "type": "' + message_type + '", "text": "' + message_text + '"}'
-                self.log_buffer.append(message_str)
 
     def influx_push(self, write_api: WriteApi, *args, **kwargs) -> None:
         while True:
             try:
                 write_api.write(*args, **kwargs)
                 break
-            except (RemoteDisconnected, ConnectionRefusedError):
-                logging.warning("Error pushing data. Retrying...")
-                sleep(1)
+            except ConnectionError as e:
+                logging.warning(f"Error pushing data: {e}. Retrying...")
+                time.sleep(1)
 
     def log_report_thread(self):
-        while self.isRunning and not self.stop_thread.is_set():
+        while not self.stop_thread.is_set():
             line = next(self.docker_logs, None)
             if not line:
                 continue

@@ -15,6 +15,8 @@ import logging
 import signal
 from typing import List, Dict, Union, Optional, Any
 
+from influxdb_client import InfluxDBClient, WriteApi
+
 class Config:
     filename : str = ""
     options : Optional[Dict[str,Any]] = None
@@ -84,18 +86,34 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
     Returns a list of metadata for each thread
     """
 
-    influxdb_client = InfluxDBClient(
-        "http://0.0.0.0:8086",
-        org="srs",
-        token="605bc59413b7d5457d181ccf20f9fda15693f81b068d70396cc183081b264f3b"
-    )
-    docker_client = docker.from_env()
-
-    process_metadata: List[Dict[str, Any]] = []
-
     if Config.options is None:
         logging.error("Config is None: parsing failed... Exiting")
         sys.exit(1)
+
+    influxdb_config = Config.options.get("influxdb", {})
+
+
+    influxdb_host, influxdb_port, influxdb_org, influxdb_token = "NO_HOST", 8086, "NO_ORG", "NO_TOKEN"
+    try:
+        influxdb_host = os.path.expandvars(influxdb_config["influxdb_host"])
+        influxdb_port = os.path.expandvars(influxdb_config["influxdb_port"])
+        influxdb_org = os.path.expandvars(influxdb_config["influxdb_org"])
+        influxdb_token = os.path.expandvars(influxdb_config["influxdb_token"])
+
+    except (KeyError, ValueError) as e:
+        print(f"Influxdb Configuration Error: {e}")
+
+    logging.debug(f"{influxdb_token} : {influxdb_org} : TEST {os.path.expandvars("${DOCKER_INFLUXDB_INIT_HOST}")}")
+
+    influxdb_client = InfluxDBClient(
+        f"http://{influxdb_host}:{influxdb_port}",
+        org=influxdb_org,
+        token=influxdb_token
+    )
+
+    docker_client = docker.from_env()
+
+    process_metadata: List[Dict[str, Any]] = []
 
     for process_config in Config.options.get("processes", []):
         process_class = None
@@ -105,7 +123,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
             logging.error(f"Invalid process type: {process_type}")
             continue
 
-        process_handle = process_class()
+        process_handle = process_class(influxdb_client, docker_client)
 
         process_handle.start(
             config=process_config["config_file"] if "config_file" in process_config.keys() else "",
@@ -115,7 +133,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         process_metadata.append({
             'id': str(uuid.uuid4()),
             'type': process_config['type'],
-            'config': process_config
+            'config': process_config,
             'handle': process_handle,
         })
 

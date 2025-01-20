@@ -1,6 +1,6 @@
 services:
   srsue:
-    container_name: srsran_ue
+    container_name: srsran/ue
     image: srsran/ue
     build:
       context: ..
@@ -22,15 +22,35 @@ services:
       - /tmp:/tmp
 
     environment:
-      - CONFIG=${UE_CONFIG_PATH:-configs/zmq/ue_zmq_docker.conf}
-      - ARGS=${UE_ARGS}
+      - CONFIG=${DOCKER_SRSUE_INIT_CONFIG:-configs/zmq/ue_zmq_docker.conf}
+      - ARGS=${DOCKER_SRSUE_INIT_ARGS}
 
     # Allow network connection for ZMQ
     ports:
        -  2000:2000/tcp
        -  2001:2001/tcp
     networks:
-      -  srsue_network
+      -  docker_srsue_network
+
+  controller:
+    container_name: controller
+    image: controller
+    volumes:
+      # Pass in the docker soket for starting srsue
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Allow results writing to host machine
+      - /tmp:/tmp
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - CONFIG=${DOCKER_CONTROLLER_INIT_CONFIG:-configs/basic_ue_zmq.yaml}
+    privileged: true
+    build:
+      context: controller
+    env_file:
+      - .env
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.7
 
   influxdb:
     container_name: influxdb
@@ -64,28 +84,6 @@ services:
       metrics:
         ipv4_address: 172.19.1.6
 
-  controller:
-    container_name: controller
-    image: controller
-    volumes:
-      # Pass in the docker soket for starting srsue
-      - /var/run/docker.sock:/var/run/docker.sock
-      # Allow results writing to host machine
-      - /tmp:/tmp
-    environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - CONFIG=${UE_CONTROLLER_CONFIG:-configs/basic_ue_zmq.yaml}
-    privileged: true
-    build:
-      context: controller
-    env_file:
-      - .env
-    network_mode: "host"
-
-    profiles:
-      - system
-
-
 
 volumes:
   ue-storage:
@@ -93,8 +91,12 @@ volumes:
   grafana-storage:
 
 networks:
-  srsue_network:
-    driver: bridge
+  docker_srsue_network:
+    ipam:
+      driver: bridge
+      config:
+        - subnet: 172.18.0.0/24
+
   metrics:
     ipam:
       driver: default
