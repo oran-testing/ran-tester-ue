@@ -55,10 +55,18 @@ public:
 
 private:
   unsigned long long get_epoch_time_nsec();
-  bool post_singleton_metrics(
-      const ue_metrics_t& metrics,
-      const uint64_t current_time_nsec);
-  //void post_metrics_carrier();
+  bool post_singleton_metrics(const ue_metrics_t& metrics,
+                            const uint64_t current_time_nsec);
+
+  bool post_carrier_metrics(const srsran::rf_metrics_t&  rf,
+                            const srsran::sys_metrics_t& sys,
+                            const phy_metrics_t&         phy,
+                            const mac_metrics_t          mac[SRSRAN_MAX_CARRIERS],
+                            const rrc_metrics_t&         rrc,
+                            const uint32_t               cc,
+                            const uint32_t               r,
+                            const uint64_t               current_time_nsec,
+                            std::string                  carrier_type);
 
   influxdb_cpp::server_info influx_server_info;
   unsigned long long metrics_init_time_nsec;

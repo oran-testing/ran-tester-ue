@@ -64,16 +64,41 @@ void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t p
     return;
   }
 
+  for (uint32_t r = 0; r < metrics.phy.nof_active_cc; r++) {
+    post_carrier_metrics(metrics.rf,
+                        metrics.sys,
+                        metrics.phy,
+                        metrics.stack.mac,
+                        metrics.stack.rrc,
+                        r,
+                        r,
+                        metrics_init_time_nsec,
+                        "lte");
+  }
+
+  // Metrics for NR carrier
+  for (uint32_t r = 0; r < metrics.phy_nr.nof_active_cc; r++) {
+    post_carrier_metrics(metrics.rf,
+                        metrics.sys,
+                        metrics.phy_nr,
+                        metrics.stack.mac_nr,
+                        metrics.stack.rrc,
+                        metrics.phy.nof_active_cc + r, // NR carrier offset
+                        r,
+                        metrics_init_time_nsec,
+                        "nr");
+  }
+
 }
 
 bool metrics_influxdb::post_singleton_metrics(
     const ue_metrics_t& metrics,
     const uint64_t current_time_nsec){
 
+  // TODO: differentiate UEs somehow
   std::string response_text;
   influxdb_cpp::builder()
-                   .meas("srsue_info")
-                   .tag("rnti", "test")
+                   .meas("srsue_singleton_metric")
                    .tag("testbed", "default")
 
                    .field("rf_o", (long long)metrics.rf.rf_o)
@@ -88,8 +113,6 @@ bool metrics_influxdb::post_singleton_metrics(
                    .field("ul_dropped_sdus", (long)metrics.stack.ul_dropped_sdus)
                    .field("nof_active_eps_bearer", (long)metrics.stack.nas.nof_active_eps_bearer)
                    .field("emm_state", (int)metrics.stack.nas.state)
-                   .field("rrc_state", (int)metrics.stack.rrc.state)
-                   .field("rrc_nr_state", (int)metrics.stack.rrc_nr.state)
 
                    .field("proc_rmem", (long long)metrics.sys.process_realmem)
                    .field("proc_rmem_kB", (long long)metrics.sys.process_realmem_kB)
@@ -99,6 +122,67 @@ bool metrics_influxdb::post_singleton_metrics(
 
                    .timestamp(current_time_nsec)
                    .post_http(influx_server_info, &response_text);
+  if(response_text.length() > 0){
+    cout << "Recieved error from influxdb: " << response_text << "\n";
+    return false;
+  }
+  return true;
+}
+
+bool metrics_influxdb::post_carrier_metrics(const srsran::rf_metrics_t&  rf,
+                          const srsran::sys_metrics_t& sys,
+                          const phy_metrics_t&         phy,
+                          const mac_metrics_t          mac[SRSRAN_MAX_CARRIERS],
+                          const rrc_metrics_t&         rrc,
+                          const uint32_t               cc,
+                          const uint32_t               r,
+                          const uint64_t current_time_nsec,
+                          std::string carrier_type){
+
+  // TODO: get metrics of neighboring cells
+
+  std::string response_text;
+  influxdb_cpp::builder()
+                   .meas("srsue_carrier_metric")
+                   .tag("testbed", "default")
+                   .tag("carrier_channel_index", std::to_string(cc))
+                   .tag("carrier_type", carrier_type)
+
+                   .field("dl_earfcn", (long long)phy.info[r].dl_earfcn)
+                   .field("pci", (int)phy.info[r].pci)
+
+                   .field("rsrp", phy.ch[r].rsrp)
+                   .field("pathloss", phy.ch[r].pathloss)
+                   .field("cfo", phy.sync[r].cfo)
+
+                   .field("rl_mcs", phy.ul[r].mcs)
+                   .field("dl_mcs", phy.dl[r].mcs)
+                   .field("sinr", std::isinf((float)phy.ch[r].sinr) ? 0.0f : (float)phy.ch[r].sinr)
+                   .field("fec_iters", phy.dl[r].fec_iters)
+                   .field("rx_brate",
+                       mac[r].rx_brate > 0?
+                       mac[r].rx_brate / mac[r].nof_tti * 1e-3
+                       : 0)
+                   .field("tx_brate",
+                       mac[r].tx_brate > 0?
+                       mac[r].tx_brate / mac[r].nof_tti * 1e-3
+                       : 0)
+
+                   .field("rx_pkts", mac[r].rx_pkts)
+                   .field("rx_errors", mac[r].rx_errors)
+                   .field("tx_pkts", mac[r].tx_pkts)
+                   .field("tx_errors", mac[r].tx_errors)
+
+                   .field("ta_us", phy.sync[r].ta_us)
+                   .field("distance_km", phy.sync[r].distance_km)
+                   .field("speed_kmph", phy.sync[r].speed_kmph)
+                   .field("ul_buffer", (float)mac[r].ul_buffer)
+
+                   .field("rrc_state", (int)rrc.state)
+
+                   .timestamp(current_time_nsec)
+                   .post_http(influx_server_info, &response_text);
+
   if(response_text.length() > 0){
     cout << "Recieved error from influxdb: " << response_text << "\n";
     return false;
