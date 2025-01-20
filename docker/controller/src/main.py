@@ -4,6 +4,7 @@ import os
 import time
 import sys
 import shutil
+import docker
 from datetime import datetime
 
 import uuid
@@ -19,8 +20,8 @@ class Config:
     options : Optional[Dict[str,Any]] = None
     log_level : int = logging.DEBUG
 
-# UE subprocess manager
-from Ue import Ue
+# srsue worker thread class
+from srsue_worker_thread import srsue
 
 
 
@@ -75,34 +76,48 @@ def kill_existing(process_names : List[str]) -> None:
     for name in process_names:
         os.system("kill -9 $(ps aux | awk '/" + name + "/{print $2}')")
 
-def start_processes() -> List[Dict[str, Union[str, Ue, int]]]:
+def start_subprocess_threads() -> List[Dict[str, Any]]:
     """
-    Starts any necessary processes using Config
-    Starts ping and iperf if specified
-    Returns a list of metadata for each process
+    Creates one central influxDB client
+    Creates one central docker client
+    Starts any necessary subprocess threads using Config
+    Returns a list of metadata for each thread
     """
-    process_metadata: List[Dict[str, Union[str, Ue]]] = []
+
+    influxdb_client = InfluxDBClient(
+        "http://0.0.0.0:8086",
+        org="srs",
+        token="605bc59413b7d5457d181ccf20f9fda15693f81b068d70396cc183081b264f3b"
+    )
+    docker_client = docker.from_env()
+
+    process_metadata: List[Dict[str, Any]] = []
 
     if Config.options is None:
         logging.error("Config is None: parsing failed... Exiting")
         sys.exit(1)
 
     for process_config in Config.options.get("processes", []):
-        if process_config["type"] == "srsue":
-            new_ue = Ue()
-            new_ue.start(
-                process_config["config_file"],
-                args=process_config["args"].split(" ") if "args" in process_config.keys() else []
-            )
+        process_class = None
+        try:
+            process_class = globals()[process_config["type"]]
+        except KeyError:
+            logging.error(f"Invalid process type: {process_type}")
+            continue
 
-            process_metadata.append({
-                'id': str(uuid.uuid4()),
-                'type': process_config['type'],
-                'config': process_config['config_file'],
-                'handle': new_ue,
-            })
-        else:
-            logging.error(f"Invalid process type: {process_config['type']}")
+        process_handle = process_class()
+
+        process_handle.start(
+            config=process_config["config_file"] if "config_file" in process_config.keys() else "",
+            args=process_config["args"].split(" ") if "args" in process_config.keys() else []
+        )
+
+        process_metadata.append({
+            'id': str(uuid.uuid4()),
+            'type': process_config['type'],
+            'config': process_config
+            'handle': process_handle,
+        })
 
     return process_metadata
 
@@ -141,11 +156,11 @@ if __name__ == '__main__':
     global process_list
     process_list = []
 
-    kill_existing(["srsue", "gnb", "iperf3"])
+    kill_existing(["srsue", "gnb"])
     configure()
 
-    global process_list
-    process_list = start_processes()
+    global process_metadata
+    process_metadata = start_subprocess_threads()
 
     export_params = Config.options.get("data_export", False)
 
