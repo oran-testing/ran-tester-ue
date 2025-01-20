@@ -55,7 +55,7 @@ public:
 
 private:
   unsigned long long get_epoch_time_nsec();
-  bool post_metics_carrier_independent(
+  bool post_singleton_metrics(
       const ue_metrics_t& metrics,
       const uint64_t current_time_nsec);
   //void post_metrics_carrier();

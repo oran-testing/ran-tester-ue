@@ -50,21 +50,23 @@ metrics_influxdb::~metrics_influxdb()
 
 void metrics_influxdb::stop() {}
 
-// metrics carrier:
+// NOTE: carrier metrics need a loop:
 // phy and phy_nr
 // stack -> mac metrics_t
+
+// NOTE: RLC metrics need a loop
 void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t period_usec)
 {
   metrics_init_time_nsec += period_usec * 1000;
 
-  if (!post_metics_carrier_independent(metrics, (uint64_t)metrics_init_time_nsec)){
+  if (!post_singleton_metrics(metrics, (uint64_t)metrics_init_time_nsec)){
     cout << "Failed to post metrics carrier independent\n";
     return;
   }
 
 }
 
-bool metrics_influxdb::post_metics_carrier_independent(
+bool metrics_influxdb::post_singleton_metrics(
     const ue_metrics_t& metrics,
     const uint64_t current_time_nsec){
 
@@ -77,6 +79,17 @@ bool metrics_influxdb::post_metics_carrier_independent(
                    .field("rf_o", (long long)metrics.rf.rf_o)
                    .field("rf_u", (long long)metrics.rf.rf_u)
                    .field("rf_l", (long long)metrics.rf.rf_l)
+
+                   .field("nof_active_cc", (int)SRSRAN_MAX(metrics.phy.nof_active_cc, metrics.phy_nr.nof_active_cc))
+
+                   .field("dl_tput_mbps", metrics.gw.dl_tput_mbps)
+                   .field("ul_tput_mbps", metrics.gw.ul_tput_mbps)
+
+                   .field("ul_dropped_sdus", (long)metrics.stack.ul_dropped_sdus)
+                   .field("nof_active_eps_bearer", (long)metrics.stack.nas.nof_active_eps_bearer)
+                   .field("emm_state", (int)metrics.stack.nas.state)
+                   .field("rrc_state", (int)metrics.stack.rrc.state)
+                   .field("rrc_nr_state", (int)metrics.stack.rrc_nr.state)
 
                    .field("proc_rmem", (long long)metrics.sys.process_realmem)
                    .field("proc_rmem_kB", (long long)metrics.sys.process_realmem_kB)
