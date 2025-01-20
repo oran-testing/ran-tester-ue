@@ -155,7 +155,7 @@ bool metrics_influxdb::post_carrier_metrics(const srsran::rf_metrics_t&  rf,
                    .field("pathloss", phy.ch[r].pathloss)
                    .field("cfo", phy.sync[r].cfo)
 
-                   .field("rl_mcs", phy.ul[r].mcs)
+                   .field("ul_mcs", phy.ul[r].mcs)
                    .field("dl_mcs", phy.dl[r].mcs)
                    .field("sinr", std::isinf((float)phy.ch[r].sinr) ? 0.0f : (float)phy.ch[r].sinr)
                    .field("fec_iters", phy.dl[r].fec_iters)

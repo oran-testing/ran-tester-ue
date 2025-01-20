@@ -1,43 +1,4 @@
 {
-  "__elements": {},
-  "__requires": [
-    {
-      "type": "panel",
-      "id": "gauge",
-      "name": "Gauge",
-      "version": ""
-    },
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "10.2.0-61719"
-    },
-    {
-      "type": "datasource",
-      "id": "influxdb",
-      "name": "InfluxDB",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "text",
-      "name": "Text",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "timeseries",
-      "name": "Time series",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -57,13 +18,13 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
+  "id": 1,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "JOSE3g9KVz"
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
       },
       "gridPos": {
         "h": 4,
@@ -78,10 +39,11 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<img src=\"https://raw.githubusercontent.com/srsran/srsRAN_Project_docs/main/docs/source/.imgs/logo.png\" />",
+        "content": "<img src=\"https://raw.githubusercontent.com/oran-testing/docs/main/images/logo.png\" />",
         "mode": "html"
       },
-      "pluginVersion": "10.2.0-61719",
+      "pluginVersion": "11.4.0",
+      "title": "",
       "transparent": true,
       "type": "text"
     },
@@ -124,6 +86,7 @@
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -135,7 +98,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.2.0-61719",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -197,6 +160,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -208,7 +172,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.2.0-61719",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -268,6 +232,7 @@
         "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "last"
@@ -279,7 +244,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.2.0-62263",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -291,7 +256,6 @@
         }
       ],
       "title": "Current Total Downlink Bitrate",
-      "transformations": [],
       "type": "stat"
     },
     {
@@ -331,6 +295,7 @@
         "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
+        "percentChangeColorMode": "standard",
         "reduceOptions": {
           "calcs": [
             "max"
@@ -342,7 +307,7 @@
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.2.0-61719",
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -354,7 +319,6 @@
         }
       ],
       "title": "Maximum Total Downlink Bitrate",
-      "transformations": [],
       "type": "stat"
     },
     {
@@ -369,11 +333,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -427,7 +393,7 @@
             "last"
           ],
           "displayMode": "table",
-          "placement": "right",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -435,13 +401,14 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ue_info\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dl_brate\")\n",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"rx_brate\")\n",
           "refId": "Downlink"
         }
       ],
@@ -469,11 +436,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -532,7 +501,7 @@
             "last"
           ],
           "displayMode": "table",
-          "placement": "right",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -540,13 +509,14 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ue_info\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dl_mcs\")",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dl_mcs\")",
           "refId": "Downlink"
         }
       ],
@@ -574,11 +544,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -632,7 +604,7 @@
             "last"
           ],
           "displayMode": "table",
-          "placement": "right",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -640,13 +612,14 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ue_info\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"ul_brate\")\n",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"tx_brate\")\n",
           "refId": "Downlink"
         }
       ],
@@ -674,11 +647,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -737,7 +712,7 @@
             "last"
           ],
           "displayMode": "table",
-          "placement": "right",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -745,13 +720,14 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ue_info\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"ul_mcs\")",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"ul_mcs\")",
           "refId": "Downlink"
         }
       ],
@@ -779,11 +755,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -842,7 +820,7 @@
             "last"
           ],
           "displayMode": "table",
-          "placement": "right",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -850,13 +828,14 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ue_info\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"pusch_snr_db\")",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"sinr\")",
           "refId": "Downlink"
         }
       ],
@@ -884,11 +863,13 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
+            "barWidthFactor": 0.6,
             "drawStyle": "line",
             "fillOpacity": 0,
             "gradientMode": "none",
@@ -955,6 +936,7 @@
           "sort": "none"
         }
       },
+      "pluginVersion": "11.4.0",
       "targets": [
         {
           "datasource": {
@@ -978,8 +960,9 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "1s",
-  "schemaVersion": 38,
+  "preload": false,
+  "refresh": "5s",
+  "schemaVersion": 40,
   "tags": [],
   "templating": {
     "list": []
@@ -990,7 +973,6 @@
   },
   "timepicker": {
     "refresh_intervals": [
-      "1s",
       "5s",
       "10s",
       "30s",

@@ -47,6 +47,23 @@ services:
       metrics:
         ipv4_address: 172.19.1.5
 
+  grafana:
+    container_name: grafana
+    image: srsran/grafana
+    build:
+      context: grafana
+    volumes:
+      - grafana-storage:/var/lib/grafana:rw
+    env_file:
+      - .env
+    depends_on:
+      - influxdb
+    ports:
+      - 3300:${GRAFANA_PORT}
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.6
+
   controller:
     container_name: controller
     image: controller
@@ -73,6 +90,7 @@ services:
 volumes:
   ue-storage:
   influxdb-storage:
+  grafana-storage:
 
 networks:
   srsue_network:
