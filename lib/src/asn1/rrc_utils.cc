@@ -20,7 +20,7 @@
  */
 
 #include "srsran/asn1/rrc_utils.h"
-#include "srsenb/hdr/stack/rrc/rrc_cell_cfg.h"
+#include "srsran/common/enb_rrc_cell_cfg.h"
 #include "srsran/asn1/obj_id_cmp_utils.h"
 #include "srsran/asn1/rrc.h"
 #include "srsran/config.h"

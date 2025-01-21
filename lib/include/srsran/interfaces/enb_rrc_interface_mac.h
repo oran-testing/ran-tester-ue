@@ -22,7 +22,7 @@
 #ifndef SRSRAN_ENB_RRC_INTERFACE_MAC_H
 #define SRSRAN_ENB_RRC_INTERFACE_MAC_H
 
-#include "srsenb/hdr/stack/mac/sched_interface.h"
+#include "srsran/interfaces/enb_mac_sched_interface.h"
 
 namespace srsenb {
 

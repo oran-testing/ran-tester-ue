@@ -22,7 +22,7 @@
 #ifndef SRSRAN_BEARER_MANAGER_H
 #define SRSRAN_BEARER_MANAGER_H
 
-#include "srsenb/hdr/common/common_enb.h"
+#include "srsran/interfaces/common_enb.h"
 #include "srsran/common/common.h"
 #include "srsran/common/rwlock_guard.h"
 #include "srsran/srslog/srslog.h"

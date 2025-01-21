@@ -24,7 +24,7 @@
 #include "srsran/common/crash_handler.h"
 #include "srsran/common/string_helpers.h"
 #include "srsue/hdr/phy/phy_nr_sa.h"
-#include "test/phy/dummy_ue_stack.h"
+#include "srsue/hdr/phy/dummy_ue_stack.h"
 #include <boost/program_options.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <iostream>

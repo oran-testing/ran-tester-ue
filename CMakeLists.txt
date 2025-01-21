@@ -62,13 +62,9 @@ configure_file(
 # # # # # # ##################################################################
 # Options
 # # # # # # ##################################################################
-option(ENABLE_SRSUE          "Build srsUE application"                  ON)
-option(ENABLE_SRSENB         "Build srsENB application"                 ON)
-option(ENABLE_SRSEPC         "Build srsEPC application"                 ON)
 option(DISABLE_SIMD          "Disable SIMD instructions"                OFF)
 option(AUTO_DETECT_ISA       "Autodetect supported ISA extensions"      ON)
 
-option(ENABLE_GUI            "Enable GUI (using srsGUI)"                ON)
 option(ENABLE_RF_PLUGINS     "Enable RF plugins"                        ON)
 option(ENABLE_UHD            "Enable UHD"                               ON)
 option(ENABLE_BLADERF        "Enable BladeRF"                           ON)
@@ -295,16 +291,6 @@ if(Boost_FOUND)
 else(Boost_FOUND)
   message(FATAL_ERROR "Boost required to build srsRAN")
 endif (Boost_FOUND)
-
-# srsGUI
-if(ENABLE_GUI)
-  find_package(SRSGUI)
-  if(SRSGUI_FOUND)
-    add_definitions(-DENABLE_GUI)
-    include_directories(${SRSGUI_INCLUDE_DIRS})
-    link_directories(${SRSGUI_LIBRARY_DIRS})
-  endif(SRSGUI_FOUND)
-endif(ENABLE_GUI)
 
 if (ENABLE_TTCN3)
   find_package(RapidJSON REQUIRED)
@@ -667,12 +653,7 @@ add_custom_target(add_srsran_headers SOURCES ${HEADERS_ALL})
 add_subdirectory(lib)
 
 if(RF_FOUND)
-  if(ENABLE_SRSUE)
-    message(STATUS "Building with srsUE")
     add_subdirectory(srsue)
-  else(ENABLE_SRSUE)
-    message(STATUS "srsUE build disabled")
-  endif(ENABLE_SRSUE)
 else(RF_FOUND)
   message(STATUS "srsUE and srsENB/srsGNB builds disabled due to missing RF driver")
 endif(RF_FOUND)
