@@ -30,7 +30,7 @@ services:
        -  2000:2000/tcp
        -  2001:2001/tcp
     networks:
-      -  docker_srsue_network
+      -  srsue_network
 
   controller:
     container_name: controller
@@ -56,6 +56,8 @@ services:
     container_name: influxdb
     image: influxdb:${DOCKER_INFLUXDB_VERSION}
     volumes:
+      # Enable writing data backups to the host machine
+      - /tmp/:/tmp/host/
       - influxdb-storage:/var/lib/influxdb2:rw
     env_file:
       - .env
@@ -91,7 +93,7 @@ volumes:
   grafana-storage:
 
 networks:
-  docker_srsue_network:
+  srsue_network:
     ipam:
       driver: bridge
       config:

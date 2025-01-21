@@ -21,6 +21,7 @@ class Config:
     filename : str = ""
     options : Optional[Dict[str,Any]] = None
     log_level : int = logging.DEBUG
+    docker_client = None
 
 # srsue worker thread class
 from srsue_worker_thread import srsue
@@ -111,7 +112,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         token=influxdb_token
     )
 
-    docker_client = docker.from_env()
+    Config.docker_client = docker.from_env()
 
     process_metadata: List[Dict[str, Any]] = []
 
@@ -123,7 +124,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
             logging.error(f"Invalid process type: {process_type}")
             continue
 
-        process_handle = process_class(influxdb_client, docker_client)
+        process_handle = process_class(influxdb_client, Config.docker_client)
 
         process_handle.start(
             config=process_config["config_file"] if "config_file" in process_config.keys() else "",
@@ -139,31 +140,44 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
 
     return process_metadata
 
-def await_children(export_params) -> None:
+def backup_metrics() -> None:
     """
     Wait for all child processes to stop
     """
-    export_data = False
-    export_path = None
 
-    # Handle export parameters
-    if export_params:
-        export_dir = pathlib.Path(export_params["output_directory"])
-        if not export_dir.exists():
-            raise ValueError(f"Directory does not exist: {export_dir}")
-        export_data = True
-        timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M,%S")
-        export_path = export_dir / f"soft_t_ue_run_{timestamp}"
-        export_path.mkdir(parents=True, exist_ok=True)
+    backup_config = Config.options.get("data_backup", {})
 
-    process_running = True
-    while process_running:
-        process_running = False
-        for process in process_list:
-            if process["handle"].isRunning:
-                process_running = True
+    if not backup_config:
+        while True:
+            logging.debug("No backup configured")
+            time.sleep(100)
 
-        time.sleep(1)
+    backup_every = int(backup_config["backup_every"]) if "backup_every" in backup_config.keys() else 1000
+    backup_dir = backup_config["backup_dir"] if "backup_dir" in backup_config.keys() else "test"
+    backup_since = backup_config["backup_since"] if "backup_since" in backup_config.keys() else "-1d"
+
+    influxdb_backup_dir = f"/tmp/host/{backup_dir}/"
+
+    containers = Config.docker_client.containers.list(all=True, filters={"name": "influxdb"})
+    logging.debug(str(containers))
+    influxdb_container = containers[0]
+    if not influxdb_container:
+        logging.error("Failed to get influxDB container")
+        sys.exit(1)
+
+    influxdb_container.exec_run(f"mkdir -p {influxdb_backup_dir}")
+    query = f'from(bucket: "srsran") |> range(start: {backup_since})'
+
+    while True:
+        csv_file = f"{influxdb_backup_dir}/backup.csv"
+        csv_command = f'influx query "{query}" --raw > {csv_file}'
+        exit_code, output = influxdb_container.exec_run(f"sh -c '{csv_command}'", demux=True)
+        if exit_code == 0:
+            print(f"CSV backup saved to {csv_file}")
+        else:
+            print(f"Failed to create CSV backup: {output[1].decode()}")
+        time.sleep(backup_every)
+
 
 
 if __name__ == '__main__':
@@ -175,14 +189,14 @@ if __name__ == '__main__':
     process_list = []
 
     kill_existing(["srsue", "gnb"])
-    configure()
 
+    configure()
     global process_metadata
     process_metadata = start_subprocess_threads()
 
     export_params = Config.options.get("data_export", False)
 
-    await_children(export_params)
+    backup_metrics()
     sys.exit(0)
 
 
