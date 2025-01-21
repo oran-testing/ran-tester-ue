@@ -1,0 +1,15 @@
+processes: # REQUIRED: a list of all processes to start
+  - type: "srsue" # REQUIRED: the name of the subprocess class
+    config_file: "configs/zmq/ue_zmq_docker.conf" # OPTIONAL: the path to a config file in the subprocess container
+    args: "--rrc.sdu_fuzzed_bits 1 --rrc.fuzz_target_message 'rrcSetupRequest'" # OPTIONAL: arguments to pass to the subprocess container
+
+influxdb: # OPTIONAL: (but recommended for metrics collection) config for InfluxDB
+  influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST} # REQUIRED: The IP or HOSTNAME of InfluxDB container
+  influxdb_port: ${DOCKER_INFLUXDB_INIT_PORT} # REQUIRED: The port of the InfluxDB service
+  influxdb_org: ${DOCKER_INFLUXDB_INIT_ORG} # REQUIRED: The org of the InfluxDB service
+  influxdb_token: ${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN} # REQUIRED: The admin token of the InfluxDB service
+
+data_backup: # OPTIONAL: configure automatic data backups
+  backup_every: 1000 # REQUIRED: Backup data interval in seconds
+  backup_dir: test # OPTIONAL: directory to output data
+  backup_since: -1d # OPTIONAL: backup starting from

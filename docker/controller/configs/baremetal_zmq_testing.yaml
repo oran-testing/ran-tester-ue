@@ -1,9 +1,0 @@
-processes:
-  - type: "srsue"
-    config_file: "configs/zmq/ue_zmq.conf"
-    args: "--rrc.sdu_fuzzed_bits 1 --rrc.fuzz_target_message 'rrcSetupRequest'"
-
-data_export:
-  output_directory: "/tmp/"
-  iq_capture: true
-  iperf_capture: true
