@@ -39,6 +39,7 @@ class srsue:
         environment = {
             "CONFIG": self.ue_config,
             "ARGS": " ".join(args),
+            "UHD_IMAGES_DIR": "/usr/local/share/uhd/images"
         }
 
         try:
@@ -57,6 +58,7 @@ class srsue:
                 volumes={
                     "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
                     "/usr/share/uhd/images": {"bind": "/usr/share/uhd/images", "mode": "ro"},
+                    "/usr/local/share/uhd/images": {"bind": "/usr/local/share/uhd/images", "mode": "ro"},
                     "/tmp": {"bind": "/tmp", "mode": "rw"}
                 },
                 privileged=True,

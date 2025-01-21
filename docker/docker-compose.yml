@@ -26,7 +26,7 @@ services:
       - ARGS=${DOCKER_SRSUE_INIT_ARGS}
 
     networks:
-      -  srsue_network
+      -  docker_srsue_network
       -  metrics
 
 
@@ -93,11 +93,8 @@ volumes:
   grafana-storage:
 
 networks:
-  srsue_network:
-    ipam:
-      driver: bridge
-      config:
-        - subnet: 172.18.0.0/24
+  docker_srsue_network:
+    external: true
 
   metrics:
     ipam:
