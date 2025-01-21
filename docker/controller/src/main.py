@@ -104,8 +104,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
     except (KeyError, ValueError) as e:
         print(f"Influxdb Configuration Error: {e}")
 
-    logging.debug(f"{influxdb_token} : {influxdb_org} : TEST {os.path.expandvars("${DOCKER_INFLUXDB_INIT_HOST}")}")
-
     influxdb_client = InfluxDBClient(
         f"http://{influxdb_host}:{influxdb_port}",
         org=influxdb_org,
@@ -166,16 +164,17 @@ def backup_metrics() -> None:
         sys.exit(1)
 
     influxdb_container.exec_run(f"mkdir -p {influxdb_backup_dir}")
-    query = f'from(bucket: "srsran") |> range(start: {backup_since})'
+    query = f'from(bucket: \\"srsran\\") |> range(start: {backup_since})'
 
     while True:
         csv_file = f"{influxdb_backup_dir}/backup.csv"
-        csv_command = f'influx query "{query}" --raw > {csv_file}'
-        exit_code, output = influxdb_container.exec_run(f"sh -c '{csv_command}'", demux=True)
+        csv_command = f"influx query '{query}' --raw > {csv_file}"
+        logging.info(f"Backing up infludb with command: {csv_command}")
+        exit_code, output = influxdb_container.exec_run(f'bash -c "{csv_command}"', demux=True)
         if exit_code == 0:
-            print(f"CSV backup saved to {csv_file}")
+            logging.debug(f"CSV backup saved to {csv_file}")
         else:
-            print(f"Failed to create CSV backup: {output[1].decode()}")
+            logging.error(f"Failed to create CSV backup: {output[1].decode()}")
         time.sleep(backup_every)
 
 

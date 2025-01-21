@@ -64,6 +64,8 @@ class srsue:
                 network=network_name,
                 detach=True,
             )
+            additional_network = self.docker_client.networks.get("docker_metrics")
+            additional_network.connect(self.docker_container)
 
             logging.debug(f"srsue container initialized: {container_name}")
 

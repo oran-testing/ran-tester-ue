@@ -1,6 +1,6 @@
 services:
   srsue:
-    container_name: srsran/ue
+    container_name: srsue
     image: srsran/ue
     build:
       context: ..
@@ -25,12 +25,10 @@ services:
       - CONFIG=${DOCKER_SRSUE_INIT_CONFIG:-configs/zmq/ue_zmq_docker.conf}
       - ARGS=${DOCKER_SRSUE_INIT_ARGS}
 
-    # Allow network connection for ZMQ
-    ports:
-       -  2000:2000/tcp
-       -  2001:2001/tcp
     networks:
       -  srsue_network
+      -  metrics
+
 
   controller:
     container_name: controller
@@ -48,6 +46,8 @@ services:
       context: controller
     env_file:
       - .env
+    depends_on:
+      - influxdb
     networks:
       metrics:
         ipv4_address: 172.19.1.7

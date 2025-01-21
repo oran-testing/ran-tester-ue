@@ -13,4 +13,4 @@ influxdb:
 data_backup:
   backup_every: 1000
   backup_dir: test
-  backup_dir: -1d
+  backup_since: -1d
