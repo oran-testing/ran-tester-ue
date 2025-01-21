@@ -1,6 +1,6 @@
 [submodule "Attacks"]
 	path = Attacks
-	url = https://github.com/oran-testing/Attacks
+	url = https://github.com/oran-testing/jammer
 	branch = main
 [submodule "Components"]
 	path = Components
