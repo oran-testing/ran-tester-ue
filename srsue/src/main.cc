@@ -156,7 +156,6 @@ static int parse_args(all_args_t* args, int argc, char* argv[])
     ("rrc.nr_short_sn_support", bpo::value<bool>(&args->stack.rrc_nr.pdcp_short_sn_support)->default_value(true),                 "Announce PDCP short SN support")
     ("rrc.sdu_fuzzed_bits",     bpo::value<uint32_t>(&args->stack.rrc_nr.sdu_fuzzed_bits)->default_value(0),                      "Number of bits to fuzz in the SDU buffer (0 disables fuzzing)")
     ("rrc.fuzz_target_message", bpo::value<string>(&args->stack.rrc_nr.target_message)->default_value(""),                        "The Message to be fuzzed in the RRC")
-    ("phy.rach_flood_count",    bpo::value<uint32_t>(&args->stack.rrc_nr.rach_flood_count)->default_value(0),                     "Enable RACH Flooding attack, how many messages to send")
     ("rrc.target_signal_attack",     bpo::value<string>(&args->stack.rrc_nr.target_signal_attack)->default_value(""),              "The Singalling storm type to be injected")
 
     ("nas.apn",               bpo::value<string>(&args->stack.nas.apn_name)->default_value(""),          "Set Access Point Name (APN) for data services")

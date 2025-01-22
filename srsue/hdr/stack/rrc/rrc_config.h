@@ -43,7 +43,6 @@ struct rrc_args_t {
   uint32_t                                mbms_service_port;
   uint32_t                                sdu_fuzzed_bits;
   std::string                             target_message;
-  uint32_t                                rach_flood_count;
 };
 
 #define SRSRAN_UE_CATEGORY_DEFAULT "4"

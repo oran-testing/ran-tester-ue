@@ -43,11 +43,6 @@ class srsue:
         }
 
         try:
-            containers = self.docker_client.containers.list(all=True, filters={"ancestor": "srsran/ue"})
-            if containers:
-                containers[0].stop()
-                containers[0].remove()
-                logging.debug(f"Removed existing container")
             network_name = "docker_srsue_network"
 
             self.docker_network = self.docker_client.networks.get(network_name)

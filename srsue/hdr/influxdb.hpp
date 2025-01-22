@@ -94,7 +94,8 @@ struct server_info {
       std::cerr << "Host not found --> " << gai_strerror(resp) << std::endl;
       if (resp == EAI_SYSTEM)
         std::cerr << "getaddrinfo() failed" << std::endl;
-      exit(1);
+      // exit(1); NOTE: REMOVE EXIT TO STOP FROM FAILING
+      return;
     }
   }
 };
@@ -284,7 +285,8 @@ inline int inner::http_request(const char*        method,
   if (ret_code < 0) {
     std::cerr << "connect() failed" << std::endl;
     closesocket(sock);
-    exit(1);
+    // NOTE: remove exit(1);
+    return -1;
   }
 
   header.resize(len = 0x100);
@@ -376,12 +378,18 @@ inline int inner::http_request(const char*        method,
     switch (_GET_NEXT_CHAR()) {
       case 'C':
         _('o')
-        _('n') _('t') _('e') _('n') _('t') _('-') _('L') _('e') _('n') _('g') _('t') _('h') _(':') _(' ')
-            _GET_NUMBER(content_length) break;
+        _('n')
+        _('t')
+        _('e')
+        _('n') _('t') _('-') _('L') _('e') _('n') _('g') _('t') _('h') _(':') _(' ') _GET_NUMBER(content_length) break;
       case 'T':
         _('r')
-        _('a') _('n') _('s') _('f') _('e') _('r') _('-') _('E') _('n') _('c') _('o') _('d') _('i') _('n') _('g') _(':')
-            _(' ') _('c') _('h') _('u') _('n') _('k') _('e') _('d') chunked = 1;
+        _('a')
+        _('n')
+        _('s')
+        _('f')
+        _('e') _('r') _('-') _('E') _('n') _('c') _('o') _('d') _('i') _('n') _('g') _(':') _(' ') _('c') _('h') _('u')
+            _('n') _('k') _('e') _('d') chunked = 1;
         break;
       case '\r':
         __('\n')
