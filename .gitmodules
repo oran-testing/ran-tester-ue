@@ -2,3 +2,6 @@
 	path = jammer
 	url = https://github.com/oran-testing/jammer
 	branch = main
+[submodule "uu-agent"]
+	path = uu-agent
+	url = https://github.com/oran-testing/uu-agent
