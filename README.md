@@ -21,7 +21,7 @@ git clone https://github.com/oran-testing/soft-t-ue && git submodule update --in
 Then build the necessary containers:
 
 ```bash
-cd docker && docker compose build
+cd docker && sudo docker compose build
 ```
 
 The environment is defined in the controller config (soft-t-ue/docker/controller/configs):
@@ -36,15 +36,15 @@ processes: # REQUIRED: a list of all processes to start
     config_file: "configs/basic_jammer.yaml"
 
 influxdb: # OPTIONAL: (but recommended for metrics collection) config for InfluxDB
-influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST} # REQUIRED: The IP or HOSTNAME of InfluxDB container
-influxdb_port: ${DOCKER_INFLUXDB_INIT_PORT} # REQUIRED: The port of the InfluxDB service
-influxdb_org: ${DOCKER_INFLUXDB_INIT_ORG} # REQUIRED: The org of the InfluxDB service
-influxdb_token: ${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN} # REQUIRED: The admin token of the InfluxDB service
+    influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST} # REQUIRED: The IP or HOSTNAME of InfluxDB container
+    influxdb_port: ${DOCKER_INFLUXDB_INIT_PORT} # REQUIRED: The port of the InfluxDB service
+    influxdb_org: ${DOCKER_INFLUXDB_INIT_ORG} # REQUIRED: The org of the InfluxDB service
+    influxdb_token: ${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN} # REQUIRED: The admin token of the InfluxDB service
 
 data_backup: # OPTIONAL: configure automatic data backups
-backup_every: 1000 # REQUIRED: Backup data interval in seconds
-backup_dir: test # OPTIONAL: directory to output data
-backup_since: -1d # OPTIONAL: backup starting from
+    backup_every: 1000 # REQUIRED: Backup data interval in seconds
+    backup_dir: test # OPTIONAL: directory to output data
+    backup_since: -1d # OPTIONAL: backup starting from
 ```
 
 NOTE: The config used by the controller is defined in soft-t-ue/docker/.env as DOCKER_CONTROLLER_INIT_CONFIG
@@ -52,7 +52,7 @@ NOTE: The config used by the controller is defined in soft-t-ue/docker/.env as D
 The following will run a jammer and UE with the requested environment, writing all data to influxdb and displaying metrics in realtime with grafana:
 
 ```bash
-docker compose up influxdb grafana controller
+sudo docker compose up influxdb grafana controller
 ```
 
 The grafana dashboard can be found at `http://localhost:3300`
