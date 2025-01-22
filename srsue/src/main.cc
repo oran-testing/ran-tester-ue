@@ -513,6 +513,10 @@ static int parse_args(all_args_t* args, int argc, char* argv[])
      bpo::value<string>(&args->general.metrics_influxdb_bucket)->default_value("srsan"),
      "Influxdb bucket name")
 
+    ("general.ue_data_identifier",
+     bpo::value<string>(&args->general.ue_data_identifier)->default_value("no_identifier"),
+     "Unique UE identifier for data export")
+
     ("general.tracing_enable",
            bpo::value<bool>(&args->general.tracing_enable)->default_value(false),
            "Events tracing")
@@ -821,7 +825,8 @@ int main(int argc, char* argv[])
                                    args.general.metrics_influxdb_port,
                                    args.general.metrics_influxdb_org,
                                    args.general.metrics_influxdb_token,
-                                   args.general.metrics_influxdb_bucket);
+                                   args.general.metrics_influxdb_bucket,
+                                   args.general.ue_data_identifier);
 
   if (args.general.metrics_influxdb_enable)
     metricshub.add_listener(&influxdb_handle);

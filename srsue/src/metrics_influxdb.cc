@@ -37,8 +37,10 @@ metrics_influxdb::metrics_influxdb(std::string influxdb_url,
                                    uint32_t    influxdb_port,
                                    std::string influxdb_org,
                                    std::string influxdb_token,
-                                   std::string influxdb_bucket) :
-  influx_server_info(influxdb_url, influxdb_port, influxdb_org, influxdb_token, influxdb_bucket)
+                                   std::string influxdb_bucket,
+                                   std::string ue_data_identifier) :
+  influx_server_info(influxdb_url, influxdb_port, influxdb_org, influxdb_token, influxdb_bucket),
+  data_id(ue_data_identifier)
 {
   metrics_init_time_nsec = get_epoch_time_nsec();
 }
@@ -97,6 +99,7 @@ bool metrics_influxdb::post_singleton_metrics(const ue_metrics_t& metrics, const
   influxdb_cpp::builder()
       .meas("srsue_singleton_metric")
       .tag("testbed", "default")
+      .tag("srsue_data_id", data_id)
 
       .field("rf_o", (long long)metrics.rf.rf_o)
       .field("rf_u", (long long)metrics.rf.rf_u)
@@ -142,6 +145,7 @@ bool metrics_influxdb::post_carrier_metrics(const srsran::rf_metrics_t&  rf,
   influxdb_cpp::builder()
       .meas("srsue_carrier_metric")
       .tag("testbed", "default")
+      .tag("srsue_data_id", data_id)
       .tag("carrier_channel_index", std::to_string(cc))
       .tag("carrier_type", carrier_type)
 

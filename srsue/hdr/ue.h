@@ -78,6 +78,7 @@ typedef struct {
   std::string metrics_influxdb_org;
   std::string metrics_influxdb_token;
   std::string metrics_influxdb_bucket;
+  std::string ue_data_identifier;
   bool        tracing_enable;
   std::string tracing_filename;
   std::size_t tracing_buffcapacity;

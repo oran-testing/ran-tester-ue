@@ -47,7 +47,8 @@ public:
                    uint32_t    influxdb_port,
                    std::string influxdb_org,
                    std::string influxdb_token,
-                   std::string influxdb_bucket);
+                   std::string influxdb_bucket,
+                   std::string ue_data_identifier);
   ~metrics_influxdb();
 
   void set_metrics(const ue_metrics_t& m, const uint32_t period_usec);
@@ -55,8 +56,7 @@ public:
 
 private:
   unsigned long long get_epoch_time_nsec();
-  bool post_singleton_metrics(const ue_metrics_t& metrics,
-                            const uint64_t current_time_nsec);
+  bool               post_singleton_metrics(const ue_metrics_t& metrics, const uint64_t current_time_nsec);
 
   bool post_carrier_metrics(const srsran::rf_metrics_t&  rf,
                             const srsran::sys_metrics_t& sys,
@@ -69,7 +69,8 @@ private:
                             std::string                  carrier_type);
 
   influxdb_cpp::server_info influx_server_info;
-  unsigned long long metrics_init_time_nsec;
+  std::string               data_id;
+  unsigned long long        metrics_init_time_nsec;
 };
 
 } // namespace srsue
