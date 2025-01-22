@@ -107,6 +107,26 @@ services:
       - /usr/share/uhd/images:/usr/share/uhd/images
       - /usr/local/share/uhd/images:/usr/local/share/uhd/images
 
+  uuagent:
+    container_name: uuagent
+    image: stu/uuagent
+    build:
+      context: ../uu-agent
+      dockerfile: Dockerfile
+      args:
+        OS_VERSION: "24.04"
+    env_file:
+      - .env
+    cap_add:
+      - SYS_NICE
+      - CAP_SYS_PTRACE
+    volumes:
+      # Access USB to use some SDRs
+      - /dev/bus/usb/:/dev/bus/usb/
+      # Access UHD images
+      - /usr/share/uhd/images:/usr/share/uhd/images
+      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
+
 
 
 
