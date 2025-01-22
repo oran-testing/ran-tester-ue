@@ -2,8 +2,3 @@
 	path = jammer
 	url = https://github.com/oran-testing/jammer
 	branch = main
-[submodule "Components"]
-	path = Components
-	url = https://github.com/oran-testing/Components
-	branch = main
-

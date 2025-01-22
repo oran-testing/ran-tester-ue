@@ -1,35 +1,4 @@
 services:
-  srsue:
-    container_name: srsue
-    image: srsran/ue
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-      args:
-        OS_VERSION: "24.04"
-    privileged: true
-    env_file:
-      - .env
-    cap_add:
-      - SYS_NICE
-      - CAP_SYS_PTRACE
-    volumes:
-      # Access USB to use some SDRs
-      - /dev/bus/usb/:/dev/bus/usb/
-      # Access UHD images
-      - /usr/share/uhd/images:/usr/share/uhd/images
-      # Store logs in /tmp
-      - /tmp:/tmp
-
-    environment:
-      - CONFIG=${DOCKER_SRSUE_INIT_CONFIG:-configs/zmq/ue_zmq_docker.conf}
-      - ARGS=${DOCKER_SRSUE_INIT_ARGS}
-
-    networks:
-      -  docker_srsue_network
-      -  metrics
-
-
   controller:
     container_name: controller
     image: controller
@@ -85,6 +54,61 @@ services:
     networks:
       metrics:
         ipv4_address: 172.19.1.6
+
+
+  srsue:
+    container_name: srsue
+    image: srsran/ue
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        OS_VERSION: "24.04"
+    privileged: true
+    env_file:
+      - .env
+    cap_add:
+      - SYS_NICE
+      - CAP_SYS_PTRACE
+    volumes:
+      # Access USB to use some SDRs
+      - /dev/bus/usb/:/dev/bus/usb/
+      # Access UHD images
+      - /usr/share/uhd/images:/usr/share/uhd/images
+      # Store logs in /tmp
+      - /tmp:/tmp
+
+    environment:
+      - CONFIG=${DOCKER_SRSUE_INIT_CONFIG:-configs/zmq/ue_zmq_docker.conf}
+      - ARGS=${DOCKER_SRSUE_INIT_ARGS}
+
+    networks:
+      -  docker_srsue_network
+      -  metrics
+
+
+  jammer:
+    container_name: jammer
+    image: stu/jammer
+    build:
+      context: ../jammer
+      dockerfile: Dockerfile
+      args:
+        OS_VERSION: "24.04"
+    env_file:
+      - .env
+    cap_add:
+      - SYS_NICE
+      - CAP_SYS_PTRACE
+    volumes:
+      # Access USB to use some SDRs
+      - /dev/bus/usb/:/dev/bus/usb/
+      # Access UHD images
+      - /usr/share/uhd/images:/usr/share/uhd/images
+      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
+
+
+
 
 
 volumes:
