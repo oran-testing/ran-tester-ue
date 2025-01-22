@@ -25,6 +25,7 @@ class Config:
 
 # srsue worker thread class
 from srsue_worker_thread import srsue
+from jammer_worker_thread import jammer
 
 
 
