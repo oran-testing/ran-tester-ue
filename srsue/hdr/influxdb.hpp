@@ -283,9 +283,9 @@ inline int inner::http_request(const char*        method,
   // connect to the server
   ret_code = connect(sock, si.res_->ai_addr, si.res_->ai_addrlen);
   if (ret_code < 0) {
-    std::cerr << "connect() failed" << std::endl;
+    //std::cerr << "connect() failed" << std::endl;
     closesocket(sock);
-    // NOTE: remove exit(1);
+    // exit(1); NOTE: REMOVE EXIT
     return -1;
   }
 
