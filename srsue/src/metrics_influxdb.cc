@@ -153,11 +153,18 @@ bool metrics_influxdb::post_carrier_metrics(const srsran::rf_metrics_t&  rf,
       .field("pci", (int)phy.info[r].pci)
 
       .field("rsrp", phy.ch[r].rsrp)
+      .field("rsrq", phy.ch[r].rsrq)
+      .field("rssi", phy.ch[r].rssi)
+      .field("ri", phy.ch[r].ri)
+      .field("sync_err", phy.ch[r].sync_err)
       .field("pathloss", phy.ch[r].pathloss)
       .field("cfo", phy.sync[r].cfo)
+      .field("sfo", (int)phy.sync[r].cfo)
 
       .field("ul_mcs", phy.ul[r].mcs)
+      .field("ul_power", phy.ul[r].power)
       .field("dl_mcs", phy.dl[r].mcs)
+      .field("dl_evm", phy.dl[r].evm)
       .field("sinr", std::isinf((float)phy.ch[r].sinr) ? 0.0f : (float)phy.ch[r].sinr)
       .field("fec_iters", phy.dl[r].fec_iters)
       .field("rx_brate", mac[r].rx_brate > 0 ? mac[r].rx_brate / mac[r].nof_tti * 1e-3 : 0)
