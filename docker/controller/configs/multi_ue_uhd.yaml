@@ -1,8 +1,8 @@
 processes:
   - type: "srsue"
-    config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
-  - type: "srsue"
-    config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
+    config_file: "configs/uhd/ue_uhd.conf"
+  #- type: "jammer"
+    #  config_file: "configs/basic_jammer.yaml"
 
 influxdb:
   influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST}
@@ -13,4 +13,4 @@ influxdb:
 data_backup:
   backup_every: 1000
   backup_dir: test
-  backup_dir: -1d
+  backup_from: -1h

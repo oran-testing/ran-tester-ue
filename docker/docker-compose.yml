@@ -104,6 +104,7 @@ services:
     volumes:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
+      - /dev/snd:/dev/snd
       # Access UHD images
       - /usr/share/uhd/images:/usr/share/uhd/images
       - /usr/local/share/uhd/images:/usr/share/uhd/images
