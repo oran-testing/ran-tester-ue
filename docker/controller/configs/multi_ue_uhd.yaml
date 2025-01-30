@@ -1,6 +1,9 @@
 processes:
   - type: "srsue"
-    config_file: "configs/uhd/ue_uhd.conf"
+    config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
+  - type: "srsue"
+    config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
+
   #- type: "jammer"
     #  config_file: "configs/basic_jammer.yaml"
 

@@ -75,7 +75,7 @@ private:
   srsran::task_multiqueue::queue_handle task_queue;
 
   int        ra_window_length = -1, ra_window_start = -1;
-  uint16_t   rar_rnti   = SRSRAN_INVALID_RNTI;
+  uint16_t   rar_rnti = SRSRAN_INVALID_RNTI;
   std::mutex mutex;
 
   srsran::rach_cfg_nr_t rach_cfg   = {};

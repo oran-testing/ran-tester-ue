@@ -1587,7 +1587,8 @@ bool rrc_nr::apply_ul_common_cfg(const asn1::rrc_nr::ul_cfg_common_s& ul_cfg_com
   if (ul_cfg_common.init_ul_bwp_present) {
     if (ul_cfg_common.init_ul_bwp.rach_cfg_common_present) {
       if (ul_cfg_common.init_ul_bwp.rach_cfg_common.type() == setup_release_c<rach_cfg_common_s>::types_opts::setup) {
-        rach_cfg_nr_t rach_cfg_nr = {};
+        rach_cfg_nr_t rach_cfg_nr                 = {};
+        rach_cfg_nr.prach_flooding_attack_enabled = args.prach_flooding_attack_enabled;
         make_mac_rach_cfg(ul_cfg_common.init_ul_bwp.rach_cfg_common.setup(), &rach_cfg_nr);
         mac->set_config(rach_cfg_nr);
 

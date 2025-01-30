@@ -34,7 +34,7 @@ class srsue:
         self.ue_config = config
         self.get_info_from_config()
 
-        container_name = f"srsran_ue_{self.ue_data_identifier}"
+        container_name = f"srsran_ue_{uuid.uuid4()}"
 
         environment = {
             "CONFIG": self.ue_config,
@@ -123,7 +123,7 @@ class srsue:
                             "time": formatted_timestamp,
                             },
                             )
-                logging.debug(f"[SRSUE]: {message_text}")
+                logging.debug(f"[{self.ue_data_identifier}]: {message_text}")
             except Exception as e:
                 logging.error(f"send_message failed with error: {e}")
 
