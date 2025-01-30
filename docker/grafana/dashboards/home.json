@@ -28,7 +28,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 3,
         "x": 0,
         "y": 0
       },
@@ -46,6 +46,129 @@
       "title": "",
       "transparent": true,
       "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "JOSE3g9KVz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 3,
+        "y": 0
+      },
+      "id": 21,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"tx_errors\")\n  |> window(every: 1s)\n  |> group(columns: [\"_stop\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> movingAverage(n: 2)",
+          "refId": "A"
+        }
+      ],
+      "title": "Uplink Errors",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "JOSE3g9KVz"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 6,
+        "y": 0
+      },
+      "id": 20,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"rx_errors\")\n  |> window(every: 1s)\n  |> group(columns: [\"_stop\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> movingAverage(n: 2)\n  ",
+          "refId": "A"
+        }
+      ],
+      "title": "Downlink Errors",
+      "type": "stat"
     },
     {
       "datasource": {
@@ -77,7 +200,7 @@
       "gridPos": {
         "h": 4,
         "w": 2,
-        "x": 4,
+        "x": 9,
         "y": 0
       },
       "id": 19,
@@ -105,11 +228,11 @@
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> distinct(column: \"carrier_channel_index\")",
+          "query": "from(bucket: \"srsran\") \n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"pci\")\n  |> distinct(column: \"srsue_data_id\")\n  |> count()",
           "refId": "Downlink"
         }
       ],
-      "title": "Num active cells",
+      "title": "Total UEs",
       "transformations": [
         {
           "id": "renameByRegex",
@@ -150,8 +273,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 6,
-        "x": 6,
+        "w": 2,
+        "x": 11,
         "y": 0
       },
       "id": 14,
@@ -179,7 +302,7 @@
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"rrc_state\") \n  |> filter(fn: (r) => r[\"_value\"] == 1)  \n  |> group(columns: [\"srsue_data_id\"])    \n  |> distinct(column: \"srsue_data_id\")    \n  |> group(columns: [])                   \n  |> count(column: \"_value\")   ",
+          "query": "from(bucket: \"srsran\") \n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"dl_mcs\")\n  |> last()\n  |> filter(fn: (r) => r._value != 0)\n  |> count()",
           "refId": "Downlink"
         }
       ],
@@ -222,8 +345,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 8,
-        "x": 12,
+        "w": 5,
+        "x": 13,
         "y": 0
       },
       "id": 3,
@@ -251,7 +374,7 @@
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ue_info\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dl_brate\")\n  |> window(every: 1s)\n  |> group(columns: [\"_stop\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> movingAverage(n: 2)\n  ",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"rx_brate\")\n  |> window(every: 1s)\n  |> group(columns: [\"_stop\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> movingAverage(n: 2)\n  ",
           "refId": "A"
         }
       ],
@@ -279,20 +402,20 @@
               }
             ]
           },
-          "unit": "bps"
+          "unit": "decbits"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 20,
+        "w": 6,
+        "x": 18,
         "y": 0
       },
       "id": 18,
       "options": {
         "colorMode": "value",
-        "graphMode": "none",
+        "graphMode": "area",
         "justifyMode": "auto",
         "orientation": "auto",
         "percentChangeColorMode": "standard",
@@ -314,11 +437,11 @@
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ue_info\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"dl_brate\")\n  |> window(every: 1s)\n  |> group(columns: [\"_stop\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> movingAverage(n: 2)\n  ",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_field\"] == \"tx_brate\")\n  |> window(every: 1s)\n  |> group(columns: [\"_stop\"])\n  |> sum(column: \"_value\")\n  |> group()\n  |> movingAverage(n: 2)\n  ",
           "refId": "A"
         }
       ],
-      "title": "Maximum Total Downlink Bitrate",
+      "title": "Total Current Uplink Bitrate",
       "type": "stat"
     },
     {
@@ -350,6 +473,9 @@
             },
             "insertNulls": 30000,
             "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
             "lineWidth": 1,
             "pointSize": 7,
             "scaleDistribution": {
@@ -365,8 +491,10 @@
               "mode": "dashed"
             }
           },
-          "decimals": 3,
+          "decimals": 0,
           "mappings": [],
+          "max": 31,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -376,21 +504,21 @@
               }
             ]
           },
-          "unit": "bps"
+          "unit": "none"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 12,
         "x": 0,
         "y": 4
       },
-      "id": 1,
+      "id": 17,
       "options": {
         "legend": {
           "calcs": [
-            "last"
+            "max"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -408,11 +536,11 @@
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"rx_brate\")\n",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"ul_mcs\")",
           "refId": "Downlink"
         }
       ],
-      "title": "Downlink Bitrate",
+      "title": "Uplink MCS",
       "transformations": [
         {
           "id": "renameByRegex",
@@ -489,7 +617,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 12,
         "x": 12,
         "y": 4
@@ -498,7 +626,7 @@
       "options": {
         "legend": {
           "calcs": [
-            "last"
+            "max"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -592,16 +720,16 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 11
       },
       "id": 16,
       "options": {
         "legend": {
           "calcs": [
-            "last"
+            "max"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -664,9 +792,6 @@
             },
             "insertNulls": 30000,
             "lineInterpolation": "linear",
-            "lineStyle": {
-              "fill": "solid"
-            },
             "lineWidth": 1,
             "pointSize": 7,
             "scaleDistribution": {
@@ -682,10 +807,8 @@
               "mode": "dashed"
             }
           },
-          "decimals": 0,
+          "decimals": 3,
           "mappings": [],
-          "max": 31,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -695,21 +818,21 @@
               }
             ]
           },
-          "unit": "none"
+          "unit": "bps"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 12,
         "x": 12,
-        "y": 10
+        "y": 11
       },
-      "id": 17,
+      "id": 1,
       "options": {
         "legend": {
           "calcs": [
-            "last"
+            "max"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -727,11 +850,11 @@
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"ul_mcs\")",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")\n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"rx_brate\")\n",
           "refId": "Downlink"
         }
       ],
-      "title": "Uplink MCS",
+      "title": "Downlink Bitrate",
       "transformations": [
         {
           "id": "renameByRegex",
@@ -808,16 +931,16 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 18
       },
       "id": 10,
       "options": {
         "legend": {
           "calcs": [
-            "last"
+            "max"
           ],
           "displayMode": "table",
           "placement": "bottom",
@@ -839,7 +962,7 @@
           "refId": "Downlink"
         }
       ],
-      "title": "Uplink SNR",
+      "title": "SINR",
       "transformations": [
         {
           "id": "renameByRegex",
@@ -900,7 +1023,6 @@
           },
           "decimals": 0,
           "mappings": [],
-          "max": 15,
           "min": 0,
           "thresholds": {
             "mode": "absolute",
@@ -910,25 +1032,24 @@
                 "value": null
               }
             ]
-          },
-          "unit": "none"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 18
       },
       "id": 7,
       "options": {
         "legend": {
           "calcs": [
-            "last"
+            "max"
           ],
           "displayMode": "table",
-          "placement": "right",
+          "placement": "bottom",
           "showLegend": true
         },
         "tooltip": {
@@ -943,11 +1064,11 @@
             "type": "influxdb",
             "uid": "JOSE3g9KVz"
           },
-          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"ue_info\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"cqi\")",
+          "query": "from(bucket: \"srsran\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"srsue_carrier_metric\")  \n  |> filter(fn: (r) => r[\"testbed\"] == \"default\")\n  |> filter(fn: (r) => r[\"_field\"] == \"rsrp\")",
           "refId": "Downlink"
         }
       ],
-      "title": "CQI",
+      "title": "RSRP",
       "transformations": [
         {
           "id": "renameByRegex",
@@ -968,7 +1089,7 @@
     "list": []
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {
@@ -989,6 +1110,6 @@
   "timezone": "",
   "title": "srsRAN Project Metrics",
   "uid": "a8a69f8a-1dd1-4496-8f3f-33de8988a823",
-  "version": 2,
+  "version": 7,
   "weekStart": ""
 }
