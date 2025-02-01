@@ -34,7 +34,7 @@
 #include "srsran/rlc/rlc_metrics.h"
 #include "srsran/system/sys_metrics.h"
 #include "srsran/upper/pdcp_metrics.h"
-#include "srsue/hdr/stack/upper/gw_metrics.h"
+#include "rtue/hdr/stack/upper/gw_metrics.h"
 
 namespace srsenb {
 

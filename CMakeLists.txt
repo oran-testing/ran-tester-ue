@@ -653,7 +653,7 @@ add_custom_target(add_srsran_headers SOURCES ${HEADERS_ALL})
 add_subdirectory(lib)
 
 if(RF_FOUND)
-    add_subdirectory(srsue)
+    add_subdirectory(rtue)
 else(RF_FOUND)
   message(STATUS "srsUE and srsENB/srsGNB builds disabled due to missing RF driver")
 endif(RF_FOUND)

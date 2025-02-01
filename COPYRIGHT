@@ -14,8 +14,8 @@ Files:  lib/src/phy/fec/viterbi37_port.c
 Copyright: 2009, Phil Karn, KA9Q
 License: LGPL-2.1
 
-Files:  srsue/src/upper/pcsc_usim.cc
-        srsue/hdr/upper/pcsc_usim.h
+Files:  rtue/src/upper/pcsc_usim.cc
+        rtue/hdr/upper/pcsc_usim.h
 Copyright: 2002-2014, Jouni Malinen <j@w1.fi>
 License: BSD-3-clause
 
@@ -54,6 +54,11 @@ License: MIT
 Files:  cmake/modules/CheckAtomic.cmake
 Copyright: 2015, Charles J. Cliffe
 License: MIT
+
+Files: rtue/hdr/influxdb.hpp
+Copyright: 2010-2018 <http://ez8.co> <orca.zhang@yahoo.com>
+License: MIT
+
 
 License: AGPL-3+
   This program is free software: you can redistribute it and/or modify
