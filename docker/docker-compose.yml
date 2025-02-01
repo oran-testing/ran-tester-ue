@@ -1,7 +1,64 @@
 services:
-  srsue:
-    container_name: srsran_ue
-    image: srsran/ue
+  controller:
+    container_name: controller
+    image: controller
+    volumes:
+      # Pass in the docker soket for starting rtue
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Allow results writing to host machine
+      - /tmp:/tmp
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - CONFIG=${DOCKER_CONTROLLER_INIT_CONFIG:-configs/basic_ue_zmq.yaml}
+    privileged: true
+    build:
+      context: controller
+    env_file:
+      - .env
+    depends_on:
+      - influxdb
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.7
+
+  influxdb:
+    container_name: influxdb
+    image: influxdb:${DOCKER_INFLUXDB_VERSION}
+    volumes:
+      # Enable writing data backups to the host machine
+      - /tmp/:/tmp/host/
+      - influxdb-storage:/var/lib/influxdb2:rw
+    env_file:
+      - .env
+    restart: on-failure:10
+    # Uncomment port section to access InfluxDB from outside the docker network
+    ports:
+      - 8086:${DOCKER_INFLUXDB_INIT_PORT}
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.5
+
+  grafana:
+    container_name: grafana
+    image: rtu/grafana
+    build:
+      context: grafana
+    volumes:
+      - grafana-storage:/var/lib/grafana:rw
+    env_file:
+      - .env
+    depends_on:
+      - influxdb
+    ports:
+      - 3300:${GRAFANA_PORT}
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.6
+
+
+  rtue:
+    container_name: rtue
+    image: rtu/ue
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -19,63 +76,74 @@ services:
       # Access UHD images
       - /usr/share/uhd/images:/usr/share/uhd/images
       # Store logs in /tmp
-      - ue-storage:/tmp
-
-    environment:
-      - CONFIG=${UE_CONFIG_PATH:-configs/zmq/ue_zmq_docker.conf}
-      - ARGS=${UE_ARGS}
-
-    # Allow network connection for ZMQ
-    ports:
-       -  2000:2000/tcp
-       -  2001:2001/tcp
-    networks:
-      -  srsue_network
-
-  controller:
-    container_name: controller
-    image: controller
-    volumes:
-      # Pass in the docker soket for starting srsue
-      - /var/run/docker.sock:/var/run/docker.sock
-      # Allow results writing to host machine
       - /tmp:/tmp
+
     environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - CONFIG=${UE_CONTROLLER_CONFIG:-configs/basic_ue_zmq.yaml}
+      - CONFIG=${DOCKER_RTUE_INIT_CONFIG:-configs/zmq/ue_zmq_docker.conf}
+      - ARGS=${DOCKER_RTUE_INIT_ARGS}
+
+    networks:
+      -  docker_rtue_network
+      -  metrics
+
+
+  jammer:
+    container_name: jammer
+    image: rtu/jammer
+    build:
+      context: ../jammer
+      dockerfile: Dockerfile
+      args:
+        OS_VERSION: "24.04"
     privileged: true
-    build:
-      context: controller
     env_file:
       - .env
-    network_mode: "host"
+    cap_add:
+      - SYS_NICE
+      - CAP_SYS_PTRACE
+    volumes:
+      # Access USB to use some SDRs
+      - /dev/bus/usb/:/dev/bus/usb/
+      - /dev/snd:/dev/snd
+      # Access UHD images
+      - /usr/share/uhd/images:/usr/share/uhd/images
+      - /usr/local/share/uhd/images:/usr/share/uhd/images
 
-    profiles:
-      - system
-
-  webui:
-    container_name: webui
-    image: webui
+  uuagent:
+    container_name: uuagent
+    image: stu/uuagent
     build:
-      context: webui
+      context: ../uu-agent
+      dockerfile: Dockerfile
+      args:
+        OS_VERSION: "24.04"
+    privileged: true
     env_file:
       - .env
-    environment:
-      - PORT=${WEBUI_PORT}
-    network_mode: "host"
-    depends_on:
-      - controller
+    cap_add:
+      - SYS_NICE
+      - CAP_SYS_PTRACE
+    volumes:
+      # Access USB to use some SDRs
+      - /dev/bus/usb/:/dev/bus/usb/
+      # Access UHD images
+      - /usr/share/uhd/images:/usr/share/uhd/images
+      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
 
-    profiles:
-      - system
+
+
+
 
 volumes:
   ue-storage:
+  influxdb-storage:
+  grafana-storage:
 
 networks:
-  srsue_network:
-    driver: bridge
-  controller:
+  docker_rtue_network:
+    external: true
+
+  metrics:
     ipam:
       driver: default
       config:

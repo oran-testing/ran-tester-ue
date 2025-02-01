@@ -19,7 +19,7 @@
  *
  */
 
-#include "../../../srsue/hdr/stack/rrc/rrc.h" // for rrc_args_t
+#include "../../../rtue/hdr/stack/rrc/rrc.h" // for rrc_args_t
 #include "srsran/asn1/rrc/ul_dcch_msg.h"
 #include "srsran/common/mac_pcap.h"
 #include <iostream>

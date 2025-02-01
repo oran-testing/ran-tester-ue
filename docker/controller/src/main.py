@@ -4,6 +4,7 @@ import os
 import time
 import sys
 import shutil
+import docker
 from datetime import datetime
 
 import uuid
@@ -12,18 +13,20 @@ import pathlib
 import yaml
 import logging
 import signal
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional, Any
 
-# Configuration data class
-from Config import Config
+from influxdb_client import InfluxDBClient, WriteApi
 
-# UE subprocess manager
-from Ue import Ue
+class Config:
+    filename : str = ""
+    options : Optional[Dict[str,Any]] = None
+    log_level : int = logging.DEBUG
+    docker_client = None
+
+from rtue_worker_thread import rtue
+from jammer_worker_thread import jammer
 
 
-logger = logging.getLogger(__name__)
-global process_list
-process_list = []
 
 def handle_signal(signum, frame):
     global process_list
@@ -45,7 +48,7 @@ def configure() -> None:
     """
     script_dir = pathlib.Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(
-        description="Run an srsRAN gNB and Open5GS, then send metrics to the ue_controller")
+        description="RAN tester UE process controller")
     parser.add_argument(
         "--config",
         type=pathlib.Path,
@@ -54,10 +57,6 @@ def configure() -> None:
     parser.add_argument("--log-level",
                     default="DEBUG",
                     help="Set the logging level. Options: DEBUG, INFO, WARNING, ERROR, CRITICAL")
-    parser.add_argument("--docker",
-                    type=bool,
-                    default=False,
-                    help="Start all processes as docker containers")
     args = parser.parse_args()
     Config.log_level = getattr(logging, args.log_level.upper(), 1)
 
@@ -67,119 +66,128 @@ def configure() -> None:
     logging.basicConfig(level=Config.log_level,
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
-    logging.getLogger("asyncio").setLevel(logging.WARNING)
-    logging.getLogger("selectors").setLevel(logging.WARNING)
 
     Config.filename = args.config
-    Config.enable_docker = args.docker
     with open(str(args.config), 'r') as file:
         Config.options = yaml.safe_load(file)
 
 
-def kill_existing(process_names : List[str]) -> None:
+def start_subprocess_threads() -> List[Dict[str, Any]]:
     """
-    Finds and kills any stray processes that might interfere with the system
+    Creates one central influxDB client
+    Creates one central docker client
+    Starts any necessary subprocess threads using Config
+    Returns a list of metadata for each thread
     """
-    for name in process_names:
-        os.system("kill -9 $(ps aux | awk '/{" + name + "}/{print $2}')")
-
-def start_processes() -> List[Dict[str, Union[str, Ue, int]]]:
-    """
-    Starts any necessary processes using Config
-    Starts ping and iperf if specified
-    """
-    process_list: List[Dict[str, Union[str, Ue, int]]] = []
-
-    ue_index = 1
 
     if Config.options is None:
-        raise ValueError("Config.options is None. Please check the configuration.")
+        logging.error("Config is None: parsing failed... Exiting")
+        sys.exit(1)
 
+    influxdb_config = Config.options.get("influxdb", {})
+
+
+    influxdb_host, influxdb_port, influxdb_org, influxdb_token = "NO_HOST", 8086, "NO_ORG", "NO_TOKEN"
+    try:
+        influxdb_host = os.path.expandvars(influxdb_config["influxdb_host"])
+        influxdb_port = os.path.expandvars(influxdb_config["influxdb_port"])
+        influxdb_org = os.path.expandvars(influxdb_config["influxdb_org"])
+        influxdb_token = os.path.expandvars(influxdb_config["influxdb_token"])
+
+    except (KeyError, ValueError) as e:
+        print(f"Influxdb Configuration Error: {e}")
+
+    influxdb_client = InfluxDBClient(
+        f"http://{influxdb_host}:{influxdb_port}",
+        org=influxdb_org,
+        token=influxdb_token
+    )
+
+    Config.docker_client = docker.from_env()
+
+    process_metadata: List[Dict[str, Any]] = []
 
     for process_config in Config.options.get("processes", []):
-        if process_config["type"] == "srsue":
-            new_ue = Ue(Config.enable_docker, ue_index)
-            if "args" in process_config.keys():
-                new_ue.start([process_config["config_file"]] + process_config["args"].split(" "))
-            else:
-                new_ue.start([process_config["config_file"]])
-            process_list.append({
-                'id': str(uuid.uuid4()),
-                'type': process_config['type'],
-                'config': process_config['config_file'],
-                'handle': new_ue,
-                'index': ue_index
-            })
-            ue_index += 1
-            logger.debug(f"STARTED: {new_ue}")
+        process_class = None
+        try:
+            process_class = globals()[process_config["type"]]
+        except KeyError:
+            logging.error(f"Invalid process type: {process_type}")
+            continue
 
-    return process_list
+        process_handle = process_class(influxdb_client, Config.docker_client)
 
-def await_children(export_params) -> None:
+        process_handle.start(
+            config=process_config["config_file"] if "config_file" in process_config.keys() else "",
+            args=process_config["args"].split(" ") if "args" in process_config.keys() else []
+        )
+
+        process_metadata.append({
+            'id': str(uuid.uuid4()),
+            'type': process_config['type'],
+            'config': process_config,
+            'handle': process_handle,
+        })
+
+    return process_metadata
+
+def backup_metrics() -> None:
     """
     Wait for all child processes to stop
     """
-    export_data = False
-    export_path = None
 
-    # Handle export parameters
-    if export_params:
-        export_dir = pathlib.Path(export_params["output_directory"])
-        if not export_dir.exists():
-            raise ValueError(f"Directory does not exist: {export_dir}")
-        export_data = True
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # Format: YYYYMMDD_HHMMSS
-        export_path = export_dir / f"test_run_{timestamp}"
-        export_path.mkdir(parents=True, exist_ok=True)
+    backup_config = Config.options.get("data_backup", {})
 
-    process_running = True
-    while process_running:
-        process_running = False
-        for process in process_list:
-            if process["handle"].isRunning:
-                process_running = True
+    if not backup_config:
+        while True:
+            logging.debug("No backup configured")
+            time.sleep(100)
 
-            if export_data:
-                for filename, output in process["handle"].get_unwritten_output().items():
-                    file_path = export_path / f"{filename}.csv"
-                    with file_path.open("a") as f:
-                        f.write("\n" + '\n'.join(output))
+    backup_every = int(backup_config["backup_every"]) if "backup_every" in backup_config.keys() else 1000
+    backup_dir = backup_config["backup_dir"] if "backup_dir" in backup_config.keys() else "test"
+    backup_since = backup_config["backup_since"] if "backup_since" in backup_config.keys() else "-1d"
 
-                # Export main output
-                output_filename = export_path / process["handle"].get_output_filename()
-                with output_filename.open("a") as f:
-                    f.write("\n" + '\n'.join(process["handle"].output))
-                process["handle"].output = []
-                for pcap_key, pcap_file in process["handle"].pcap_data.items():
-                    if pcap_file:
-                        pcap_path = pathlib.Path(pcap_file)
-                        if pcap_path.is_file():
-                            target_file = export_path / pcap_path.name
-                            shutil.copy(pcap_path, target_file)
+    influxdb_backup_dir = f"/tmp/host/{backup_dir}/"
 
+    containers = Config.docker_client.containers.list(all=True, filters={"name": "influxdb"})
+    logging.debug(str(containers))
+    influxdb_container = containers[0]
+    if not influxdb_container:
+        logging.error("Failed to get influxDB container")
+        sys.exit(1)
 
-                if process["handle"].metrics_client.file_path:
-                    target_file = export_path / f"metrics_ue{process['handle'].ue_index}.csv" 
-                    try:
-                        shutil.copy(process["handle"].metrics_client.file_path, target_file)
-                    except FileNotFoundError as e:
-                        logging.error(f"UE metrics file {process['handle'].metrics_client.file_path} not found")
-        time.sleep(1)
+    influxdb_container.exec_run(f"mkdir -p {influxdb_backup_dir}")
+    query = f'from(bucket: \\"rtusystem\\") |> range(start: {backup_since})'
+
+    while True:
+        csv_file = f"{influxdb_backup_dir}/backup.csv"
+        csv_command = f"influx query '{query}' --raw > {csv_file}"
+        logging.info(f"Backing up infludb with command: {csv_command}")
+        exit_code, output = influxdb_container.exec_run(f'bash -c "{csv_command}"', demux=True)
+        if exit_code == 0:
+            logging.debug(f"CSV backup saved to {csv_file}")
+        else:
+            logging.error(f"Failed to create CSV backup: {output[1].decode()}")
+        time.sleep(backup_every)
+
 
 
 if __name__ == '__main__':
     if os.geteuid() != 0:
-        logger.error("The Soft-T-UE controller must be run as root. Exiting.")
+        logging.error("The RAN Tester UE controller must be run as root. Exiting.")
         sys.exit(1)
 
-    kill_existing(["srsue", "gnb", "iperf3"])
-    configure()
+    global process_list
+    process_list = []
 
-    process_list = start_processes()
+    configure()
+    global process_metadata
+    process_metadata = start_subprocess_threads()
 
     export_params = Config.options.get("data_export", False)
 
-    await_children(export_params)
+    backup_metrics()
+    sys.exit(0)
 
 
 

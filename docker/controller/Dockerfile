@@ -23,12 +23,13 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY ./src .
-COPY ./configs configs
 COPY requirements.txt .
 
 RUN python3 -m venv .
 RUN ./bin/pip3 install -r requirements.txt
 
-CMD ./bin/python3 main.py --config $CONFIG --docker 1
+COPY ./src .
+COPY ./configs configs
+
+CMD ./bin/python3 main.py --config $CONFIG
 

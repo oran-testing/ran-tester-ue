@@ -19,7 +19,7 @@
  *
  */
 
-#include "srsenb/hdr/stack/mac/sched_interface.h"
+#include "srsran/interfaces/enb_sched_interface.h"
 #include "srsran/interfaces/rrc_interface_types.h"
 
 #ifndef SRSRAN_ENB_MAC_INTERFACES_H

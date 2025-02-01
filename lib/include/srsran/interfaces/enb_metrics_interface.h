@@ -24,17 +24,17 @@
 
 #include <stdint.h>
 
-#include "srsenb/hdr/common/common_enb.h"
-#include "srsenb/hdr/phy/phy_metrics.h"
-#include "srsenb/hdr/stack/mac/common/mac_metrics.h"
-#include "srsenb/hdr/stack/rrc/rrc_metrics.h"
-#include "srsenb/hdr/stack/s1ap/s1ap_metrics.h"
+#include "srsran/interfaces/common_enb.h"
+#include "srsran/interfaces/enb_phy_metrics.h"
+#include "srsran/interfaces/enb_mac_metrics.h"
+#include "srsran/interfaces/enb_rrc_metrics.h"
+#include "srsran/interfaces/enb_s1ap_metrics.h"
 #include "srsran/common/metrics_hub.h"
 #include "srsran/radio/radio_metrics.h"
 #include "srsran/rlc/rlc_metrics.h"
 #include "srsran/system/sys_metrics.h"
 #include "srsran/upper/pdcp_metrics.h"
-#include "srsue/hdr/stack/upper/gw_metrics.h"
+#include "rtue/hdr/stack/upper/gw_metrics.h"
 
 namespace srsenb {
 

@@ -1,100 +1,58 @@
-# NTIA Software Tester UE
+# NTIA RAN Tester UE
 
-Penetration Testing Tool for Software Defined Radio
+This project is a security testing tool based on modifications and attacks from the User Equipment, designed to test 5G and open radio access networks (RANs) via the Uu air interface between the UE and the network. While enabling various types of testing, the primary focus of this software is on RAN security testing.  
 
-## Overview
+---
 
-This project is a security testing tool based on srsRAN Project's User
-Equipment, used to test 5G and open radio access networks (RANs) via the Uu air
-interface between the UE and the network. While this enables different types of
-testing, the focus of the software is on RAN security testing. This soft T-UE is
-fully software-defined and compatible with widely available, commercial
-off-the-shelf software radio hardware. Standardized 3GPP or O-RAN tests as well
-as custom test procedures can then be implemented and executed at minimal cost
-and at different stages of RAN development and integration. This system allows
-for testing many commercial and open source random access networks with minimal
-technical overhead. Many attacks on the RAN can be run automatically by the
-system.
+This RAN tester UE (rtUE) is fully software-based and compatible with widely available, commercial off-the-shelf (COTS) software radio hardware. Standardized 3GPP or O-RAN tests, as well as custom test procedures, can be implemented and executed at minimal cost and at different stages of RAN development and integration. This system facilitates testing across multiple commercial and open-source RAN implementations with minimal technical overhead. Additionally, many attacks on the RAN can be executed automatically by the system.
 
-- [UE Documentation](https://github.com/oran-testing/soft-t-ue/blob/main/docs/UE.md)
-- [gNB Documentation](https://github.com/oran-testing/soft-t-ue/blob/main/docs/gNB.md)
-- [Attack Documentation](https://github.com/oran-testing/soft-t-ue/blob/main/docs/attacks)
+---
 
-**NOTE: This system is designed to run on ubuntu and is tested on ubuntu 24.04**
+See the our comprehensive [documentation ](https://docs.rantesterue.org) for more info on our attacks and metrics.
 
-## Installation
+## Quickstart Guide
 
-Testing can be done with one machine (ZMQ) or two. Each command should be run in a seperate terminal.
-
-Before installing, clone the soft-t-ue repo and the srsRAN_Project repo.
+First, clone the core repository and it's submodules:
 
 ```bash
-git clone https://github.com/oran-testing/soft-t-ue && git submodule update --init --recursive
+git clone https://github.com/oran-testing/ran-tester-ue && git submodule update --init --recursive
 ```
+
+Then build the necessary containers:
 
 ```bash
-git clone https://github.com/srsran/srsRAN_Project
+cd docker && sudo docker compose build
 ```
 
+The environment is defined in the controller config (ran-tester-ue/docker/controller/configs):
 
-To build the UE controller and web GUI, run (Machine A):
+```yaml
+processes: # REQUIRED: a list of all processes to start
+  - type: "srsue" # REQUIRED: the name of the subprocess class
+    config_file: "configs/zmq/ue_zmq_docker.conf" # OPTIONAL: the path to a config file in the subprocess container
+    args: "--rrc.sdu_fuzzed_bits 1 --rrc.fuzz_target_message 'rrcSetupRequest'" # OPTIONAL: arguments to pass to the subprocess container
+
+  - type: "jammer"
+    config_file: "configs/basic_jammer.yaml"
+
+influxdb: # OPTIONAL: (but recommended for metrics collection) config for InfluxDB
+    influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST} # REQUIRED: The IP or HOSTNAME of InfluxDB container
+    influxdb_port: ${DOCKER_INFLUXDB_INIT_PORT} # REQUIRED: The port of the InfluxDB service
+    influxdb_org: ${DOCKER_INFLUXDB_INIT_ORG} # REQUIRED: The org of the InfluxDB service
+    influxdb_token: ${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN} # REQUIRED: The admin token of the InfluxDB service
+
+data_backup: # OPTIONAL: configure automatic data backups
+    backup_every: 1000 # REQUIRED: Backup data interval in seconds
+    backup_dir: test # OPTIONAL: directory to output data
+    backup_since: -1d # OPTIONAL: backup starting from
+```
+
+NOTE: The config used by the controller is defined in ran-tester-ue/docker/.env as DOCKER_CONTROLLER_INIT_CONFIG
+
+The following will run a jammer and UE with the requested environment, writing all data to influxdb and displaying metrics in realtime with grafana:
 
 ```bash
-cd docker && docker compose build
+sudo docker compose up influxdb grafana controller
 ```
 
-To install the 5gs, run (Machine B):
-
-```bash
-sudo ./soft-t-ue/scripts/install-open5gs.sh
-```
-
-To install the gNB run (Machine B):
-
-```bash
-sudo ./soft-t-ue/scripts/install-gnb.sh
-```
-
-## Running
-
-**To run the UE with the controller, run (Machine A):**
-
-```bash
-cd docker
-docker compose up controller webui
-```
-
-To run the srsue only (Machine A):
-```bash
-mkdir -p build && cd build
-cmake ../
-make -j$(nproc)
-sudo make install
-cd ..
-sudo srsue ./configs/zmq/ue_zmq.conf
-```
-
-To see the metrics open http://localhost:3000 in the browser
-
-**To run the 5gs, run (Machine B):**
-
-```bash
-cd srsRAN_Project/docker
-sudo docker compose up 5gc
-```
-\
-**<span style="color: #e03e2d;">!!!</span>
-gNB should run last
-<span style="color: #e03e2d;">!!!</span>** \
-Otherwise, gnB will not work.
-
-**To run the gNB run (Machine B):**
-
-```bash
-sudo gnb -c ./soft-t-ue/configs/zmq/gnb_zmq_docker.yaml
-```
-Note: If running with docker compose use gnb_zmq_docker.yaml otherwise use gnb_zmq.yaml
-
-## System Architecture
-
-![Soft-T-UE-System.png](docs/images/soft-t-ue-system-v2.png)
+The grafana dashboard can be found at `http://localhost:3300`

@@ -1,9 +1,7 @@
-[submodule "Attacks"]
-	path = Attacks
-	url = https://github.com/oran-testing/Attacks
+[submodule "jammer"]
+	path = jammer
+	url = https://github.com/oran-testing/jammer
 	branch = main
-[submodule "Components"]
-	path = Components
-	url = https://github.com/oran-testing/Components
-	branch = main
-
+[submodule "uu-agent"]
+	path = uu-agent
+	url = https://github.com/oran-testing/uu-agent

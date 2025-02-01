@@ -22,7 +22,7 @@
 #ifndef SRSRAN_RRC_UTILS_H
 #define SRSRAN_RRC_UTILS_H
 
-#include "srsenb/hdr/stack/mac/sched_interface.h"
+#include "srsran/interfaces/enb_sched_interface.h"
 #include "srsran/interfaces/mac_interface_types.h"
 #include "srsran/interfaces/pdcp_interface_types.h"
 #include "srsran/interfaces/rlc_interface_types.h"

@@ -1,9 +1,15 @@
 processes:
-  - type: "srsue"
+  - type: "rtue"
     config_file: "configs/zmq/ue_zmq_docker.conf"
-    args: "--rrc.sdu_fuzzed_bits 1 --rrc.fuzz_target_message 'rrcSetupRequest'" # this means fuzz bits in the rrc setup
 
-data_export:
-  output_directory: "/tmp/"
-  iq_capture: true
-  iperf_capture: true
+
+influxdb:
+  influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST}
+  influxdb_port: ${DOCKER_INFLUXDB_INIT_PORT}
+  influxdb_org: ${DOCKER_INFLUXDB_INIT_ORG}
+  influxdb_token: ${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN}
+
+data_backup:
+  backup_every: 1000
+  backup_dir: test
+  backup_since: -1d
