@@ -70,7 +70,6 @@ private:
 
   influxdb_cpp::server_info influx_server_info;
   std::string               data_id;
-  unsigned long long        metrics_init_time_nsec;
 };
 
 } // namespace srsue

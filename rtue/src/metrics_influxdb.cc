@@ -42,7 +42,6 @@ metrics_influxdb::metrics_influxdb(std::string influxdb_url,
   influx_server_info(influxdb_url, influxdb_port, influxdb_org, influxdb_token, influxdb_bucket),
   data_id(ue_data_identifier)
 {
-  metrics_init_time_nsec = get_epoch_time_nsec();
 }
 
 metrics_influxdb::~metrics_influxdb()
@@ -59,9 +58,9 @@ void metrics_influxdb::stop() {}
 // NOTE: RLC metrics need a loop
 void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t period_usec)
 {
-  metrics_init_time_nsec += period_usec * 1000;
+  uint64_t current_time_nsec = (uint64_t)get_epoch_time_nsec();
 
-  if (!post_singleton_metrics(metrics, (uint64_t)metrics_init_time_nsec)) {
+  if (!post_singleton_metrics(metrics, current_time_nsec)) {
     cout << "Failed to post metrics carrier independent\n";
     return;
   }
@@ -74,7 +73,7 @@ void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t p
                          metrics.stack.rrc,
                          r,
                          r,
-                         metrics_init_time_nsec,
+                         current_time_nsec,
                          "lte");
   }
 
@@ -87,7 +86,7 @@ void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t p
                          metrics.stack.rrc,
                          metrics.phy.nof_active_cc + r, // NR carrier offset
                          r,
-                         metrics_init_time_nsec,
+                         current_time_nsec,
                          "nr");
   }
 }
