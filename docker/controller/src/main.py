@@ -23,8 +23,7 @@ class Config:
     log_level : int = logging.DEBUG
     docker_client = None
 
-# srsue worker thread class
-from srsue_worker_thread import srsue
+from rtue_worker_thread import rtue
 from jammer_worker_thread import jammer
 
 
@@ -49,7 +48,7 @@ def configure() -> None:
     """
     script_dir = pathlib.Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(
-        description="Run an srsRAN gNB and Open5GS, then send metrics to the ue_controller")
+        description="RAN tester UE process controller")
     parser.add_argument(
         "--config",
         type=pathlib.Path,
@@ -72,13 +71,6 @@ def configure() -> None:
     with open(str(args.config), 'r') as file:
         Config.options = yaml.safe_load(file)
 
-
-def kill_existing(process_names : List[str]) -> None:
-    """
-    Finds and kills any stray processes that might interfere with the system
-    """
-    for name in process_names:
-        os.system("kill -9 $(ps aux | awk '/" + name + "/{print $2}')")
 
 def start_subprocess_threads() -> List[Dict[str, Any]]:
     """
@@ -165,7 +157,7 @@ def backup_metrics() -> None:
         sys.exit(1)
 
     influxdb_container.exec_run(f"mkdir -p {influxdb_backup_dir}")
-    query = f'from(bucket: \\"srsran\\") |> range(start: {backup_since})'
+    query = f'from(bucket: \\"rtusystem\\") |> range(start: {backup_since})'
 
     while True:
         csv_file = f"{influxdb_backup_dir}/backup.csv"
@@ -187,8 +179,6 @@ if __name__ == '__main__':
 
     global process_list
     process_list = []
-
-    kill_existing(["srsue", "gnb"])
 
     configure()
     global process_metadata

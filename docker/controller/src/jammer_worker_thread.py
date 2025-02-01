@@ -11,14 +11,6 @@ from datetime import datetime
 from influxdb_client import InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-# UE process manager class:
-# subprocesses: srsRAN UE, Metrics monitor
-#
-# Handles all process and data management for one UE
-#
-# Collects data from UE then sends them to the webui
-#
-
 class jammer:
     def __init__(self, influxdb_client, docker_client):
         self.influxdb_client = influxdb_client
@@ -26,11 +18,6 @@ class jammer:
 
 
     def start(self, config="", args=[]):
-        """
-        Gets data identifier and pcap info from ue config
-        Starts srsue container with volumes
-        Starts log report thread
-        """
         self.jammer_config = config
 
         container_name = f"jammer_{str(uuid.uuid4())}"
@@ -41,14 +28,14 @@ class jammer:
         }
 
         try:
-            containers = self.docker_client.containers.list(all=True, filters={"ancestor": "stu/jammer"})
+            containers = self.docker_client.containers.list(all=True, filters={"ancestor": "rtu/jammer"})
             if containers:
                 containers[0].stop()
                 containers[0].remove()
                 logging.debug(f"Removed existing container")
 
             self.docker_container = self.docker_client.containers.run(
-                image="stu/jammer",
+                image="rtu/jammer",
                 name=container_name,
                 environment=environment,
                 volumes={
@@ -96,7 +83,7 @@ class jammer:
             try:
                 utc_timestamp = datetime.utcnow()
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
-                self.influx_push(write_api, bucket='srsran', record_time_key="time", 
+                self.influx_push(write_api, bucket='rtusystem', record_time_key="time", 
                             record={
                                 "measurement": "jammer_log",
                                 "tags": {

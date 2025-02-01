@@ -1,5 +1,5 @@
 processes: # REQUIRED: a list of all processes to start
-  - type: "srsue" # REQUIRED: the name of the subprocess class
+  - type: "rtue" # REQUIRED: the name of the subprocess class
     config_file: "configs/zmq/ue_zmq_docker.conf" # OPTIONAL: the path to a config file in the subprocess container
     args: "--rrc.sdu_fuzzed_bits 1 --rrc.fuzz_target_message 'rrcSetupRequest'" # OPTIONAL: arguments to pass to the subprocess container
 

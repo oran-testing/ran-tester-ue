@@ -12,14 +12,12 @@ from influxdb_client import InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 # UE process manager class:
-# subprocesses: srsRAN UE, Metrics monitor
-#
 # Handles all process and data management for one UE
 #
 # Collects data from UE then sends them to the webui
 #
 
-class srsue:
+class rtue:
     def __init__(self, influxdb_client, docker_client):
         self.influxdb_client = influxdb_client
         self.docker_client = docker_client
@@ -28,13 +26,13 @@ class srsue:
     def start(self, config="", args=[]):
         """
         Gets data identifier and pcap info from ue config
-        Starts srsue container with volumes and network
+        Starts rtue container with volumes and network
         Starts log report thread
         """
         self.ue_config = config
         self.get_info_from_config()
 
-        container_name = f"srsran_ue_{uuid.uuid4()}"
+        container_name = f"tester_ue_{uuid.uuid4()}"
 
         environment = {
             "CONFIG": self.ue_config,
@@ -43,11 +41,11 @@ class srsue:
         }
 
         try:
-            network_name = "docker_srsue_network"
+            network_name = "docker_rtue_network"
 
             self.docker_network = self.docker_client.networks.get(network_name)
             self.docker_container = self.docker_client.containers.run(
-                image="srsran/ue",
+                image="rtu/ue",
                 name=container_name,
                 environment=environment,
                 volumes={
@@ -64,7 +62,7 @@ class srsue:
             additional_network = self.docker_client.networks.get("docker_metrics")
             additional_network.connect(self.docker_container)
 
-            logging.debug(f"srsue container initialized: {container_name}")
+            logging.debug(f"rtue container initialized: {container_name}")
 
 
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
@@ -80,7 +78,7 @@ class srsue:
 
     def stop(self):
         """
-        Stops srsue cotainer if existing
+        Stops rtue cotainer if existing
         Stops log reporting thread
         """
         if self.docker_container:
@@ -111,7 +109,7 @@ class srsue:
             try:
                 utc_timestamp = datetime.utcnow()
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
-                self.influx_push(write_api, bucket='srsran', record_time_key="time", 
+                self.influx_push(write_api, bucket='rtusystem', record_time_key="time", 
                             record={
                                 "measurement": "ue_info",
                                 "tags": {
@@ -119,7 +117,7 @@ class srsue:
                                     "ue_data_identifier": f"{self.ue_data_identifier}",
                                     "testbed": "testing",
                                 },
-                            "fields": {"srsue_stdout_log": message_text},
+                            "fields": {"rtue_stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )

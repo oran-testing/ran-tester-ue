@@ -97,9 +97,9 @@ bool metrics_influxdb::post_singleton_metrics(const ue_metrics_t& metrics, const
   // TODO: differentiate UEs somehow
   std::string response_text;
   influxdb_cpp::builder()
-      .meas("srsue_singleton_metric")
+      .meas("rtue_singleton_metric")
       .tag("testbed", "default")
-      .tag("srsue_data_id", data_id)
+      .tag("rtue_data_id", data_id)
 
       .field("rf_o", (long long)metrics.rf.rf_o)
       .field("rf_u", (long long)metrics.rf.rf_u)
@@ -143,9 +143,9 @@ bool metrics_influxdb::post_carrier_metrics(const srsran::rf_metrics_t&  rf,
 
   std::string response_text;
   influxdb_cpp::builder()
-      .meas("srsue_carrier_metric")
+      .meas("rtue_carrier_metric")
       .tag("testbed", "default")
-      .tag("srsue_data_id", data_id)
+      .tag("rtue_data_id", data_id)
       .tag("carrier_channel_index", std::to_string(cc))
       .tag("carrier_type", carrier_type)
 

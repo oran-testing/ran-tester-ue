@@ -1,7 +1,7 @@
 processes:
-  - type: "srsue"
+  - type: "rtue"
     config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
-  - type: "srsue"
+  - type: "rtue"
     config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
 
   #- type: "jammer"

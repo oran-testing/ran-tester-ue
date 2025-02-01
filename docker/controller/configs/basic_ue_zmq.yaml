@@ -1,5 +1,5 @@
 processes:
-  - type: "srsue"
+  - type: "rtue"
     config_file: "configs/zmq/ue_zmq_docker.conf"
 
 

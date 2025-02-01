@@ -3,7 +3,7 @@ services:
     container_name: controller
     image: controller
     volumes:
-      # Pass in the docker soket for starting srsue
+      # Pass in the docker soket for starting rtue
       - /var/run/docker.sock:/var/run/docker.sock
       # Allow results writing to host machine
       - /tmp:/tmp
@@ -40,7 +40,7 @@ services:
 
   grafana:
     container_name: grafana
-    image: srsran/grafana
+    image: rtu/grafana
     build:
       context: grafana
     volumes:
@@ -56,9 +56,9 @@ services:
         ipv4_address: 172.19.1.6
 
 
-  srsue:
-    container_name: srsue
-    image: srsran/ue
+  rtue:
+    container_name: rtue
+    image: rtu/ue
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -79,17 +79,17 @@ services:
       - /tmp:/tmp
 
     environment:
-      - CONFIG=${DOCKER_SRSUE_INIT_CONFIG:-configs/zmq/ue_zmq_docker.conf}
-      - ARGS=${DOCKER_SRSUE_INIT_ARGS}
+      - CONFIG=${DOCKER_RTUE_INIT_CONFIG:-configs/zmq/ue_zmq_docker.conf}
+      - ARGS=${DOCKER_RTUE_INIT_ARGS}
 
     networks:
-      -  docker_srsue_network
+      -  docker_rtue_network
       -  metrics
 
 
   jammer:
     container_name: jammer
-    image: stu/jammer
+    image: rtu/jammer
     build:
       context: ../jammer
       dockerfile: Dockerfile
@@ -140,7 +140,7 @@ volumes:
   grafana-storage:
 
 networks:
-  docker_srsue_network:
+  docker_rtue_network:
     external: true
 
   metrics:

@@ -16,24 +16,22 @@ RUN apt-get update && apt-get upgrade -y && \
     gcc \
     g++ \
     pkg-config \
+    libzmq3-dev \
+    iproute2 \
+    uhd-host \
+    libgtest-dev \
+    iperf3 \
     libfftw3-dev \
     libmbedtls-dev \
     libsctp-dev \
     libyaml-cpp-dev \
-    libgtest-dev \
-    libzmq3-dev \
     net-tools \
     libboost-all-dev \
     libconfig++-dev \
-    iperf3 \
-    git \
     libxcb-cursor0 \
     libgles2-mesa-dev \
     gr-osmosdr \
-    iproute2 \
-   uhd-host \
     libuhd-dev
-
 
 RUN mkdir -p /app
 
@@ -41,7 +39,7 @@ WORKDIR /app
 
 COPY CMakeLists.txt .
 COPY lib lib
-COPY srsue srsue
+COPY rtue rtue
 COPY cmake cmake
 COPY cmake_uninstall.cmake.in .
 COPY CTestConfig.cmake .
@@ -61,4 +59,4 @@ WORKDIR /app
 
 COPY configs configs
 
-CMD [ "sh", "-c", "/usr/local/bin/srsue \"${CONFIG}\" $ARGS" ]
+CMD [ "sh", "-c", "/usr/local/bin/rtue \"${CONFIG}\" $ARGS" ]
