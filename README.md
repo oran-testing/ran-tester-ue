@@ -1,10 +1,10 @@
-# NTIA Software Tester UE
+# NTIA RAN Tester UE
 
-The software tester UE is an open source security and reliability testing tool for wireless RANs.
+This project is a security testing tool based on modifications and attacks from the User Equipment, designed to test 5G and open radio access networks (RANs) via the Uu air interface between the UE and the network. While enabling various types of testing, the primary focus of this software is on RAN security testing.  
 
 ---
 
-This solution takes a UE based approach to RAN testing, by providing an easy to use, and well documented platform. The implementation is entirely cross platform with minimal dependencies. The system implements many attacks from recent literature, based on the 3GPP standard, taking into account the many possible avenues of exploitation.
+This RAN tester UE (rtUE) is fully software-based and compatible with widely available, commercial off-the-shelf (COTS) software radio hardware. Standardized 3GPP or O-RAN tests, as well as custom test procedures, can be implemented and executed at minimal cost and at different stages of RAN development and integration. This system facilitates testing across multiple commercial and open-source RAN implementations with minimal technical overhead. Additionally, many attacks on the RAN can be executed automatically by the system.
 
 ---
 
@@ -15,7 +15,7 @@ See the our comprehensive [documentation ](https://docs.rantesterue.org) for mor
 First, clone the core repository and it's submodules:
 
 ```bash
-git clone https://github.com/oran-testing/soft-t-ue && git submodule update --init --recursive
+git clone https://github.com/oran-testing/ran-tester-ue && git submodule update --init --recursive
 ```
 
 Then build the necessary containers:
@@ -24,7 +24,7 @@ Then build the necessary containers:
 cd docker && sudo docker compose build
 ```
 
-The environment is defined in the controller config (soft-t-ue/docker/controller/configs):
+The environment is defined in the controller config (ran-tester-ue/docker/controller/configs):
 
 ```yaml
 processes: # REQUIRED: a list of all processes to start
@@ -47,7 +47,7 @@ data_backup: # OPTIONAL: configure automatic data backups
     backup_since: -1d # OPTIONAL: backup starting from
 ```
 
-NOTE: The config used by the controller is defined in soft-t-ue/docker/.env as DOCKER_CONTROLLER_INIT_CONFIG
+NOTE: The config used by the controller is defined in ran-tester-ue/docker/.env as DOCKER_CONTROLLER_INIT_CONFIG
 
 The following will run a jammer and UE with the requested environment, writing all data to influxdb and displaying metrics in realtime with grafana:
 
