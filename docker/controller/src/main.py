@@ -174,7 +174,7 @@ def backup_metrics() -> None:
 
 if __name__ == '__main__':
     if os.geteuid() != 0:
-        logging.error("The Soft-T-UE controller must be run as root. Exiting.")
+        logging.error("The RAN Tester UE controller must be run as root. Exiting.")
         sys.exit(1)
 
     global process_list
