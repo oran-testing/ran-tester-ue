@@ -75,6 +75,9 @@ services:
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
       - /usr/share/uhd/images:/usr/share/uhd/images
+      - /usr/local/share/uhd/images:/usr/share/uhd/images
+      - /usr/share/uhd/images:/usr/local/share/uhd/images
+      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
       # Store logs in /tmp
       - /tmp:/tmp
 
