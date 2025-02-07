@@ -5,7 +5,7 @@ if [ $EUID -ne 0 ]; then
 	exit 1
 fi
 
-source .env
+source ../.env
 
 EPOCH=$(date -d '7 days ago' --utc +'%Y-%m-%dT00:00:00Z')
 NOW=$(date --utc +'%Y-%m-%dT23:59:59Z')
