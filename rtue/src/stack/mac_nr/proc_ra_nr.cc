@@ -20,9 +20,9 @@
  */
 
 #include "rtue/hdr/stack/mac_nr/proc_ra_nr.h"
+#include "rtue/hdr/stack/mac_nr/mac_nr.h"
 #include "srsran/common/standard_streams.h"
 #include "srsran/mac/mac_rar_pdu_nr.h"
-#include "rtue/hdr/stack/mac_nr/mac_nr.h"
 #include <iostream>
 
 namespace srsue {

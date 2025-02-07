@@ -44,7 +44,7 @@ struct rrc_nr_args_t {
   std::string                 target_message;
   std::string                 target_signal_attack;
 
-  bool prach_flooding_attack_enabled;
+  bool prach_flooding_attack_enabled = false;
 };
 
 } // namespace srsue
