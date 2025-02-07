@@ -33,6 +33,7 @@ class rtue:
         self.get_info_from_config()
 
         container_name = f"tester_ue_{uuid.uuid4()}"
+        self.container_name = container_name
 
         environment = {
             "CONFIG": self.ue_config,
@@ -121,7 +122,7 @@ class rtue:
                             "time": formatted_timestamp,
                             },
                             )
-                logging.debug(f"[{self.ue_data_identifier}]: {message_text}")
+                logging.debug(f"[{self.container_name}]: {message_text}")
             except Exception as e:
                 logging.error(f"send_message failed with error: {e}")
 

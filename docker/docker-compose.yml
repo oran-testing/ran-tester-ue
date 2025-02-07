@@ -114,7 +114,7 @@ services:
 
   uuagent:
     container_name: uuagent
-    image: stu/uuagent
+    image: rtu/uuagent
     build:
       context: ../uu-agent
       dockerfile: Dockerfile
