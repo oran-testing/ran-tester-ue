@@ -1,0 +1,18 @@
+processes:
+  - type: "rtue"
+    config_file: "configs/uhd/ue_uhd.conf"
+
+  - type: "sniffer"
+    config_file: "/5gsniffer/5gsniffer/SpriteLab-Private5G.toml"
+
+
+influxdb:
+  influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST}
+  influxdb_port: ${DOCKER_INFLUXDB_INIT_PORT}
+  influxdb_org: ${DOCKER_INFLUXDB_INIT_ORG}
+  influxdb_token: ${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN}
+
+data_backup:
+  backup_every: 1000
+  backup_dir: test
+  backup_since: -1d

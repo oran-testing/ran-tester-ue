@@ -11,32 +11,31 @@ from datetime import datetime
 from influxdb_client import InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-class jammer:
+class sniffer:
     def __init__(self, influxdb_client, docker_client):
         self.influxdb_client = influxdb_client
         self.docker_client = docker_client
 
 
     def start(self, config="", args=[]):
-        self.jammer_config = config
+        self.sniffer_config = config
 
-        container_name = f"jammer_{str(uuid.uuid4())}"
-        self.container_name = container_name
+        container_name = f"sniffer_{str(uuid.uuid4())}"
 
         environment = {
-            "CONFIG": self.jammer_config,
+            "CONFIG": self.sniffer_config,
             "UHD_IMAGES_DIR": "/usr/local/share/uhd/images"
         }
 
         try:
-            containers = self.docker_client.containers.list(all=True, filters={"ancestor": "rtu/jammer"})
+            containers = self.docker_client.containers.list(all=True, filters={"ancestor": "rtu/sniffer"})
             if containers:
                 containers[0].stop()
                 containers[0].remove()
                 logging.debug(f"Removed existing container")
 
             self.docker_container = self.docker_client.containers.run(
-                image="rtu/jammer",
+                image="rtu/sniffer",
                 name=container_name,
                 environment=environment,
                 volumes={
@@ -50,7 +49,7 @@ class jammer:
                 detach=True,
             )
 
-            logging.debug(f"jammer container initialized: {container_name}")
+            logging.debug(f"sniffer container initialized: {container_name}")
 
 
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
@@ -66,7 +65,7 @@ class jammer:
 
     def stop(self):
         """
-        Stops jammer cotainer if existing
+        Stops sniffer cotainer if existing
         Stops log reporting thread
         """
         if self.docker_container:
@@ -86,15 +85,15 @@ class jammer:
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
                 self.influx_push(write_api, bucket='rtusystem', record_time_key="time", 
                             record={
-                                "measurement": "jammer_log",
+                                "measurement": "sniffer_log",
                                 "tags": {
                                     "testbed": "default",
                                 },
-                            "fields": {"jammer_stdout_log": message_text},
+                            "fields": {"sniffer_stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )
-                logging.debug(f"[{self.container_name}]: {message_text}")
+                logging.debug(f"[sniffer]: {message_text}")
             except Exception as e:
                 logging.error(f"send_message failed with error: {e}")
 
