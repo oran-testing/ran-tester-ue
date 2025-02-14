@@ -47,6 +47,7 @@ inline __int64 writev(int sock, struct iovec* iov, int cnt)
 
 namespace influxdb_cpp {
 struct server_info {
+  int             resp_;
   std::string     host_;
   int             port_;
   std::string     org_;
@@ -66,7 +67,6 @@ struct server_info {
 
     // please reference the IBM documentation for IPv4/IPv6 with questions
     // https://www.ibm.com/docs/en/i/7.2?topic=clients-example-ipv4-ipv6-client
-    int resp = 0;
 
     struct in6_addr serveraddr;
     memset(&hints_, 0x00, sizeof(hints_));
@@ -75,24 +75,24 @@ struct server_info {
     hints_.ai_socktype = SOCK_STREAM;
 
     // check to see if the address is a valid IPv4 address
-    resp = inet_pton(AF_INET, host.c_str(), &serveraddr);
-    if (resp == 1) {
+    resp_ = inet_pton(AF_INET, host.c_str(), &serveraddr);
+    if (resp_ == 1) {
       hints_.ai_family = AF_INET; // IPv4
       hints_.ai_flags |= AI_NUMERICHOST;
 
       // not a valid IPv4 -> check to see if address is a valid IPv6 address
     } else {
-      resp = inet_pton(AF_INET6, host.c_str(), &serveraddr);
-      if (resp == 1) {
+      resp_ = inet_pton(AF_INET6, host.c_str(), &serveraddr);
+      if (resp_ == 1) {
         hints_.ai_family = AF_INET6; // IPv6
         hints_.ai_flags |= AI_NUMERICHOST;
       }
     }
 
-    resp = getaddrinfo(host.c_str(), std::to_string(port).c_str(), &hints_, &res_);
-    if (resp != 0) {
-      std::cerr << "Host not found --> " << gai_strerror(resp) << std::endl;
-      if (resp == EAI_SYSTEM)
+    resp_ = getaddrinfo(host.c_str(), std::to_string(port).c_str(), &hints_, &res_);
+    if (resp_ != 0) {
+      std::cerr << "Host not found --> " << gai_strerror(resp_) << std::endl;
+      if (resp_ == EAI_SYSTEM)
         std::cerr << "getaddrinfo() failed" << std::endl;
       // exit(1); NOTE: REMOVE EXIT TO STOP FROM FAILING
       return;
@@ -230,7 +230,7 @@ struct ts_caller : public builder {
     lines_ << '\n';
     return _m(m);
   }
-  int post_http(const server_info& si, std::string* resp = NULL) { return _post_http(si, resp); }
+  int post_http(const server_info& si, std::string* resp_ = NULL) { return _post_http(si, resp_); }
 };
 struct field_caller : public ts_caller {
   detail::field_caller& field(const std::string& k, const std::string& v) { return _f_s(',', k, v); }
@@ -283,7 +283,7 @@ inline int inner::http_request(const char*        method,
   // connect to the server
   ret_code = connect(sock, si.res_->ai_addr, si.res_->ai_addrlen);
   if (ret_code < 0) {
-    //std::cerr << "connect() failed" << std::endl;
+    // std::cerr << "connect() failed" << std::endl;
     closesocket(sock);
     // exit(1); NOTE: REMOVE EXIT
     return -1;
@@ -388,8 +388,13 @@ inline int inner::http_request(const char*        method,
         _('n')
         _('s')
         _('f')
-        _('e') _('r') _('-') _('E') _('n') _('c') _('o') _('d') _('i') _('n') _('g') _(':') _(' ') _('c') _('h') _('u')
-            _('n') _('k') _('e') _('d') chunked = 1;
+        _('e')
+        _('r')
+        _('-')
+        _('E')
+        _('n')
+        _('c')
+        _('o') _('d') _('i') _('n') _('g') _(':') _(' ') _('c') _('h') _('u') _('n') _('k') _('e') _('d') chunked = 1;
         break;
       case '\r':
         __('\n')
