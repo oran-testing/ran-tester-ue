@@ -42,6 +42,7 @@ metrics_influxdb::metrics_influxdb(std::string influxdb_url,
   influx_server_info(influxdb_url, influxdb_port, influxdb_org, influxdb_token, influxdb_bucket),
   data_id(ue_data_identifier)
 {
+  init_success = influx_server_info.resp_ != 0;
 }
 
 metrics_influxdb::~metrics_influxdb()
@@ -58,6 +59,8 @@ void metrics_influxdb::stop() {}
 // NOTE: RLC metrics need a loop
 void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t period_usec)
 {
+  if (!init_success)
+    return;
   uint64_t current_time_nsec = (uint64_t)get_epoch_time_nsec();
 
   if (!post_singleton_metrics(metrics, current_time_nsec)) {
@@ -66,15 +69,8 @@ void metrics_influxdb::set_metrics(const ue_metrics_t& metrics, const uint32_t p
   }
 
   for (uint32_t r = 0; r < metrics.phy.nof_active_cc; r++) {
-    post_carrier_metrics(metrics.rf,
-                         metrics.sys,
-                         metrics.phy,
-                         metrics.stack.mac,
-                         metrics.stack.rrc,
-                         r,
-                         r,
-                         current_time_nsec,
-                         "lte");
+    post_carrier_metrics(
+        metrics.rf, metrics.sys, metrics.phy, metrics.stack.mac, metrics.stack.rrc, r, r, current_time_nsec, "lte");
   }
 
   // Metrics for NR carrier
