@@ -34,9 +34,9 @@ ru_ofh:
   enable_dl_static_compr_hdr: true
   iq_scaling: 5.5
   cells:
-    - network_interface: lo
-      du_mac_addr: 00:00:00:00:00:00
-      ru_mac_addr: 00:00:00:00:00:00
+    - network_interface: 0000:08:00.1
+      du_mac_addr: 90:e3:ba:00:12:23
+      ru_mac_addr: 90:e3:ba:00:12:22
       vlan_tag_cp: 33
       vlan_tag_up: 33
       prach_port_id: [4, 5]
@@ -67,10 +67,13 @@ cell_cfg:
 
 log:
   filename: /tmp/gnb.log
-  all_level: warning
+  all_level: debug
 
 pcap:
   mac_enable: false
   mac_filename: /tmp/gnb_mac.pcap
   ngap_enable: false
   ngap_filename: /tmp/gnb_ngap.pcap
+
+hal:
+  eal_args: "--lcores (0-1)@(0-15) -b 0000:08:00.0 --file-prefix gnb"

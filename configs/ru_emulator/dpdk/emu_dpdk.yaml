@@ -1,13 +1,13 @@
 log:
   filename: /tmp/ru_emu.log
-  level: warning
+  level: debug
 
 ru_emu:
     cells:
     - bandwidth: 100                          # Bandwidth of the cell
-      network_interface: lo               # Use BDF instead of interface name for DPDK
-      ru_mac_addr: 00:00:00:00:00:00
-      du_mac_addr: 00:00:00:00:00:00
+      network_interface: 0000:08:00.0
+      ru_mac_addr: 90:e3:ba:00:12:22
+      du_mac_addr: 90:e3:ba:00:12:23
       enable_promiscuous: false               # Promiscuous mode flag
       vlan_tag: 33                            # VLAN tag
       dl_port_id: [0, 1, 2, 3]                # Port IDs for downlink
@@ -22,5 +22,5 @@ ru_emu:
       t2a_max_up: 345                         # T2a maximum value for User-Plane
       t2a_min_up: 70                          # T2a minimum value for User-Plane
 
-# dpdk:
-#   eal_args: "--lcores (0-1)@(0-15)"
+dpdk:
+  eal_args: "--lcores (0-1)@(0-15) -b 0000:08:00.1"
