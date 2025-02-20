@@ -42,7 +42,7 @@ metrics_influxdb::metrics_influxdb(std::string influxdb_url,
   influx_server_info(influxdb_url, influxdb_port, influxdb_org, influxdb_token, influxdb_bucket),
   data_id(ue_data_identifier)
 {
-  init_success = influx_server_info.resp_ != 0;
+  init_success = influx_server_info.resp_ == 0;
 }
 
 metrics_influxdb::~metrics_influxdb()
