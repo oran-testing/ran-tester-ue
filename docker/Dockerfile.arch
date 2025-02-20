@@ -1,0 +1,68 @@
+ARG OS_VERSION=latest
+ARG LIB=uhd
+ARG LIB_VERSION=4.7.0.0
+ARG MARCH=native
+ARG NUM_CORES=""
+
+FROM archlinux:$OS_VERSION
+
+ENV CONFIG="configs/zmq/ue_zmq_docker.conf"
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update system and install base-devel for building software
+RUN pacman -Sy --noconfirm archlinux-keyring && \
+    pacman -Syu --noconfirm && \
+    pacman -S --noconfirm \
+    cmake \
+    make \
+    gcc \
+    clang \
+    pkgconf \
+    zeromq \
+    iproute2 \
+    libuhd \
+    gtest \
+    iperf3 \
+    fftw \
+    mbedtls \
+    lksctp-tools \
+    yaml-cpp \
+    net-tools \
+    boost \
+    libconfig \
+    xcb-util-cursor \
+    mesa \
+    git \
+    base-devel
+
+# Install gr-osmosdr from AUR if needed
+#RUN git clone https://aur.archlinux.org/yay.git && \
+#    cd yay && makepkg -si --noconfirm && \
+#    yay -S --noconfirm gr-osmosdr
+
+RUN mkdir -p /app
+
+WORKDIR /app
+
+COPY CMakeLists.txt .
+COPY lib lib
+COPY rtue rtue
+COPY cmake cmake
+COPY cmake_uninstall.cmake.in .
+COPY CTestConfig.cmake .
+COPY CTestCustom.cmake.in .
+
+RUN mkdir -p /app/build
+
+WORKDIR /app/build
+
+RUN cmake ../ && \
+    make -j$(nproc) && \
+    make install && \
+    srsran_install_configs.sh user
+
+WORKDIR /app
+
+COPY configs configs
+
+CMD [ "sh", "-c", "/usr/local/bin/rtue \"${CONFIG}\" $ARGS" ]
