@@ -61,9 +61,9 @@ services:
     image: rtu/ue
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/Dockerfile.arch
       args:
-        OS_VERSION: "24.04"
+        OS_VERSION: "latest"
     privileged: true
     env_file:
       - .env
@@ -95,9 +95,9 @@ services:
     image: rtu/jammer
     build:
       context: ../jammer
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.alpine
       args:
-        OS_VERSION: "24.04"
+        OS_VERSION: "3.18"
     privileged: true
     env_file:
       - .env
@@ -119,9 +119,9 @@ services:
     image: rtu/uuagent
     build:
       context: ../uu-agent
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.alpine
       args:
-        OS_VERSION: "24.04"
+        OS_VERSION: "3.18"
     privileged: true
     env_file:
       - .env
