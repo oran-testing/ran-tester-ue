@@ -36,7 +36,7 @@ class jammer:
                 logging.debug(f"Removed existing container")
 
             self.docker_container = self.docker_client.containers.run(
-                image="rtu/jammer",
+                image="ghcr.io/oran-testing/jammer",
                 name=container_name,
                 environment=environment,
                 volumes={

@@ -35,7 +35,7 @@ class sniffer:
                 logging.debug(f"Removed existing container")
 
             self.docker_container = self.docker_client.containers.run(
-                image="rtu/sniffer",
+                image="ghcr.io/oran-testing/sniffer",
                 name=container_name,
                 environment=environment,
                 volumes={

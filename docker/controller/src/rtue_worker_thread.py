@@ -32,7 +32,7 @@ class rtue:
         self.ue_config = config
         self.get_info_from_config()
 
-        container_name = f"tester_ue_{uuid.uuid4()}"
+        container_name = f"rtue_{uuid.uuid4()}"
         self.container_name = container_name
 
         environment = {
@@ -46,7 +46,7 @@ class rtue:
 
             self.docker_network = self.docker_client.networks.get(network_name)
             self.docker_container = self.docker_client.containers.run(
-                image="rtu/ue",
+                image="ghcr.io/oran-testing/rtue",
                 name=container_name,
                 environment=environment,
                 volumes={
