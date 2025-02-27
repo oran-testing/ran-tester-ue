@@ -25,7 +25,7 @@ class jammer:
 
         environment = {
             "CONFIG": self.jammer_config,
-            "UHD_IMAGES_DIR": "/usr/local/share/uhd/images"
+            "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
         }
 
         try:

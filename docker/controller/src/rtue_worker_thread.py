@@ -38,11 +38,11 @@ class rtue:
         environment = {
             "CONFIG": self.ue_config,
             "ARGS": " ".join(args),
-            "UHD_IMAGES_DIR": "/usr/local/share/uhd/images"
+            "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
         }
 
         try:
-            network_name = "docker_rtue_network"
+            network_name = "docker_metrics"
 
             self.docker_network = self.docker_client.networks.get(network_name)
             self.docker_container = self.docker_client.containers.run(
@@ -60,8 +60,6 @@ class rtue:
                 network=network_name,
                 detach=True,
             )
-            additional_network = self.docker_client.networks.get("docker_metrics")
-            additional_network.connect(self.docker_container)
 
             logging.debug(f"rtue container initialized: {container_name}")
 

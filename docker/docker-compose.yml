@@ -71,7 +71,7 @@ services:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
-      - /usr/share/uhd/images:/usr/share/uhd/images
+      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
       # Store logs in /tmp
       - /tmp:/tmp
 
@@ -100,7 +100,7 @@ services:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
-      - /usr/share/uhd/images:/usr/share/uhd/images
+      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
 
   uuagent:
     image: ghcr.io/oran-testing/uu-agent
@@ -119,7 +119,7 @@ services:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
-      - /usr/share/uhd/images:/usr/share/uhd/images
+      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
 
   sniffer:
     image: ghcr.io/oran-testing/5g-sniffer
@@ -136,7 +136,7 @@ services:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
-      - /usr/share/uhd/images:/usr/share/uhd/images
+      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
 
 
 volumes:
