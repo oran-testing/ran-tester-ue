@@ -15,7 +15,7 @@ See the our comprehensive [documentation ](https://docs.rantesterue.org) for mor
 First, clone the core repository and it's submodules:
 
 ```bash
-git clone https://github.com/oran-testing/ran-tester-ue && git submodule update --init --recursive
+git clone https://github.com/oran-testing/ran-tester-ue && cd ran-tester-ue && git submodule update --init --recursive
 ```
 
 Then build the necessary containers:
