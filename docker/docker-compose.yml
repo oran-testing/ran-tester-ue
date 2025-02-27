@@ -61,9 +61,9 @@ services:
     image: rtu/ue
     build:
       context: ..
-      dockerfile: docker/Dockerfile.arch
+      dockerfile: docker/Dockerfile
       args:
-        OS_VERSION: "latest"
+        OS_VERSION: "24.04"
     privileged: true
     env_file:
       - .env
@@ -75,9 +75,6 @@ services:
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
       - /usr/share/uhd/images:/usr/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/share/uhd/images
-      - /usr/share/uhd/images:/usr/local/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
       # Store logs in /tmp
       - /tmp:/tmp
 
@@ -107,12 +104,8 @@ services:
     volumes:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
-      - /dev/snd:/dev/snd
       # Access UHD images
       - /usr/share/uhd/images:/usr/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/share/uhd/images
-      - /usr/share/uhd/images:/usr/local/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
 
   uuagent:
     container_name: uuagent
@@ -133,15 +126,12 @@ services:
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
       - /usr/share/uhd/images:/usr/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/share/uhd/images
-      - /usr/share/uhd/images:/usr/local/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
 
   sniffer:
     container_name: sniffer
     image: rtu/sniffer
     build:
-      context: ../5g-sniffer/
+      context: ../5g-sniffer
       dockerfile: Dockerfile
     privileged: true
     env_file:
@@ -154,9 +144,6 @@ services:
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
       - /usr/share/uhd/images:/usr/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/share/uhd/images
-      - /usr/share/uhd/images:/usr/local/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
 
 
 volumes:
