@@ -24,7 +24,7 @@ class sniffer:
 
         environment = {
             "CONFIG": self.sniffer_config,
-            "UHD_IMAGES_DIR": "/usr/local/share/uhd/images"
+            "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
         }
 
         try:
@@ -35,7 +35,7 @@ class sniffer:
                 logging.debug(f"Removed existing container")
 
             self.docker_container = self.docker_client.containers.run(
-                image="rtu/sniffer",
+                image="ghcr.io/oran-testing/sniffer",
                 name=container_name,
                 environment=environment,
                 volumes={

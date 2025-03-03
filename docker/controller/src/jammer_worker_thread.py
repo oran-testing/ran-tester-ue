@@ -25,7 +25,7 @@ class jammer:
 
         environment = {
             "CONFIG": self.jammer_config,
-            "UHD_IMAGES_DIR": "/usr/local/share/uhd/images"
+            "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
         }
 
         try:
@@ -36,7 +36,7 @@ class jammer:
                 logging.debug(f"Removed existing container")
 
             self.docker_container = self.docker_client.containers.run(
-                image="rtu/jammer",
+                image="ghcr.io/oran-testing/jammer",
                 name=container_name,
                 environment=environment,
                 volumes={

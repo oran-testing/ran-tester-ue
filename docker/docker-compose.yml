@@ -1,7 +1,6 @@
 services:
   controller:
-    container_name: controller
-    image: controller
+    image: ghcr.io/oran-testing/controller
     volumes:
       # Pass in the docker soket for starting rtue
       - /var/run/docker.sock:/var/run/docker.sock
@@ -30,7 +29,7 @@ services:
       - influxdb-storage:/var/lib/influxdb2:rw
     env_file:
       - .env
-    restart: on-failure:10
+    #restart: on-failure:10
     # Uncomment port section to access InfluxDB from outside the docker network
     ports:
       - 8086:${DOCKER_INFLUXDB_INIT_PORT}
@@ -39,7 +38,6 @@ services:
         ipv4_address: 172.19.1.5
 
   grafana:
-    container_name: grafana
     image: rtu/grafana
     build:
       context: grafana
@@ -57,8 +55,7 @@ services:
 
 
   rtue:
-    container_name: rtue
-    image: rtu/ue
+    image: ghcr.io/oran-testing/rtue
     build:
       context: ..
       dockerfile: docker/Dockerfile
@@ -74,10 +71,7 @@ services:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
-      - /usr/share/uhd/images:/usr/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/share/uhd/images
-      - /usr/share/uhd/images:/usr/local/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
+      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
       # Store logs in /tmp
       - /tmp:/tmp
 
@@ -86,18 +80,16 @@ services:
       - ARGS=${DOCKER_RTUE_INIT_ARGS}
 
     networks:
-      -  docker_rtue_network
       -  metrics
 
 
   jammer:
-    container_name: jammer
-    image: rtu/jammer
+    image: ghcr.io/oran-testing/jammer
     build:
       context: ../jammer
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.alpine
       args:
-        OS_VERSION: "24.04"
+        OS_VERSION: "3.18"
     privileged: true
     env_file:
       - .env
@@ -107,21 +99,16 @@ services:
     volumes:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
-      - /dev/snd:/dev/snd
       # Access UHD images
-      - /usr/share/uhd/images:/usr/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/share/uhd/images
-      - /usr/share/uhd/images:/usr/local/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
+      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
 
   uuagent:
-    container_name: uuagent
-    image: rtu/uuagent
+    image: ghcr.io/oran-testing/uu-agent
     build:
       context: ../uu-agent
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.alpine
       args:
-        OS_VERSION: "24.04"
+        OS_VERSION: "3.18"
     privileged: true
     env_file:
       - .env
@@ -132,16 +119,12 @@ services:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
-      - /usr/share/uhd/images:/usr/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/share/uhd/images
-      - /usr/share/uhd/images:/usr/local/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
+      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
 
   sniffer:
-    container_name: sniffer
-    image: rtu/sniffer
+    image: ghcr.io/oran-testing/5g-sniffer
     build:
-      context: ../5g-sniffer/
+      context: ../5g-sniffer
       dockerfile: Dockerfile
     privileged: true
     env_file:
@@ -153,10 +136,7 @@ services:
       # Access USB to use some SDRs
       - /dev/bus/usb/:/dev/bus/usb/
       # Access UHD images
-      - /usr/share/uhd/images:/usr/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/share/uhd/images
-      - /usr/share/uhd/images:/usr/local/share/uhd/images
-      - /usr/local/share/uhd/images:/usr/local/share/uhd/images
+      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
 
 
 volumes:
@@ -165,9 +145,6 @@ volumes:
   grafana-storage:
 
 networks:
-  docker_rtue_network:
-    external: true
-
   metrics:
     ipam:
       driver: default
