@@ -1,6 +1,7 @@
 processes:
   - type: "rtue"
-    config_file: "configs/zmq/ue_zmq_docker.conf"
+    config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
+    args: "--prach.rach_flooding_attack_enabled true"
 
 
 influxdb:

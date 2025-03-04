@@ -7,7 +7,9 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # Get container IDs for containers using the rtu/ue image
-container_ids=$(sudo docker ps -a --filter "ancestor=rtu/ue" --format "{{.ID}}")
+#container_ids=$(sudo docker ps -a --filter "ancestor=rtu/ue" --format "{{.ID}}")
+container_ids=$(sudo docker ps --filter "name=rtue" --format "{{.ID}}")
+
 echo "Container IDs: $container_ids"
 
 # Loop through each container ID

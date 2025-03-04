@@ -90,6 +90,7 @@ services:
       dockerfile: Dockerfile.alpine
       args:
         OS_VERSION: "3.18"
+        UHD_IMAGES_DIR: ${UHD_IMAGES_DIR}
     privileged: true
     env_file:
       - .env

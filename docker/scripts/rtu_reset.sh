@@ -5,7 +5,7 @@ if [ $EUID -ne 0 ]; then
 	exit 1
 fi
 
-UE_PS=$(docker ps -q -a --filter="ancestor=rtu/ue")
+UE_PS=$(docker ps -q -a --filter="name=rtue")
 JAMMER_PS=$(docker ps -q -a --filter="ancestor=rtu/jammer")
 UU_PS=$(docker ps -q -a --filter="ancestor=rtu/uuagent")
 
