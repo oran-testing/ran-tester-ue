@@ -1,9 +1,9 @@
 processes:
   - type: "rtue"
     config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
-#      args: "--prach.rach_flooding_attack_enabled true"
-#      #- type: "rtue"
-#      #config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
+    
+  - type: "rtue"
+    config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
 
 #  #- type: "jammer"
 #    #  config_file: "configs/basic_jammer.yaml"
