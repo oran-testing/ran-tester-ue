@@ -104,17 +104,40 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         token=influxdb_token
     )
 
+
+
     Config.docker_client = docker.from_env()
 
     process_metadata: List[Dict[str, Any]] = []
-
+    process_ids = []
     for process_config in Config.options.get("processes", []):
+
         process_class = None
         try:
             process_class = globals()[process_config["type"]]
         except KeyError:
-            logging.error(f"Invalid process type: {process_type}")
+            logging.error(f"Invalid process type: {process_config["type"]}")
             continue
+
+        if "sleep_ms" in process_config.keys():
+            logging.debug(f"Sleeping for {process_config['sleep_ms']}")
+            sleep_time = int(process_config["sleep_ms"])/1000.0
+            time.sleep(sleep_time)
+         
+        #logging.debug("Processes: ",process_config.keys())
+     
+        if "id" in process_config.keys():
+                    
+                    process_ids.append(process_config["id"])
+                    logging.debug(f"Waiting for process id: {process_config["id"]} ")
+        else:
+            sleep_time = int(process_config["sleep_ms"])/1000.0
+            logging.debug(f"Sleeping for {process_config['sleep_ms']}")
+            time.sleep(sleep_time)
+
+                
+
+        
 
         process_handle = process_class(influxdb_client, Config.docker_client)
 
@@ -125,10 +148,12 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
 
         process_metadata.append({
             'id': str(uuid.uuid4()),
+            #'id': process_id,
             'type': process_config['type'],
             'config': process_config,
             'handle': process_handle,
         })
+
 
     return process_metadata
 

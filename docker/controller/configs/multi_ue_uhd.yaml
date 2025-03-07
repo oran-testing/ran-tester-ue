@@ -1,9 +1,25 @@
 processes:
   - type: "rtue"
     config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
+    sleep_ms : 500
+    #depends_on: 
+    id : "test1"
     
+
+    #tests:
+    #  - influxdb
+    #  - controller
+      
+
   - type: "rtue"
     config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
+    sleep_ms : 500
+    id : "test2"
+    #depends_on: 
+    #tests:
+    #  - influxdb
+    # - controller
+      
 
 #  #- type: "jammer"
 #    #  config_file: "configs/basic_jammer.yaml"
