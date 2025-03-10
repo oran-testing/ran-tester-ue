@@ -51,9 +51,15 @@ class rtue:
             logging.error(f"Error checking or pulling Docker image {self.image_name}: {e}")
             raise RuntimeError(f"Failed to check or pull Docker image {self.image_name}: {e}")
 
-
-
         try:
+            # Stop all existing instances
+            containers = self.docker_client.containers.list(all=True, filters={"ancestor": self.image_name})
+            if containers:
+                for container in containers:
+                    logging.debug(f"Removing existing container {container}")
+                    container.stop()
+                    container.remove()
+
             environment = {
                 "CONFIG": self.ue_config,
                 "ARGS": " ".join(args),
