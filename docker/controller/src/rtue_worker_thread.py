@@ -40,9 +40,8 @@ class rtue:
             image_exists = any(img.tags and self.image_name in img.tags for img in self.docker_client.images.list())
 
             if not image_exists:
-                logging.warning(f"Image {self.image_name} not found locally. Attempting to pull...")
-                self.docker_client.images.pull(self.image_name)
-                logging.info(f"Successfully pulled {self.image_name}.")
+                logging.error(f"Image {self.image_name} not found locally.")
+                raise RuntimeError(f"Required Docker image {self.image_name} not found")
 
         except docker.errors.ImageNotFound:
             logging.error(f"Required image {self.image_name} not found and could not be pulled.")
