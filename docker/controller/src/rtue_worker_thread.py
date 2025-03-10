@@ -34,19 +34,36 @@ class rtue:
 
         container_name = f"rtue_{uuid.uuid4()}"
         self.container_name = container_name
-
-        environment = {
-            "CONFIG": self.ue_config,
-            "ARGS": " ".join(args),
-            "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
-        }
+        self.image_name = "ghcr.io/oran-testing/rtue"
 
         try:
-            network_name = "docker_metrics"
+            image_exists = any(img.tags and self.image_name in img.tags for img in self.docker_client.images.list())
+
+            if not image_exists:
+                logging.warning(f"Image {self.image_name} not found locally. Attempting to pull...")
+                self.docker_client.images.pull(self.image_name)
+                logging.info(f"Successfully pulled {self.image_name}.")
+
+        except docker.errors.ImageNotFound:
+            logging.error(f"Required image {self.image_name} not found and could not be pulled.")
+            raise RuntimeError(f"Required Docker image {self.image_name} not found.")
+
+        except docker.errors.APIError as e:
+            logging.error(f"Error checking or pulling Docker image {self.image_name}: {e}")
+            raise RuntimeError(f"Failed to check or pull Docker image {self.image_name}: {e}")
+
+
+
+        try:
+            environment = {
+                "CONFIG": self.ue_config,
+                "ARGS": " ".join(args),
+                "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
+            }
 
             self.docker_network = self.docker_client.networks.get(network_name)
             self.docker_container = self.docker_client.containers.run(
-                image="ghcr.io/oran-testing/rtue",
+                image=self.image_name,
                 name=container_name,
                 environment=environment,
                 volumes={
@@ -57,7 +74,7 @@ class rtue:
                 },
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],
-                network=network_name,
+                network="docker_metrics",
                 detach=True,
             )
 
