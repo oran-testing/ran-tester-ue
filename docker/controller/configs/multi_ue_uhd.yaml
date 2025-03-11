@@ -1,28 +1,15 @@
 processes:
   - type: "rtue"
+    id : "rtue_uhd_1"
     config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
     sleep_ms : 500
-    #depends_on: 
-    id : "test1"
-    
-
-    #tests:
-    #  - influxdb
-    #  - controller
-      
 
   - type: "rtue"
+    id : "rtue_uhd_2"
     config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
     sleep_ms : 500
-    id : "test2"
-    #depends_on: 
-    #tests:
-    #  - influxdb
-    # - controller
-      
+    depends_on: ["rtue_uhd_1"]
 
-#  #- type: "jammer"
-#    #  config_file: "configs/basic_jammer.yaml"
 
 influxdb:
   influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST}

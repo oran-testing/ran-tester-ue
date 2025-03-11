@@ -32,13 +32,15 @@ class rtue:
         self.ue_config = config
         self.get_info_from_config()
 
-        container_name = f"rtue_{uuid.uuid4()}"
-        self.container_name = container_name
+        self.container_name = f"rtue_{uuid.uuid4()}"
         self.image_name = "ghcr.io/oran-testing/rtue"
 
         try:
-            image_exists = any(img.tags and self.image_name in img.tags for img in self.docker_client.images.list())
-
+            image_exists = False
+            for img in self.docker_client.images.list():
+                if self.image_name + ':latest' in img.tags:
+                    image_exists = True
+                    break
             if not image_exists:
                 logging.error(f"Image {self.image_name} not found locally.")
                 raise RuntimeError(f"Required Docker image {self.image_name} not found")
@@ -52,40 +54,33 @@ class rtue:
             raise RuntimeError(f"Failed to check or pull Docker image {self.image_name}: {e}")
 
         try:
-            # Stop all existing instances
-            containers = self.docker_client.containers.list(all=True, filters={"ancestor": self.image_name})
-            if containers:
-                for container in containers:
-                    logging.debug(f"Removing existing container {container}")
-                    container.stop()
-                    container.remove()
+            uhd_images_dir = str(os.getenv("UHD_IMAGES_DIR"))
+            if not uhd_images_dir:
+                raise RuntimeError("UHD_IMAGES_DIR (required for UHD apps) is not set")
 
             environment = {
                 "CONFIG": self.ue_config,
                 "ARGS": " ".join(args),
-                "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
+                "UHD_IMAGES_DIR": uhd_images_dir
             }
 
-            self.docker_network = self.docker_client.networks.get(network_name)
+
+            self.network_name = "docker_metrics"
+            self.docker_network = self.docker_client.networks.get(self.network_name)
             self.docker_container = self.docker_client.containers.run(
                 image=self.image_name,
-                name=container_name,
+                name=self.container_name,
                 environment=environment,
                 volumes={
                     "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
-                    "/usr/share/uhd/images": {"bind": "/usr/share/uhd/images", "mode": "ro"},
-                    "/usr/local/share/uhd/images": {"bind": "/usr/local/share/uhd/images", "mode": "ro"},
+                    uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
                     "/tmp": {"bind": "/tmp", "mode": "rw"}
                 },
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],
-                network="docker_metrics",
+                network=self.network_name,
                 detach=True,
             )
-
-            logging.debug(f"rtue container initialized: {container_name}")
-
-
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
 
         except docker.errors.APIError as e:
