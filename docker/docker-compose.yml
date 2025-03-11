@@ -20,6 +20,8 @@ services:
     networks:
       metrics:
         ipv4_address: 172.19.1.7
+    configs:
+      - controller.yml
 
   influxdb:
     container_name: influxdb
@@ -130,9 +132,9 @@ services:
       - /usr/share/uhd/images:/usr/share/uhd/images
       - /usr/local/share/uhd/images:/usr/local/share/uhd/images
 
-
-
-
+configs:
+  controller.yml:
+    file: ${DOCKER_CONTROLLER_INIT_CONFIG:-controller/configs/multi_ue_uhd.yaml}
 
 volumes:
   ue-storage:

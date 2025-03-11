@@ -31,5 +31,5 @@ RUN ./bin/pip3 install -r requirements.txt
 COPY ./src .
 COPY ./configs configs
 
-CMD ./bin/python3 main.py --config $CONFIG
+CMD ./bin/python3 main.py --config /controller.yml
 
