@@ -32,6 +32,5 @@ RUN python3 -m venv venv && \
 COPY ./src .
 COPY ./configs configs
 
-# Default command
-CMD ["sh", "-c", "./venv/bin/python main.py --config \"${CONFIG}\""]
+CMD ./bin/python3 main.py --config /controller.yml
 
