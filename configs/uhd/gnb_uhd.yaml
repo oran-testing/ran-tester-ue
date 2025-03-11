@@ -14,6 +14,7 @@ cu_cp:
 ru_sdr:
   device_driver: uhd
   device_args: type=b200
+  clock: external
   srate: 23.04
   tx_gain: 80
   rx_gain: 40
@@ -34,6 +35,10 @@ cell_cfg:
       coreset0_index: 12
   prach:
     prach_config_index: 1
+  pdsch:
+    mcs_table: qam64
+  pusch:
+    mcs_table: qam64
 
 log:
   filename: /tmp/gnb.log

@@ -1,0 +1,26 @@
+log:
+  filename: /tmp/ru_emu.log
+  level: debug
+
+ru_emu:
+    cells:
+    - bandwidth: 100                          # Bandwidth of the cell
+      network_interface: enp8s0f0
+      ru_mac_addr: 90:e3:ba:00:12:22
+      du_mac_addr: 90:e3:ba:00:12:23
+      enable_promiscuous: false               # Promiscuous mode flag
+      vlan_tag: 33                            # VLAN tag
+      dl_port_id: [0, 1, 2, 3]                # Port IDs for downlink
+      ul_port_id: [0, 1, 2, 3]                # Port IDs for uplink
+      prach_port_id: [4, 5]                   # Port IDs for PRACH
+      compr_method_ul: "bfp"                  # Compression method for uplink
+      compr_bitwidth_ul: 9                    # Compression bitwidth for uplink
+      t2a_max_cp_dl: 470                      # T2a maximum value for downlink Control-Plane
+      t2a_min_cp_dl: 350                      # T2a minimum value for downlink Control-Plane
+      t2a_max_cp_ul: 200                      # T2a maximum value for uplink Control-Plane
+      t2a_min_cp_ul: 90                       # T2a minimum value for uplink Control-Plane
+      t2a_max_up: 345                         # T2a maximum value for User-Plane
+      t2a_min_up: 70                          # T2a minimum value for User-Plane
+
+# dpdk:
+#   eal_args: "--lcores (0-1)@(0-15)"

@@ -70,6 +70,7 @@ private:
 
   influxdb_cpp::server_info influx_server_info;
   std::string               data_id;
+  bool                      init_success = false;
 };
 
 } // namespace srsue

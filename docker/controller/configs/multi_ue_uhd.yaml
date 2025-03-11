@@ -1,11 +1,12 @@
 processes:
   - type: "rtue"
     config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
+    
   - type: "rtue"
     config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
 
-  #- type: "jammer"
-    #  config_file: "configs/basic_jammer.yaml"
+#  #- type: "jammer"
+#    #  config_file: "configs/basic_jammer.yaml"
 
 influxdb:
   influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST}

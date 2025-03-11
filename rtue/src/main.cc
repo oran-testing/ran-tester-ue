@@ -19,6 +19,11 @@
  *
  */
 
+#include "rtue/hdr/metrics_csv.h"
+#include "rtue/hdr/metrics_influxdb.h"
+#include "rtue/hdr/metrics_json.h"
+#include "rtue/hdr/metrics_stdout.h"
+#include "rtue/hdr/ue.h"
 #include "srsran/common/common_helper.h"
 #include "srsran/common/config_file.h"
 #include "srsran/common/crash_handler.h"
@@ -31,11 +36,6 @@
 #include "srsran/support/emergency_handlers.h"
 #include "srsran/support/signal_handler.h"
 #include "srsran/version.h"
-#include "rtue/hdr/metrics_csv.h"
-#include "rtue/hdr/metrics_influxdb.h"
-#include "rtue/hdr/metrics_json.h"
-#include "rtue/hdr/metrics_stdout.h"
-#include "rtue/hdr/ue.h"
 #include <boost/program_options.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <csignal>

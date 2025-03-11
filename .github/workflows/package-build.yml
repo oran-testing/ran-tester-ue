@@ -1,0 +1,77 @@
+name: Build and Publish Jammer Docker Package
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-commit:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run_rtue: ${{ steps.commit-check.outputs.should_run_rtue }}
+      should_run_controller: ${{ steps.commit-check.outputs.should_run_controller }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check Commit Message
+        id: commit-check
+        run: |
+          if git log -1 --pretty=%B | grep -q "deploy-rtue"; then
+            echo "should_run_rtue=true" >> $GITHUB_ENV
+            echo "should_run_rtue=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run_rtue=false" >> $GITHUB_ENV
+            echo "should_run_rtue=false" >> $GITHUB_OUTPUT
+          fi
+
+          if git log -1 --pretty=%B | grep -q "deploy-controller"; then
+            echo "should_run_controller=true" >> $GITHUB_ENV
+            echo "should_run_controller=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run_controller=false" >> $GITHUB_ENV
+            echo "should_run_controller=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-rtue:
+    needs: check-commit
+    if: needs.check-commit.outputs.should_run_rtue == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+
+      - name: Build Docker Image
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/rtue:latest . -f docker/Dockerfile
+
+      - name: Push Docker Image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/rtue:latest
+
+  build-controller:
+    needs: check-commit
+    if: needs.check-commit.outputs.should_run_controller == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
+
+      - name: Build Docker Image
+        run: |
+          docker build -t ghcr.io/${{ github.repository_owner }}/controller:latest ./docker/controller -f docker/controller/Dockerfile
+
+      - name: Push Docker Image
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/controller:latest

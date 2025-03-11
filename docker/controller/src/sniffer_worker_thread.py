@@ -11,18 +11,17 @@ from datetime import datetime
 from influxdb_client import InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-class jammer:
+class sniffer:
     def __init__(self, influxdb_client, docker_client):
         self.influxdb_client = influxdb_client
         self.docker_client = docker_client
 
 
     def start(self, config="", args=[]):
-        self.jammer_config = config
+        self.sniffer_config = config
 
-        container_name = f"jammer_{str(uuid.uuid4())}"
-        self.container_name = container_name
-        self.image_name = "ghcr.io/oran-testing/jammer"
+        container_name = f"sniffer_{str(uuid.uuid4())}"
+        self.image_name = "ghcr.io/oran-testing/sniffer"
 
         try:
             image_exists = any(img.tags and self.image_name in img.tags for img in self.docker_client.images.list())
@@ -39,9 +38,8 @@ class jammer:
             logging.error(f"Error checking or pulling Docker image {self.image_name}: {e}")
             raise RuntimeError(f"Failed to check or pull Docker image {self.image_name}: {e}")
 
-
         environment = {
-            "CONFIG": self.jammer_config,
+            "CONFIG": self.sniffer_config,
             "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
         }
 
@@ -69,7 +67,7 @@ class jammer:
                 detach=True,
             )
 
-            logging.debug(f"jammer container initialized: {container_name}")
+            logging.debug(f"sniffer container initialized: {container_name}")
 
 
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
@@ -85,7 +83,7 @@ class jammer:
 
     def stop(self):
         """
-        Stops jammer cotainer if existing
+        Stops sniffer cotainer if existing
         Stops log reporting thread
         """
         if self.docker_container:
@@ -105,15 +103,15 @@ class jammer:
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
                 self.influx_push(write_api, bucket='rtusystem', record_time_key="time", 
                             record={
-                                "measurement": "jammer_log",
+                                "measurement": "sniffer_log",
                                 "tags": {
                                     "testbed": "default",
                                 },
-                            "fields": {"jammer_stdout_log": message_text},
+                            "fields": {"sniffer_stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )
-                logging.debug(f"[{self.container_name}]: {message_text}")
+                logging.debug(f"[sniffer]: {message_text}")
             except Exception as e:
                 logging.error(f"send_message failed with error: {e}")
 

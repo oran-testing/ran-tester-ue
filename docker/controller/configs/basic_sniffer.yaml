@@ -1,7 +1,11 @@
 processes:
   - type: "rtue"
-    config_file: "configs/zmq/ue_zmq_docker.conf"
-    
+    config_file: "configs/uhd/ue_uhd.conf"
+
+  - type: "sniffer"
+    config_file: "/5gsniffer/5gsniffer/SpriteLab-Private5G.toml"
+
+
 influxdb:
   influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST}
   influxdb_port: ${DOCKER_INFLUXDB_INIT_PORT}
