@@ -22,6 +22,23 @@ class jammer:
 
         container_name = f"jammer_{str(uuid.uuid4())}"
         self.container_name = container_name
+        self.image_name = "ghcr.io/oran-testing/jammer"
+
+        try:
+            image_exists = any(img.tags and self.image_name in img.tags for img in self.docker_client.images.list())
+
+            if not image_exists:
+                logging.error(f"Image {self.image_name} not found locally.")
+                raise RuntimeError(f"Required Docker image {self.image_name} not found")
+
+        except docker.errors.ImageNotFound:
+            logging.error(f"Required image {self.image_name} not found and could not be pulled.")
+            raise RuntimeError(f"Required Docker image {self.image_name} not found.")
+
+        except docker.errors.APIError as e:
+            logging.error(f"Error checking or pulling Docker image {self.image_name}: {e}")
+            raise RuntimeError(f"Failed to check or pull Docker image {self.image_name}: {e}")
+
 
         environment = {
             "CONFIG": self.jammer_config,
@@ -29,14 +46,16 @@ class jammer:
         }
 
         try:
-            containers = self.docker_client.containers.list(all=True, filters={"ancestor": "rtu/jammer"})
+            # Stop all existing instances
+            containers = self.docker_client.containers.list(all=True, filters={"ancestor": self.image_name})
             if containers:
-                containers[0].stop()
-                containers[0].remove()
-                logging.debug(f"Removed existing container")
+                for container in containers:
+                    logging.debug(f"Removing existing container {container}")
+                    container.stop()
+                    container.remove()
 
             self.docker_container = self.docker_client.containers.run(
-                image="ghcr.io/oran-testing/jammer",
+                image=self.image_name,
                 name=container_name,
                 environment=environment,
                 volumes={

@@ -18,14 +18,22 @@ First, clone the core repository and it's submodules:
 git clone https://github.com/oran-testing/ran-tester-ue && cd ran-tester-ue && git submodule update --init --recursive
 ```
 
-Then build the necessary containers:
+Then pull the necessary containers from our registry:
 
 ```bash
-cd docker && sudo docker compose build
+cd ran-tester-ue/docker
+sudo docker compose pull
 ```
 
-The environment is defined in the controller config (ran-tester-ue/docker/controller/configs):
+Alternatively, you can build the images yourself:
 
+```bash
+sudo docker compose build
+```
+
+The environment is defined in the controller config (`ran-tester-ue/docker/controller/configs`):
+
+This configuration tells the controller which services to run, and in what order. This allows for fully automated tests with many componenets.
 ```yaml
 processes: # REQUIRED: a list of all processes to start
   - type: "srsue" # REQUIRED: the name of the subprocess class
@@ -47,7 +55,8 @@ data_backup: # OPTIONAL: configure automatic data backups
     backup_since: -1d # OPTIONAL: backup starting from
 ```
 
-NOTE: The config used by the controller is defined in ran-tester-ue/docker/.env as DOCKER_CONTROLLER_INIT_CONFIG
+The config used by the controller is defined in `ran-tester-ue/docker/.env` as DOCKER_CONTROLLER_INIT_CONFIG. Change this value to use a different configuration.
+
 
 The following will run a jammer and UE with the requested environment, writing all data to influxdb and displaying metrics in realtime with grafana:
 

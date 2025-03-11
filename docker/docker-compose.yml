@@ -6,6 +6,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # Allow results writing to host machine
       - /tmp:/tmp
+      # Allow access to system level docker configuration
+      - /root/.docker:/root/.docker
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - CONFIG=${DOCKER_CONTROLLER_INIT_CONFIG:-configs/basic_ue_zmq.yaml}
@@ -19,6 +21,8 @@ services:
     networks:
       metrics:
         ipv4_address: 172.19.1.7
+    configs:
+      - controller.yml
 
   influxdb:
     container_name: influxdb
@@ -139,6 +143,11 @@ services:
       # Access UHD images
       - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
 
+configs:
+  controller.yml:
+    file: ${DOCKER_CONTROLLER_INIT_CONFIG:-controller/configs/multi_ue_uhd.yaml}
+  rtue.conf:
+    file: ${DOCKER_RTUE_INIT:-../configs/uhd/ue_uhd.conf}
 
 volumes:
   ue-storage:
