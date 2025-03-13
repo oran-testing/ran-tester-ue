@@ -17,16 +17,18 @@ class jammer:
         self.docker_client = docker_client
 
 
-    def start(self, config="", args=[]):
+    def start(self, config="", args=[], process_id=""):
         self.jammer_config = config
 
-        container_name = f"jammer_{str(uuid.uuid4())}"
-        self.container_name = container_name
+        self.container_name = process_id
         self.image_name = "ghcr.io/oran-testing/jammer"
 
         try:
-            image_exists = any(img.tags and self.image_name in img.tags for img in self.docker_client.images.list())
-
+            image_exists = False
+            for img in self.docker_client.images.list():
+                if self.image_name + ':latest' in img.tags:
+                    image_exists = True
+                    break
             if not image_exists:
                 logging.error(f"Image {self.image_name} not found locally.")
                 raise RuntimeError(f"Required Docker image {self.image_name} not found")
@@ -46,31 +48,19 @@ class jammer:
         }
 
         try:
-            # Stop all existing instances
-            containers = self.docker_client.containers.list(all=True, filters={"ancestor": self.image_name})
-            if containers:
-                for container in containers:
-                    logging.debug(f"Removing existing container {container}")
-                    container.stop()
-                    container.remove()
-
             self.docker_container = self.docker_client.containers.run(
                 image=self.image_name,
-                name=container_name,
+                name=self.container_name,
                 environment=environment,
                 volumes={
                     "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
-                    "/usr/share/uhd/images": {"bind": "/usr/share/uhd/images", "mode": "ro"},
-                    "/usr/local/share/uhd/images": {"bind": "/usr/local/share/uhd/images", "mode": "ro"},
+                    uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
                     "/tmp": {"bind": "/tmp", "mode": "rw"}
                 },
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],
                 detach=True,
             )
-
-            logging.debug(f"jammer container initialized: {container_name}")
-
 
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
 
@@ -108,6 +98,7 @@ class jammer:
                                 "measurement": "jammer_log",
                                 "tags": {
                                     "testbed": "default",
+                                    "jammer_data_identifier": self.container_name,
                                 },
                             "fields": {"jammer_stdout_log": message_text},
                             "time": formatted_timestamp,
