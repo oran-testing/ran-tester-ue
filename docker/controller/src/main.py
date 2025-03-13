@@ -152,7 +152,8 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
 
         process_handle.start(
             config=process_config["config_file"],
-            args=process_config["args"].split(" ") if "args" in process_config.keys() else []
+            args=process_config["args"].split(" ") if "args" in process_config.keys() else [],
+            process_id=process_config["id"]
         )
 
     return process_metadata

@@ -17,11 +17,10 @@ class jammer:
         self.docker_client = docker_client
 
 
-    def start(self, config="", args=[]):
+    def start(self, config="", args=[], process_id=""):
         self.jammer_config = config
 
-        container_name = f"jammer_{str(uuid.uuid4())}"
-        self.container_name = container_name
+        self.container_name = process_id
         self.image_name = "ghcr.io/oran-testing/jammer"
 
         try:
@@ -99,6 +98,7 @@ class jammer:
                                 "measurement": "jammer_log",
                                 "tags": {
                                     "testbed": "default",
+                                    "jammer_data_identifier": self.container_name,
                                 },
                             "fields": {"jammer_stdout_log": message_text},
                             "time": formatted_timestamp,

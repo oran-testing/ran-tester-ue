@@ -17,10 +17,10 @@ class sniffer:
         self.docker_client = docker_client
 
 
-    def start(self, config="", args=[]):
+    def start(self, config="", args=[], process_id=""):
         self.sniffer_config = config
 
-        container_name = f"sniffer_{str(uuid.uuid4())}"
+        self.container_name = process_id
         self.image_name = "ghcr.io/oran-testing/sniffer"
 
         try:
@@ -97,12 +97,13 @@ class sniffer:
                                 "measurement": "sniffer_log",
                                 "tags": {
                                     "testbed": "default",
+                                    "sniffer_data_identifier": self.container_name,
                                 },
                             "fields": {"sniffer_stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )
-                logging.debug(f"[sniffer]: {message_text}")
+                logging.debug(f"[{self.container_name}]: {message_text}")
             except Exception as e:
                 logging.error(f"send_message failed with error: {e}")
 

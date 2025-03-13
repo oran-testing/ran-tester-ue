@@ -23,7 +23,7 @@ class rtue:
         self.docker_client = docker_client
 
 
-    def start(self, config="", args=[]):
+    def start(self, config="", args=[], process_id=""):
         """
         Gets data identifier and pcap info from ue config
         Starts rtue container with volumes and network
@@ -32,7 +32,7 @@ class rtue:
         self.ue_config = config
         self.get_info_from_config()
 
-        self.container_name = f"rtue_{uuid.uuid4()}"
+        self.container_name = process_id
         self.image_name = "ghcr.io/oran-testing/rtue"
 
         try:
@@ -117,8 +117,6 @@ class rtue:
             "nas_filename": config.get("pcap", "nas_filename", fallback=None)
         }
 
-        self.ue_data_identifier = config.get("general", "ue_data_identifier", fallback=str(uuid.uuid4()))
-
 
     def send_message(self, message_text):
         with self.influxdb_client.write_api(write_options=SYNCHRONOUS) as write_api:
@@ -130,7 +128,7 @@ class rtue:
                                 "measurement": "ue_info",
                                 "tags": {
                                     "pci": "test",
-                                    "ue_data_identifier": f"{self.ue_data_identifier}",
+                                    "ue_data_identifier": f"{self.container_name}",
                                     "testbed": "testing",
                                 },
                             "fields": {"rtue_stdout_log": message_text},
