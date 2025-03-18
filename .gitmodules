@@ -8,3 +8,6 @@
 [submodule "5g-sniffer"]
 	path = 5g-sniffer
 	url = https://github.com/oran-testing/5g-sniffer
+[submodule "rtue"]
+	path = rtue
+	url = https://github.com/oran-testing/rtue
