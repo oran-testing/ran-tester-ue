@@ -6,7 +6,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # Allow results writing to host machine
       - /tmp:/tmp
-      # Allow access to system level docker configuration
+      # Allo access to system level docker configuration
       - /root/.docker:/root/.docker
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
@@ -65,23 +65,8 @@ services:
     privileged: true
     env_file:
       - .env
-    cap_add:
-      - SYS_NICE
-      - CAP_SYS_PTRACE
-    volumes:
-      # Access USB to use some SDRs
-      - /dev/bus/usb/:/dev/bus/usb/
-      # Access UHD images
-      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
-      # Store logs in /tmp
-      - /tmp:/tmp
-
-    environment:
-      - CONFIG=${DOCKER_RTUE_INIT_CONFIG:-configs/zmq/ue_zmq_docker.conf}
-      - ARGS=${DOCKER_RTUE_INIT_ARGS}
-
-    networks:
-      -  metrics
+    profiles:
+      - build_only
 
 
   jammer:
@@ -92,17 +77,10 @@ services:
       args:
         OS_VERSION: "3.18"
         UHD_IMAGES_DIR: ${UHD_IMAGES_DIR}
-    privileged: true
     env_file:
       - .env
-    cap_add:
-      - SYS_NICE
-      - CAP_SYS_PTRACE
-    volumes:
-      # Access USB to use some SDRs
-      - /dev/bus/usb/:/dev/bus/usb/
-      # Access UHD images
-      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
+    profiles:
+      - build_only
 
   uuagent:
     image: ghcr.io/oran-testing/uu-agent
@@ -111,40 +89,24 @@ services:
       dockerfile: Dockerfile.alpine
       args:
         OS_VERSION: "3.18"
-    privileged: true
     env_file:
       - .env
-    cap_add:
-      - SYS_NICE
-      - CAP_SYS_PTRACE
-    volumes:
-      # Access USB to use some SDRs
-      - /dev/bus/usb/:/dev/bus/usb/
-      # Access UHD images
-      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
+    profiles:
+      - build_only
 
   sniffer:
     image: ghcr.io/oran-testing/5g-sniffer
     build:
       context: ../5g-sniffer
       dockerfile: Dockerfile
-    privileged: true
     env_file:
       .env
-    cap_add:
-      - SYS_NICE
-      - CAP_SYS_PTRACE
-    volumes:
-      # Access USB to use some SDRs
-      - /dev/bus/usb/:/dev/bus/usb/
-      # Access UHD images
-      - ${UHD_IMAGES_DIR}:${UHD_IMAGES_DIR}
+    profiles:
+      - build_only
 
 configs:
   controller.yml:
     file: ${DOCKER_CONTROLLER_INIT_CONFIG:-controller/configs/multi_ue_uhd.yaml}
-  rtue.conf:
-    file: ${DOCKER_RTUE_INIT:-../configs/uhd/ue_uhd.conf}
 
 volumes:
   ue-storage:
