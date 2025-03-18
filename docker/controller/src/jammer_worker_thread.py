@@ -25,12 +25,12 @@ class jammer:
 
         image_exists = False
         for img in self.docker_client.images.list():
-            if self.image_name + ':latest' in img.tags:
+            image_tags = [image_tag.split(':')[0] for image_tag in img.tags]
+            if self.image_name in image_tags:
                 image_exists = True
                 break
         if not image_exists:
-            logging.error(f"Image {self.image_name} not found locally.")
-        raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
+            raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
 
 
         environment = {
