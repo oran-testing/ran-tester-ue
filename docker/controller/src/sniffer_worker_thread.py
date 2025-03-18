@@ -23,23 +23,14 @@ class sniffer:
         self.container_name = process_id
         self.image_name = "ghcr.io/oran-testing/sniffer"
 
-        try:
-            image_exists = False
-            for img in self.docker_client.images.list():
-                if self.image_name + ':latest' in img.tags:
-                    image_exists = True
-                    break
-            if not image_exists:
-                logging.error(f"Image {self.image_name} not found locally.")
-                raise RuntimeError(f"Required Docker image {self.image_name} not found")
-
-        except docker.errors.ImageNotFound:
-            logging.error(f"Required image {self.image_name} not found and could not be pulled.")
-            raise RuntimeError(f"Required Docker image {self.image_name} not found.")
-
-        except docker.errors.APIError as e:
-            logging.error(f"Error checking or pulling Docker image {self.image_name}: {e}")
-            raise RuntimeError(f"Failed to check or pull Docker image {self.image_name}: {e}")
+        image_exists = False
+        for img in self.docker_client.images.list():
+            if self.image_name + ':latest' in img.tags:
+                image_exists = True
+                break
+        if not image_exists:
+            logging.error(f"Image {self.image_name} not found locally.")
+        raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
 
         environment = {
             "CONFIG": self.sniffer_config,

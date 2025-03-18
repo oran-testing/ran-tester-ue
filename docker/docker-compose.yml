@@ -18,11 +18,14 @@ services:
       - .env
     depends_on:
       - influxdb
+      - grafana
     networks:
       metrics:
         ipv4_address: 172.19.1.7
     configs:
       - controller.yml
+    profiles:
+     - system
 
   influxdb:
     container_name: influxdb
@@ -37,6 +40,8 @@ services:
     networks:
       metrics:
         ipv4_address: 172.19.1.5
+    profiles:
+     - system
 
   grafana:
     image: rtu/grafana
@@ -53,6 +58,8 @@ services:
     networks:
       metrics:
         ipv4_address: 172.19.1.6
+    profiles:
+     - system
 
 
   rtue:
@@ -66,7 +73,7 @@ services:
     env_file:
       - .env
     profiles:
-      - build_only
+      - components
 
 
   jammer:
@@ -80,7 +87,7 @@ services:
     env_file:
       - .env
     profiles:
-      - build_only
+      - components
 
   uuagent:
     image: ghcr.io/oran-testing/uu-agent
@@ -92,7 +99,7 @@ services:
     env_file:
       - .env
     profiles:
-      - build_only
+      - components
 
   sniffer:
     image: ghcr.io/oran-testing/5g-sniffer
@@ -102,7 +109,7 @@ services:
     env_file:
       .env
     profiles:
-      - build_only
+      - components
 
 configs:
   controller.yml:
