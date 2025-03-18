@@ -85,18 +85,17 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         logging.error("Config is None: parsing failed... Exiting")
         sys.exit(1)
 
-    influxdb_config = Config.options.get("influxdb", {})
+    influxdb_host = os.getenv("DOCKER_INFLUXDB_INIT_HOST")
+    influxdb_port = os.getenv("DOCKER_INFLUXDB_INIT_PORT")
+    influxdb_org = os.getenv("DOCKER_INFLUXDB_INIT_ORG")
+    influxdb_token = os.getenv("DOCKER_INFLUXDB_INIT_ADMIN_TOKEN")
 
+    logging.debug(f"DOCKER_INFLUXDB_INIT_HOST: {influxdb_host}")
+    logging.debug(f"DOCKER_INFLUXDB_INIT_PORT: {influxdb_port}")
+    logging.debug(f"DOCKER_INFLUXDB_INIT_ORG: {influxdb_org}")
 
-    influxdb_host, influxdb_port, influxdb_org, influxdb_token = "NO_HOST", 8086, "NO_ORG", "NO_TOKEN"
-    try:
-        influxdb_host = os.path.expandvars(influxdb_config["influxdb_host"])
-        influxdb_port = os.path.expandvars(influxdb_config["influxdb_port"])
-        influxdb_org = os.path.expandvars(influxdb_config["influxdb_org"])
-        influxdb_token = os.path.expandvars(influxdb_config["influxdb_token"])
-
-    except (KeyError, ValueError) as e:
-        print(f"Influxdb Configuration Error: {e}")
+    if not influxdb_host or not influxdb_port or not influxdb_org or not influxdb_token:
+        raise RuntimeError("Influxdb environment is not complete! Ensure .env is configured and passed properly")
 
     influxdb_client = InfluxDBClient(
         f"http://{influxdb_host}:{influxdb_port}",

@@ -122,6 +122,7 @@ volumes:
 
 networks:
   metrics:
+    name: docker_metrics
     ipam:
       driver: default
       config:

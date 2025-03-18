@@ -30,7 +30,6 @@ RUN python3 -m venv venv && \
 
 # Copy application source code and configs
 COPY ./src .
-COPY ./configs configs
 
 CMD ./venv/bin/python3 main.py --config /controller.yml
 
