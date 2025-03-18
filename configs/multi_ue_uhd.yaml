@@ -3,6 +3,10 @@ processes:
     id : "rtue_uhd_1"
     config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
     sleep_ms : 500
+    rf:
+      type: "uhd"
+      make: "b200"
+
 
   #- type: "rtue"
     #id : "rtue_uhd_2"

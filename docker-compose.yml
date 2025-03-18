@@ -113,7 +113,7 @@ services:
 
 configs:
   controller.yml:
-    file: ${DOCKER_CONTROLLER_INIT_CONFIG:-controller/configs/multi_ue_uhd.yaml}
+    file: ${DOCKER_CONTROLLER_INIT_CONFIG:-configs/multi_ue_uhd.yaml}
 
 volumes:
   ue-storage:
