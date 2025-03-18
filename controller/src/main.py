@@ -65,7 +65,7 @@ def configure() -> None:
         raise ValueError(f"Invalid log level: {args.log_level}")
 
     logging.basicConfig(level=Config.log_level,
-                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    format='%(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
     Config.filename = args.config
@@ -102,8 +102,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         org=influxdb_org,
         token=influxdb_token
     )
-
-
 
     Config.docker_client = docker.from_env()
 
@@ -149,11 +147,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
             'handle': process_handle,
         })
 
-        process_handle.start(
-            config=process_config["config_file"],
-            args=process_config["args"].split(" ") if "args" in process_config.keys() else [],
-            process_id=process_config["id"]
-        )
+        process_handle.start(process_config)
 
     return process_metadata
 

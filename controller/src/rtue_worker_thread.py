@@ -23,18 +23,19 @@ class rtue:
         self.docker_client = docker_client
 
 
-    def start(self, config="", args=[], process_id=""):
+    def start(self, process_config):
         """
         Gets data identifier and pcap info from ue config
         Starts rtue container with volumes and network
         Starts log report thread
         """
-        self.ue_config = config
-        self.get_info_from_config()
+        self.ue_config = process_config["config_file"]
+        self.container_name = process_config["id"]
+        self.ue_args = process_config["args"] if "args" in process_config.keys() else [""]
 
-        self.container_name = process_id
         self.image_name = "ghcr.io/oran-testing/rtue"
 
+        # Verify Image
         image_exists = False
         for img in self.docker_client.images.list():
             image_tags = [image_tag.split(':')[0] for image_tag in img.tags]
@@ -44,14 +45,20 @@ class rtue:
         if not image_exists:
             raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
 
-        try:
-            uhd_images_dir = str(os.getenv("UHD_IMAGES_DIR"))
-            if not uhd_images_dir:
-                raise RuntimeError("UHD_IMAGES_DIR (required for UHD apps) is not set")
+        # Process RF
+        uhd_images_dir = ""
+        rf_config = process_config["rf"]
+        if rf_config["type"] == "b200":
+            uhd_images_dir = rf_config["images_dir"]
+        else:
+            raise RuntimeError(f"Invalid RF type for rtUE: {rf_config['type']}")
 
+
+        # Start Container
+        try:
             environment = {
                 "CONFIG": self.ue_config,
-                "ARGS": " ".join(args),
+                "ARGS": " ".join(self.ue_args),
                 "UHD_IMAGES_DIR": uhd_images_dir
             }
 
@@ -98,15 +105,6 @@ class rtue:
         self.stop_thread.set()
 
 
-    def get_info_from_config(self):
-        config = configparser.ConfigParser()
-        config.read(self.ue_config)
-
-        self.pcap_data = {
-            "mac_filename": config.get("pcap", "mac_filename", fallback=None),
-            "mac_nr_filename": config.get("pcap", "mac_nr_filename", fallback=None),
-            "nas_filename": config.get("pcap", "nas_filename", fallback=None)
-        }
 
 
     def send_message(self, message_text):
