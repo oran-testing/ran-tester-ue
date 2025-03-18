@@ -1,20 +1,23 @@
 processes:
   - type: "rtue"
+    id : "rtue_uhd_1"
     config_file: "configs/uhd/multi_ue/ue1_uhd.conf"
-    
-  - type: "rtue"
-    config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
+    sleep_ms : 500
 
-#  #- type: "jammer"
-#    #  config_file: "configs/basic_jammer.yaml"
+  #- type: "rtue"
+    #id : "rtue_uhd_2"
+    #config_file: "configs/uhd/multi_ue/ue2_uhd.conf"
+    #sleep_ms : 500
+    #depends_on: ["rtue_uhd_1"]
+
+  #- type: "sniffer"
+    #  id: "sniffer_1"
+    #config_file: "../MSU-Private5G184205.toml"
+    #depends_on: ["rtue_uhd_1", "rtue_uhd_2"]
+
 
 influxdb:
   influxdb_host: ${DOCKER_INFLUXDB_INIT_HOST}
   influxdb_port: ${DOCKER_INFLUXDB_INIT_PORT}
   influxdb_org: ${DOCKER_INFLUXDB_INIT_ORG}
   influxdb_token: ${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN}
-
-data_backup:
-  backup_every: 1000
-  backup_dir: test
-  backup_from: -1h

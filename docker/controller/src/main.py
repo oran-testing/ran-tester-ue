@@ -104,78 +104,64 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         token=influxdb_token
     )
 
+
+
     Config.docker_client = docker.from_env()
 
     process_metadata: List[Dict[str, Any]] = []
-
+    process_ids = []
     for process_config in Config.options.get("processes", []):
+        if "id" not in process_config.keys():
+            raise RuntimeError("id field required for each process")
+
+        if "type" not in process_config.keys():
+            raise RuntimeError("type field required for each process")
+
+        if "config_file" not in process_config.keys():
+            raise RuntimeError("config_file field required for each process")
+
+        if "depends_on" in process_config.keys():
+            depends_on_list = list(process_config["depends_on"])
+            for dependency in depends_on_list:
+                found_dep = False
+                for process_data in process_metadata:
+                    if process_data["id"] == dependency:
+                        found_dep = True
+                if not found_dep:
+                    raise RuntimeError(f"Did not find dependent process '{dependency}' for '{process_config['id']}'")
+
+        if "sleep_ms" in process_config.keys():
+            logging.debug(f"Sleeping for {process_config['sleep_ms']}")
+            sleep_time = float(process_config["sleep_ms"])/1000.0
+            time.sleep(sleep_time)
+
         process_class = None
         try:
             process_class = globals()[process_config["type"]]
         except KeyError:
-            logging.error(f"Invalid process type: {process_type}")
-            continue
+            raise RuntimeError(f"Invalid process type {process_config['type']}")
 
         process_handle = process_class(influxdb_client, Config.docker_client)
 
-        process_handle.start(
-            config=process_config["config_file"] if "config_file" in process_config.keys() else "",
-            args=process_config["args"].split(" ") if "args" in process_config.keys() else []
-        )
-
         process_metadata.append({
-            'id': str(uuid.uuid4()),
+            'id': process_config['id'],
             'type': process_config['type'],
             'config': process_config,
             'handle': process_handle,
         })
 
+        process_handle.start(
+            config=process_config["config_file"],
+            args=process_config["args"].split(" ") if "args" in process_config.keys() else [],
+            process_id=process_config["id"]
+        )
+
     return process_metadata
-
-def backup_metrics() -> None:
-    """
-    Wait for all child processes to stop
-    """
-
-    backup_config = Config.options.get("data_backup", {})
-
-    if not backup_config:
-        while True:
-            logging.debug("No backup configured")
-            time.sleep(100)
-
-    backup_every = int(backup_config["backup_every"]) if "backup_every" in backup_config.keys() else 1000
-    backup_dir = backup_config["backup_dir"] if "backup_dir" in backup_config.keys() else "test"
-    backup_since = backup_config["backup_since"] if "backup_since" in backup_config.keys() else "-1d"
-
-    influxdb_backup_dir = f"/tmp/host/{backup_dir}/"
-
-    containers = Config.docker_client.containers.list(all=True, filters={"name": "influxdb"})
-    logging.debug(str(containers))
-    influxdb_container = containers[0]
-    if not influxdb_container:
-        logging.error("Failed to get influxDB container")
-        sys.exit(1)
-
-    influxdb_container.exec_run(f"mkdir -p {influxdb_backup_dir}")
-    query = f'from(bucket: \\"rtusystem\\") |> range(start: {backup_since})'
-
-    while True:
-        csv_file = f"{influxdb_backup_dir}/backup.csv"
-        csv_command = f"influx query '{query}' --raw > {csv_file}"
-        logging.info(f"Backing up infludb with command: {csv_command}")
-        exit_code, output = influxdb_container.exec_run(f'bash -c "{csv_command}"', demux=True)
-        if exit_code == 0:
-            logging.debug(f"CSV backup saved to {csv_file}")
-        else:
-            logging.error(f"Failed to create CSV backup: {output[1].decode()}")
-        time.sleep(backup_every)
-
 
 
 if __name__ == '__main__':
     if os.geteuid() != 0:
-        logging.error("The RAN Tester UE controller must be run as root. Exiting.")
+        logging.error("The RAN Tester UE controller must be run as root.")
         sys.exit(1)
 
     global process_list
@@ -184,11 +170,5 @@ if __name__ == '__main__':
     configure()
     global process_metadata
     process_metadata = start_subprocess_threads()
-
-    export_params = Config.options.get("data_export", False)
-
-    backup_metrics()
-    sys.exit(0)
-
-
-
+    while True:
+        time.sleep(1)
