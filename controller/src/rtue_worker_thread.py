@@ -45,6 +45,16 @@ class rtue:
         if not image_exists:
             raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
 
+        # Remove old container
+        try:
+            old_container = self.docker_client.containers.get(self.container_name)
+            old_container.remove(force=True)
+            logging.debug(f"Container '{self.container_name}' has been removed.")
+        except docker.errors.NotFound:
+            logging.debug(f"Container '{self.container_name}' does not exist.")
+        except Exception as e:
+            raise RuntimeError(f"Failed to remove old container: {e}")
+
         # Process RF
         uhd_images_dir = ""
         rf_config = process_config["rf"]
