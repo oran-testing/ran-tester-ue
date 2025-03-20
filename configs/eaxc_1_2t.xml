@@ -1,0 +1,84 @@
+<xml>
+    <eaxc-config version="1.0">
+        <antenna antenna-id="0">
+                        <eaxc-id type="downlink">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>0</ru-port-id>
+                        </eaxc-id>
+                        <eaxc-id type="uplink">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>0</ru-port-id>
+                        </eaxc-id>
+                        <eaxc-id type="prach">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>4</ru-port-id>
+                        </eaxc-id>
+                </antenna>
+        <antenna antenna-id="1">
+                        <eaxc-id type="downlink">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>1</ru-port-id>
+                        </eaxc-id>
+                        <eaxc-id type="uplink">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>1</ru-port-id>
+                        </eaxc-id>
+                        <eaxc-id type="prach">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>5</ru-port-id>
+                        </eaxc-id>
+                </antenna>
+        <antenna antenna-id="2">
+                        <eaxc-id type="downlink">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>2</ru-port-id>
+                        </eaxc-id>
+                        <eaxc-id type="uplink">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>2</ru-port-id>
+                        </eaxc-id>
+                        <eaxc-id type="prach">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>6</ru-port-id>
+                        </eaxc-id>
+                </antenna>
+        <antenna antenna-id="3">
+                        <eaxc-id type="downlink">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>3</ru-port-id>
+                        </eaxc-id>
+                        <eaxc-id type="uplink">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>3</ru-port-id>
+                        </eaxc-id>
+                        <eaxc-id type="prach">
+                                <du-port-id>0</du-port-id>
+                                <band-sector>0</band-sector>
+                                <cc-id>0</cc-id>
+                                <ru-port-id>7</ru-port-id>
+                        </eaxc-id>
+                </antenna>
+    </eaxc-config>
+</xml>
