@@ -82,7 +82,8 @@ class rtue:
                 volumes={
                     "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
                     uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
-                    "/tmp": {"bind": "/tmp", "mode": "rw"}
+                    "/tmp": {"bind": "/tmp", "mode": "rw"},
+                    self.ue_config: {"bind": "/ue.conf", "mode": "ro"}
                 },
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],

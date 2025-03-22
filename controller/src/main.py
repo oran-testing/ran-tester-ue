@@ -117,6 +117,21 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         if "config_file" not in process_config.keys():
             raise RuntimeError("config_file field required for each process")
 
+        process_config["config_file"] = os.path.join("/host", process_config["config_file"])
+        if not os.path.exists(process_config["config_file"]):
+            logging.warning(f"File {process_config['config_file']} not found searching root")
+            config_basename = process_config["config_file"].split("/")[-1]
+            found = False
+            for root, _, files in os.walk("/host"):
+                if config_basename in files:
+                    process_config["config_file"] = os.path.join(root, config_basename)
+                    logging.info(f"Found config file {process_config['config_file']}")
+                    found = True
+                    break
+            if not found:
+                raise RuntimeError(f"config file {process_config['config_file']} not found")
+
+
         if "depends_on" in process_config.keys():
             depends_on_list = list(process_config["depends_on"])
             for dependency in depends_on_list:
