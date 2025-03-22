@@ -17,12 +17,13 @@ class sniffer:
         self.docker_client = docker_client
 
 
-    def start(self, config="", args=[], process_id=""):
-        self.sniffer_config = config
+    def start(self, process_config):
 
-        self.container_name = process_id
-        self.image_name = "ghcr.io/oran-testing/sniffer"
+        self.sniffer_config = process_config["config_file"]
+        self.container_name = process_config["id"]
+        self.image_name = "ghcr.io/oran-testing/5g-sniffer"
 
+        # Verify Image
         image_exists = False
         for img in self.docker_client.images.list():
             image_tags = [image_tag.split(':')[0] for image_tag in img.tags]
@@ -32,9 +33,27 @@ class sniffer:
         if not image_exists:
             raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
 
+        # Remove old container
+        try:
+            old_container = self.docker_client.containers.get(self.container_name)
+            old_container.remove(force=True)
+            logging.debug(f"Container '{self.container_name}' has been removed.")
+        except docker.errors.NotFound:
+            logging.debug(f"Container '{self.container_name}' does not exist.")
+        except Exception as e:
+            raise RuntimeError(f"Failed to remove old container: {e}")
+
+        # Process RF
+        uhd_images_dir = ""
+        rf_config = process_config["rf"]
+        if rf_config["type"] == "b200":
+            uhd_images_dir = rf_config["images_dir"]
+        else:
+            raise RuntimeError(f"Invalid RF type for 5G sniffer: {rf_config['type']}")
+
         environment = {
             "CONFIG": self.sniffer_config,
-            "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
+            "UHD_IMAGES_DIR": uhd_images_dir
         }
 
         try:
@@ -45,7 +64,8 @@ class sniffer:
                 volumes={
                     "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
                     uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
-                    "/tmp": {"bind": "/tmp", "mode": "rw"}
+                    "/tmp": {"bind": "/tmp", "mode": "rw"},
+                    self.sniffer_config: {"bind": "/sniffer.toml", "mode": "ro"}
                 },
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],

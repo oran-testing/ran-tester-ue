@@ -117,7 +117,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         if "config_file" not in process_config.keys():
             raise RuntimeError("config_file field required for each process")
 
-        process_config["config_file"] = os.path.join("/host", process_config["config_file"])
+        process_config["config_file"] = os.path.join("/host",process_config["config_file"])
         if not os.path.exists(process_config["config_file"]):
             logging.warning(f"File {process_config['config_file']} not found searching root")
             config_basename = process_config["config_file"].split("/")[-1]
@@ -130,6 +130,8 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
                     break
             if not found:
                 raise RuntimeError(f"config file {process_config['config_file']} not found")
+        process_config["config_file"] = process_config["config_file"].replace("/host", os.getenv("CONFIGS_DIR"))
+        logging.debug(f"Filename on host {process_config['config_file']}")
 
 
         if "depends_on" in process_config.keys():
