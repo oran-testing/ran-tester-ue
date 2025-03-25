@@ -9,7 +9,7 @@ services:
       # Allow access to system level docker configuration
       - /root/.docker:/root/.docker
       # Allow access to all configurations under the current directory
-      - ${CONFIGS_DIR}:/host:ro
+      - ${DOCKER_SYSTEM_DIRECTORY}:/host:ro
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - CONFIG=${DOCKER_CONTROLLER_INIT_CONFIG:-configs/basic_ue_zmq.yaml}
