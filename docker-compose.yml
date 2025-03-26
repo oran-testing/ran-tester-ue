@@ -63,14 +63,21 @@ services:
     profiles:
      - system
 
+  components_base:
+    image: ghcr.io/oran-testing/components_base
+    build:
+      context: .
+      dockerfile: Dockerfile.components_base
+    profiles:
+      - components
 
   rtue:
     image: ghcr.io/oran-testing/rtue
     build:
       context: ./rtue
-      dockerfile: Dockerfile
-      args:
-        OS_VERSION: "24.04"
+      dockerfile: Dockerfile.alpine
+    depends_on:
+      - components_base
     privileged: true
     env_file:
       - .env
@@ -83,9 +90,8 @@ services:
     build:
       context: ./jammer
       dockerfile: Dockerfile.alpine
-      args:
-        OS_VERSION: "3.18"
-        UHD_IMAGES_DIR: ${UHD_IMAGES_DIR}
+    depends_on:
+      - components_base
     env_file:
       - .env
     profiles:
@@ -96,8 +102,8 @@ services:
     build:
       context: ./uu-agent
       dockerfile: Dockerfile.alpine
-      args:
-        OS_VERSION: "3.18"
+    depends_on:
+      - components_base
     env_file:
       - .env
     profiles:
@@ -107,7 +113,9 @@ services:
     image: ghcr.io/oran-testing/5g-sniffer
     build:
       context: ./5g-sniffer
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.alpine
+    depends_on:
+      - components_base
     env_file:
       .env
     profiles:
