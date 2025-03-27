@@ -130,7 +130,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
                     break
             if not found:
                 raise RuntimeError(f"config file {process_config['config_file']} not found")
-        process_config["config_file"] = process_config["config_file"].replace("/host", os.getenv("CONFIGS_DIR"))
+        process_config["config_file"] = process_config["config_file"].replace("/host", os.getenv("DOCKER_SYSTEM_DIRECTORY"))
         logging.debug(f"Filename on host {process_config['config_file']}")
 
 
