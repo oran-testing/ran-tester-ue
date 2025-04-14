@@ -17,12 +17,13 @@ class jammer:
         self.docker_client = docker_client
 
 
-    def start(self, config="", args=[], process_id=""):
-        self.jammer_config = config
+    def start(self, process_config):
+        self.jammer_config = process_config["config_file"]
+        self.container_name = process_config["id"]
 
-        self.container_name = process_id
         self.image_name = "ghcr.io/oran-testing/jammer"
 
+        # Verify Image
         image_exists = False
         for img in self.docker_client.images.list():
             image_tags = [image_tag.split(':')[0] for image_tag in img.tags]
@@ -32,21 +33,42 @@ class jammer:
         if not image_exists:
             raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
 
+        # Remove old container
+        try:
+            old_container = self.docker_client.containers.get(self.container_name)
+            old_container.remove(force=True)
+            logging.debug(f"Container '{self.container_name}' has been removed.")
+        except docker.errors.NotFound:
+            logging.debug(f"Container '{self.container_name}' does not exist.")
+        except Exception as e:
+            raise RuntimeError(f"Failed to remove old container: {e}")
 
-        environment = {
-            "CONFIG": self.jammer_config,
-            "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
-        }
+        # Process RF
+        uhd_images_dir = ""
+        rf_config = process_config["rf"]
+        if rf_config["type"] == "b200":
+            uhd_images_dir = rf_config["images_dir"]
+        else:
+            raise RuntimeError(f"Invalid RF type for rtUE: {rf_config['type']}")
+
 
         try:
+            environment = {
+                "CONFIG": self.jammer_config,
+                "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
+            }
+
+            self.network_name = "docker_metrics"
             self.docker_container = self.docker_client.containers.run(
+                network=self.network_name,
                 image=self.image_name,
                 name=self.container_name,
                 environment=environment,
                 volumes={
                     "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
                     uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
-                    "/tmp": {"bind": "/tmp", "mode": "rw"}
+                    "/tmp": {"bind": "/tmp", "mode": "rw"},
+                    self.jammer_config: {"bind": "/jammer.yaml", "mode": "ro"}
                 },
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],

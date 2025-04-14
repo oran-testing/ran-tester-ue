@@ -155,6 +155,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         except KeyError:
             raise RuntimeError(f"Invalid process type {process_config['type']}")
 
+        logging.debug("USING CONFIG: {process_config['config_file']}")
         process_handle = process_class(influxdb_client, Config.docker_client)
 
         process_metadata.append({
