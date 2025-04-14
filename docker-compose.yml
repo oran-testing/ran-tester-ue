@@ -1,0 +1,140 @@
+services:
+  controller:
+    image: ghcr.io/oran-testing/controller
+    volumes:
+      # Pass in the docker soket for starting rtue
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Allow results writing to host machine
+      - /tmp:/tmp
+      # Allow access to system level docker configuration
+      - /root/.docker:/root/.docker
+      # Allow access to all configurations under the current directory
+      - ${DOCKER_SYSTEM_DIRECTORY}:/host:ro
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - CONFIG=${DOCKER_CONTROLLER_INIT_CONFIG:-configs/basic_ue_zmq.yaml}
+    privileged: true
+    build:
+      context: controller
+    env_file:
+      - .env
+    depends_on:
+      - influxdb
+      - grafana
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.7
+    configs:
+      - controller.yml
+    profiles:
+     - system
+
+  influxdb:
+    container_name: influxdb
+    image: influxdb:${DOCKER_INFLUXDB_VERSION}
+    volumes:
+      - /tmp/:/tmp/host/
+      - influxdb-storage:/var/lib/influxdb2:rw
+    env_file:
+      - .env
+    ports:
+      - 8086:${DOCKER_INFLUXDB_INIT_PORT}
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.5
+    profiles:
+     - system
+
+  grafana:
+    image: rtu/grafana
+    build:
+      context: grafana
+    volumes:
+      - grafana-storage:/var/lib/grafana:rw
+    env_file:
+      - .env
+    depends_on:
+      - influxdb
+    ports:
+      - 3300:${GRAFANA_PORT}
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.6
+    profiles:
+     - system
+
+  components_base:
+    image: ghcr.io/oran-testing/components_base
+    build:
+      context: .
+      dockerfile: Dockerfile.components_base
+    profiles:
+      - components
+
+  rtue:
+    image: ghcr.io/oran-testing/rtue
+    build:
+      context: ./rtue
+      dockerfile: Dockerfile.alpine
+    depends_on:
+      - components_base
+    privileged: true
+    env_file:
+      - .env
+    profiles:
+      - components
+
+
+  jammer:
+    image: ghcr.io/oran-testing/jammer
+    build:
+      context: ./jammer
+      dockerfile: Dockerfile.alpine
+    depends_on:
+      - components_base
+    env_file:
+      - .env
+    profiles:
+      - components
+
+  uuagent:
+    image: ghcr.io/oran-testing/uu-agent
+    build:
+      context: ./uu-agent
+      dockerfile: Dockerfile.alpine
+    depends_on:
+      - components_base
+    env_file:
+      - .env
+    profiles:
+      - components
+
+  # NOTE: temporarily disable sniffer
+  #sniffer:
+  #  image: ghcr.io/oran-testing/5g-sniffer
+  #  build:
+  #    context: ./5g-sniffer
+  #    dockerfile: Dockerfile.alpine
+  #  depends_on:
+  #    - components_base
+  #  env_file:
+  #    .env
+  #  profiles:
+  #    - components
+
+configs:
+  controller.yml:
+    file: ${DOCKER_CONTROLLER_INIT_CONFIG:-configs/multi_ue_uhd.yaml}
+
+volumes:
+  ue-storage:
+  influxdb-storage:
+  grafana-storage:
+
+networks:
+  metrics:
+    name: docker_metrics
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.19.1.0/24
