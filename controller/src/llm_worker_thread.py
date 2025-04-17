@@ -11,7 +11,7 @@ from datetime import datetime
 from influxdb_client import InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-class configurator:
+class llm_config:
     def __init__(self, influxdb_client, docker_client):
         self.influxdb_client = influxdb_client
         self.docker_client = docker_client
@@ -19,6 +19,77 @@ class configurator:
 
     def start(self, process_config):
         # TODO: configure based on how the llm configurator works
+
+        # setting up
+        self.llm_config = process_config["config_file"]
+        self.container_name = process_config["id"]
+        self.llm_args = process_config["args"] if "args" in process_config.keys() else [""]
+        self.image_name = "ghcr.io/oran-testing/jammer" # change the image name
+
+       # Verify Image
+        image_exists = False
+        for img in self.docker_client.images.list():
+            image_tags = [image_tag.split(':')[0] for image_tag in img.tags]
+            if self.image_name in image_tags:
+                image_exists = True
+                break
+        if not image_exists:
+            raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
+
+        # Remove old container
+        try:
+            old_container = self.docker_client.containers.get(self.container_name)
+            old_container.remove(force=True)
+            logging.debug(f"Container '{self.container_name}' has been removed.")
+        except docker.errors.NotFound:
+            logging.debug(f"Container '{self.container_name}' does not exist.")
+        except Exception as e:
+            raise RuntimeError(f"Failed to remove old container: {e}")
+
+        # Process RF
+        uhd_images_dir = ""
+        rf_config = process_config["rf"]
+        if rf_config["type"] == "b200":
+            uhd_images_dir = rf_config["images_dir"]
+        else:
+            raise RuntimeError(f"Invalid RF type for llm: {rf_config['type']}")
+
+        # TODO
+        # Start Container
+        try:
+            environment = {
+                "CONFIG": self.llm_config,
+                "ARGS": " ".join(self.llm_args),
+                "UHD_IMAGES_DIR": uhd_images_dir
+            }
+
+
+            # self.network_name = "docker_metrics"
+            # self.docker_network = self.docker_client.networks.get(self.network_name)
+            # self.docker_container = self.docker_client.containers.run(
+            #     image=self.image_name,
+            #     name=self.container_name,
+            #     environment=environment,
+            #     volumes={
+            #         "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
+            #         uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
+            #         "/tmp": {"bind": "/tmp", "mode": "rw"},
+            #         self.ue_config: {"bind": "/ue.conf", "mode": "ro"}
+            #     },
+            #     privileged=True,
+            #     cap_add=["SYS_NICE", "SYS_PTRACE"],
+            #     network=self.network_name,
+            #     detach=True,
+            # )
+            self.docker_logs = self.docker_container.logs(stream=True, follow=True)
+
+        except docker.errors.APIError as e:
+            logging.error(f"Failed to start Docker container: {e}")
+            return
+
+        self.stop_thread = threading.Event()
+        self.log_thread = threading.Thread(target=self.log_report_thread, daemon=True)
+        self.log_thread.start()
 
 
     def stop(self):
