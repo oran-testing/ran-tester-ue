@@ -49,7 +49,7 @@ class jammer:
         if rf_config["type"] == "b200":
             uhd_images_dir = rf_config["images_dir"]
         else:
-            raise RuntimeError(f"Invalid RF type for rtUE: {rf_config['type']}")
+            raise RuntimeError(f"Invalid RF type for jammer: {rf_config['type']}")
 
 
         try:
