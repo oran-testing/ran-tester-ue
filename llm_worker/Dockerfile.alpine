@@ -14,13 +14,14 @@ RUN apt-get update \
 
 # Install Python packages without caching
 RUN pip install --upgrade pip \
- && pip install --no-cache-dir unsloth ollama \
- && pip install toml \
+ #&& pip install --no-cache-dir unsloth ollama \
+ #&& pip install toml \
  && pip install fastapi uvicorn requests \
  && rm -rf /root/.cache/pip
 
- 
+
 COPY app.py .
+COPY testapp.py .
 COPY finetune.py .
 COPY generatedataset.py .
 

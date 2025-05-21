@@ -215,6 +215,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         process_handle.start(process_config)
 
     return process_metadata
+# [Your existing imports... unchanged]
 
 def send_to_llm_worker():
     url = "http://llm_worker:8000/message"
@@ -229,7 +230,7 @@ def send_to_llm_worker():
     except Exception as e:
         print("Error contacting llm_worker:", e)
 
-
+# FastAPI receiver
 app = FastAPI()
 
 class Message(BaseModel):
@@ -242,9 +243,10 @@ async def receive_response(msg: Message):
     return {"status": "controller received"}
 
 def run_api():
+    print("[Controller] 🌐 Starting REST API on port 9000")
     uvicorn.run(app, host="0.0.0.0", port=9000)
 
-
+# [Your full main logic]
 if __name__ == '__main__':
 
     if os.geteuid() != 0:
@@ -258,12 +260,14 @@ if __name__ == '__main__':
     global process_metadata
     process_metadata = start_subprocess_threads()
 
-    # Start the REST API server in a daemon thread for receiving 1 response from llm_worker
+    # Start REST API server
     threading.Thread(target=run_api, daemon=True).start()
 
-    # Start the WebSocket server in a daemon thread
+    # Start WebSocket server
     threading.Thread(target=start_ws_thread, daemon=True).start()
 
+    # ⏳ Wait before sending
+    time.sleep(2)
     send_to_llm_worker()
 
     while True:

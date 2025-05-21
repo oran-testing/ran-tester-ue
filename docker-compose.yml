@@ -19,9 +19,11 @@ services:
     env_file:
       - .env
     depends_on:
-      # - influxdb
+      - influxdb
       # - grafana
       - llm_worker
+
+    
     networks:
       metrics:
         ipv4_address: 172.19.1.7
@@ -113,7 +115,7 @@ services:
       - components
 
   llm_worker:
-    image: llm_worker:finetuned  # use locally committed image
+    image: llm_worker:finetuned
     ports:
       - "8000:8000"
     deploy:
@@ -126,7 +128,17 @@ services:
     profiles:
       - components
       - system
-    command: python3 app.py
+    command: python3 testapp.py
+    extra_hosts:
+      - "controller:172.19.1.7"  # controller service IP from your Compose
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
+
 
 
       
