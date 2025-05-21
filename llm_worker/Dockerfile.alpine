@@ -1,0 +1,27 @@
+FROM python:3.10-slim
+
+ENV HF_HUB_DISABLE_PROGRESS_BAR=1
+WORKDIR /app
+ENV PATH="/root/.ollama/bin:${PATH}"
+
+# Install dependencies
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    curl \
+    build-essential \
+    vim-tiny \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages without caching
+RUN pip install --upgrade pip \
+ && pip install --no-cache-dir unsloth ollama \
+ && pip install toml \
+ && pip install fastapi uvicorn requests \
+ && rm -rf /root/.cache/pip
+
+ 
+COPY app.py .
+COPY finetune.py .
+COPY generatedataset.py .
+
+CMD ["sh", "-c", "exec python app.py"]

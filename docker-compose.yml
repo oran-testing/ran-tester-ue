@@ -19,13 +19,16 @@ services:
     env_file:
       - .env
     depends_on:
-      - influxdb
-      - grafana
+      # - influxdb
+      # - grafana
+      - llm_worker
     networks:
       metrics:
         ipv4_address: 172.19.1.7
     configs:
       - controller.yml
+    ports:
+      - "9000:9000"
     profiles:
      - system
 
@@ -45,23 +48,23 @@ services:
     profiles:
      - system
 
-  grafana:
-    image: rtu/grafana
-    build:
-      context: grafana
-    volumes:
-      - grafana-storage:/var/lib/grafana:rw
-    env_file:
-      - .env
-    depends_on:
-      - influxdb
-    ports:
-      - 3300:${GRAFANA_PORT}
-    networks:
-      metrics:
-        ipv4_address: 172.19.1.6
-    profiles:
-     - system
+  # grafana:
+  #   image: rtu/grafana
+  #   build:
+  #     context: grafana
+  #   volumes:
+  #     - grafana-storage:/var/lib/grafana:rw
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - influxdb
+  #   ports:
+  #     - 3300:${GRAFANA_PORT}
+  #   networks:
+  #     metrics:
+  #       ipv4_address: 172.19.1.6
+  #   profiles:
+  #    - system
 
   components_base:
     image: ghcr.io/oran-testing/components_base
@@ -109,6 +112,24 @@ services:
     profiles:
       - components
 
+  llm_worker:
+    image: llm_worker:finetuned  # use locally committed image
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    profiles:
+      - components
+      - system
+    command: python3 app.py
+
+
+      
   # NOTE: temporarily disable sniffer
   #sniffer:
   #  image: ghcr.io/oran-testing/5g-sniffer

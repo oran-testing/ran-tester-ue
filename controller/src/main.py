@@ -6,6 +6,7 @@ import sys
 import shutil
 import docker
 from datetime import datetime
+import websockets
 
 import uuid
 import argparse
@@ -15,7 +16,50 @@ import logging
 import signal
 from typing import List, Dict, Union, Optional, Any
 
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+import threading
+import requests
+import uvicorn
+import time
+
+
+
 from influxdb_client import InfluxDBClient, WriteApi
+
+
+async def ws_handler(ws, path):
+    """
+    Handles both text logs and binary file uploads.
+    Path will be '/llm' or '/jammer' depending on who connects. 
+    """
+    client = path.lstrip("/")  # e.g. "llm"
+    logging.info(f"[WS] {client} connected")
+
+    try:
+        async for msg in ws:
+            if isinstance(msg, bytes):
+                # Binary file received
+                fn = f"/tmp/{client}_llm_output.txt"
+                with open(fn, "wb") as f:
+                    f.write(msg)
+                logging.info(f"[WS] Saved binary file to {fn}")
+                await ws.send("FILE RECEIVED")
+            else:
+                # Text log line
+                logging.info(f"[WS] ←{client}: {msg}")
+                await ws.send("ACK")
+    except websockets.ConnectionClosed:
+        logging.info(f"[WS] {client} disconnected")
+
+async def ws_serve():
+    # listen on 0.0.0.0:8000, handle /llm and /jammer
+    await websockets.serve(ws_handler, "0.0.0.0", 8000)
+    await asyncio.Future()  # run forever
+
+def start_ws_thread():
+    asyncio.run(websockets.serve(ws_handler, "0.0.0.0", 8000))
 
 class Config:
     filename : str = ""
@@ -172,8 +216,37 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
 
     return process_metadata
 
+def send_to_llm_worker():
+    url = "http://llm_worker:8000/message"
+    payload = {
+        "sender": "controller",
+        "content": "Hello from controller"
+    }
+
+    try:
+        r = requests.post(url, json=payload)
+        print("Response from llm_worker:", r.json())
+    except Exception as e:
+        print("Error contacting llm_worker:", e)
+
+
+app = FastAPI()
+
+class Message(BaseModel):
+    sender: str
+    content: str
+
+@app.post("/from-worker")
+async def receive_response(msg: Message):
+    print(f"[Controller] Received from {msg.sender}: {msg.content}")
+    return {"status": "controller received"}
+
+def run_api():
+    uvicorn.run(app, host="0.0.0.0", port=9000)
+
 
 if __name__ == '__main__':
+
     if os.geteuid() != 0:
         logging.error("The RAN Tester UE controller must be run as root.")
         sys.exit(1)
@@ -184,5 +257,14 @@ if __name__ == '__main__':
     configure()
     global process_metadata
     process_metadata = start_subprocess_threads()
+
+    # Start the REST API server in a daemon thread for receiving 1 response from llm_worker
+    threading.Thread(target=run_api, daemon=True).start()
+
+    # Start the WebSocket server in a daemon thread
+    threading.Thread(target=start_ws_thread, daemon=True).start()
+
+    send_to_llm_worker()
+
     while True:
         time.sleep(1)
