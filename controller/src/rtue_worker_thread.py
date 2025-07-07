@@ -55,11 +55,21 @@ class rtue:
         except Exception as e:
             raise RuntimeError(f"Failed to remove old container: {e}")
 
+        container_volumes = {
+            "/tmp": {"bind": "/tmp", "mode": "rw"},
+            self.ue_config: {"bind": "/ue.conf", "mode": "ro"}
+        }
+
         # Process RF
+        zmq_network = None
         uhd_images_dir = ""
         rf_config = process_config["rf"]
         if rf_config["type"] == "b200":
             uhd_images_dir = rf_config["images_dir"]
+            container_volumes[uhd_images_dir] = {"bind": uhd_images_dir, "mode": "ro"}
+            container_volumes["/dev/bus/usb/"] = {"bind": "/dev/bus/usb/", "mode": "rw"}
+        elif rf_config["type"] == "zmq":
+            zmq_network = self.docker_client.networks.get("docker_zmq")
         else:
             raise RuntimeError(f"Invalid RF type for rtUE: {rf_config['type']}")
 
@@ -79,17 +89,14 @@ class rtue:
                 image=self.image_name,
                 name=self.container_name,
                 environment=environment,
-                volumes={
-                    "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
-                    uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
-                    "/tmp": {"bind": "/tmp", "mode": "rw"},
-                    self.ue_config: {"bind": "/ue.conf", "mode": "ro"}
-                },
+                volumes=container_volumes,
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],
                 network=self.network_name,
                 detach=True,
             )
+            if zmq_network:
+                zmq_network.connect(self.docker_container, ipv4_address="172.22.0.2")
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
 
         except docker.errors.APIError as e:

@@ -90,10 +90,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
     influxdb_org = os.getenv("DOCKER_INFLUXDB_INIT_ORG")
     influxdb_token = os.getenv("DOCKER_INFLUXDB_INIT_ADMIN_TOKEN")
 
-    logging.debug(f"DOCKER_INFLUXDB_INIT_HOST: {influxdb_host}")
-    logging.debug(f"DOCKER_INFLUXDB_INIT_PORT: {influxdb_port}")
-    logging.debug(f"DOCKER_INFLUXDB_INIT_ORG: {influxdb_org}")
-
     if not influxdb_host or not influxdb_port or not influxdb_org or not influxdb_token:
         raise RuntimeError("Influxdb environment is not complete! Ensure .env is configured and passed properly")
 
@@ -155,7 +151,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         except KeyError:
             raise RuntimeError(f"Invalid process type {process_config['type']}")
 
-        logging.debug("USING CONFIG: {process_config['config_file']}")
         process_handle = process_class(influxdb_client, Config.docker_client)
 
         process_metadata.append({

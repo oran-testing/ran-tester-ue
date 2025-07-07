@@ -24,6 +24,8 @@ services:
     networks:
       metrics:
         ipv4_address: 172.19.1.7
+      zmq:
+        ipv4_address: 172.22.0.99
     configs:
       - controller.yml
     profiles:
@@ -138,3 +140,10 @@ networks:
       driver: default
       config:
         - subnet: 172.19.1.0/24
+
+  zmq:
+    name: docker_zmq
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.22.0.0/24
