@@ -1,0 +1,7 @@
+torch
+bitsandbytes
+transformers
+accelerate
+scipy
+tqdm
+#scikit-optimize
