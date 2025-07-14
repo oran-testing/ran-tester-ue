@@ -18,10 +18,9 @@ services:
       context: controller
     env_file:
       - .env
-    depends_on:
+    # depends_on:
       # - influxdb
       # - grafana
-      - llm_worker
     networks:
       metrics:
         ipv4_address: 172.19.1.7
@@ -29,6 +28,7 @@ services:
       - controller.yml
     ports:
       - "9000:9000"
+      - "8000:8000"
     profiles:
      - system
 
@@ -112,26 +112,9 @@ services:
     profiles:
       - components
 
-  llm_worker:
-    image: llm_worker:finetuned  # use locally committed image
-    ports:
-      - "8000:8000"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    profiles:
-      - components
-      - system
-    command: python3 app.py
-
-
       
   # NOTE: temporarily disable sniffer
-  #sniffer:
+  # sniffer:
   #  image: ghcr.io/oran-testing/5g-sniffer
   #  build:
   #    context: ./5g-sniffer

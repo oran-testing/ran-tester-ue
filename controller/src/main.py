@@ -25,7 +25,6 @@ import uvicorn
 import time
 
 
-
 from influxdb_client import InfluxDBClient, WriteApi
 
 
