@@ -13,14 +13,16 @@ services:
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - CONFIG=${DOCKER_CONTROLLER_INIT_CONFIG:-configs/basic_ue_zmq.yaml}
+
     privileged: true
     build:
       context: controller
     env_file:
       - .env
-    # depends_on:
+    depends_on:
       # - influxdb
       # - grafana
+      - llm_worker
     networks:
       metrics:
         ipv4_address: 172.19.1.7
@@ -28,7 +30,6 @@ services:
       - controller.yml
     ports:
       - "9000:9000"
-      - "8000:8000"
     profiles:
      - system
 
@@ -47,7 +48,29 @@ services:
         ipv4_address: 172.19.1.5
     profiles:
      - system
-
+  llm_worker:
+    build:
+      context: ./llm_worker/
+      dockerfile: Dockerfile.alpine # Tells Docker to build using the llm_worker/Dockerfile
+    image: llm_image # This is the name of the image you will build locally with the Dockerfile
+    ports:
+      - "8000:8000" # Expose port 8000 for the FastAPI app
+    networks:
+      metrics:
+        ipv4_address: 172.19.1.8
+    # This is how the LLM container can find the controller container
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # To use GPUs, we need the deploy block
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    profiles:
+      - system
   # grafana:
   #   image: rtu/grafana
   #   build:

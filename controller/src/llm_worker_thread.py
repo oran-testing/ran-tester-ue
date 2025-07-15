@@ -19,7 +19,7 @@ class llm_config:
         self.container_name = process_config["id"]
         self.llm_args = process_config.get("args", [""])
         # This is the name of the image you will build locally with the Dockerfile
-        self.image_name = "llm-agent-env:latest"
+        self.image_name = "llm_image"
 
         # Verify the local image exists
         try:

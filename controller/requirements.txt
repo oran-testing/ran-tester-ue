@@ -6,3 +6,5 @@ influxdb-client==1.46.0
 docker==7.1.0
 mypy==1.13.0
 websockets==14.0
+fastapi
+uvicorn[standard]

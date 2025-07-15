@@ -27,39 +27,6 @@ import time
 
 from influxdb_client import InfluxDBClient, WriteApi
 
-
-async def ws_handler(ws, path):
-    """
-    Handles both text logs and binary file uploads.
-    Path will be '/llm' or '/jammer' depending on who connects. 
-    """
-    client = path.lstrip("/")  # e.g. "llm"
-    logging.info(f"[WS] {client} connected")
-
-    try:
-        async for msg in ws:
-            if isinstance(msg, bytes):
-                # Binary file received
-                fn = f"/tmp/{client}_llm_output.txt"
-                with open(fn, "wb") as f:
-                    f.write(msg)
-                logging.info(f"[WS] Saved binary file to {fn}")
-                await ws.send("FILE RECEIVED")
-            else:
-                # Text log line
-                logging.info(f"[WS] ←{client}: {msg}")
-                await ws.send("ACK")
-    except websockets.ConnectionClosed:
-        logging.info(f"[WS] {client} disconnected")
-
-async def ws_serve():
-    # listen on 0.0.0.0:8000, handle /llm and /jammer
-    await websockets.serve(ws_handler, "0.0.0.0", 8000)
-    await asyncio.Future()  # run forever
-
-def start_ws_thread():
-    asyncio.run(websockets.serve(ws_handler, "0.0.0.0", 8000))
-
 class Config:
     filename : str = ""
     options : Optional[Dict[str,Any]] = None
@@ -70,7 +37,7 @@ from rtue_worker_thread import rtue
 from jammer_worker_thread import jammer
 from sniffer_worker_thread import sniffer
 from decoder_worker_thread import decoder
-from llm_worker_thread import llm_config
+# from llm_worker_thread import llm_config
 from rach_worker_thread import rach_agent
 
 
@@ -154,6 +121,11 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
     process_metadata: List[Dict[str, Any]] = []
     process_ids = []
     for process_config in Config.options.get("processes", []):
+
+        if process_config.get("id") == "llm_worker":
+            logging.info("Controller is intentionally skipping the 'llm_worker' startup, as it's managed externally by Docker Compose.")
+            continue
+
         if "id" not in process_config.keys():
             raise RuntimeError("id field required for each process")
 
@@ -215,20 +187,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
 
     return process_metadata
 
-def send_to_llm_worker():
-    url = "http://llm_worker:8000/message"
-    payload = {
-        "sender": "controller",
-        "content": "Hello from controller"
-    }
-
-    try:
-        r = requests.post(url, json=payload)
-        print("Response from llm_worker:", r.json())
-    except Exception as e:
-        print("Error contacting llm_worker:", e)
-
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 app = FastAPI()
 
 class Message(BaseModel):
@@ -236,12 +195,29 @@ class Message(BaseModel):
     content: str
 
 @app.post("/from-worker")
-async def receive_response(msg: Message):
-    print(f"[Controller] Received from {msg.sender}: {msg.content}")
-    return {"status": "controller received"}
+async def receive_message_from_llm(msg: Message):
+    logging.info(f"SUCCESS! Message received from '{msg.sender}': '{msg.content}'")
+    # Here you can trigger other logic based on the message
+    send_command_to_llm_worker("start_tuning")
+    return {"status": "ok", "message": "Controller acknowledges message and has sent something back"}
 
 def run_api():
     uvicorn.run(app, host="0.0.0.0", port=9000)
+
+
+def send_command_to_llm_worker(command: str):
+    """
+    Sends a command to the LLM worker's API.
+    """
+    llm_worker_url = "http://llm_worker:8000/command"
+    logging.info(f"Sending command '{command}' to LLM worker at {llm_worker_url}")
+    try:
+        # We send the command as a simple string in the request body
+        response = requests.post(llm_worker_url, json=command, timeout=15)
+        response.raise_for_status()
+        logging.info(f"LLM worker replied: {response.json()}")
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to send command to LLM worker: {e}")
 
 
 if __name__ == '__main__':
@@ -256,14 +232,8 @@ if __name__ == '__main__':
     configure()
     global process_metadata
     process_metadata = start_subprocess_threads()
+    uvicorn.run(app, host="0.0.0.0", port=9000)
 
-    # Start the REST API server in a daemon thread for receiving 1 response from llm_worker
-    threading.Thread(target=run_api, daemon=True).start()
-
-    # Start the WebSocket server in a daemon thread
-    threading.Thread(target=start_ws_thread, daemon=True).start()
-
-    send_to_llm_worker()
 
     while True:
         time.sleep(1)

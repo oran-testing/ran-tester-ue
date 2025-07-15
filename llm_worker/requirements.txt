@@ -4,4 +4,6 @@ transformers
 accelerate
 scipy
 tqdm
+fastapi          
+uvicorn[standard]  
 #scikit-optimize

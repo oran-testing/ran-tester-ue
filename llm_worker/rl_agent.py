@@ -1,6 +1,9 @@
 # auto_tuner_agent.py (Optimized for High-VRAM GPU)
 import os
 import socket
+import time
+import requests
+import logging
 import torch
 import yaml
 import re
@@ -8,6 +11,11 @@ import random
 import argparse
 from tqdm import tqdm
 from itertools import product
+import threading
+import uvicorn
+from fastapi import FastAPI
+from pydantic import BaseModel
+
 from transformers import (
     AutoTokenizer, GenerationConfig,
     AutoModelForCausalLM
@@ -121,6 +129,55 @@ High-Level Goal: Jam a target at {freq:.4f} GHz
     avg_score = total_score / len(test_frequencies)
     print(f"--- [Worker] Run Complete. Final average score: {avg_score:.4f} ---")
     return avg_score
+
+app = FastAPI()
+@app.post("/command")
+async def receive_command(command: str):
+    """
+    Receives a command from the controller.
+    If the command is 'start_tuning', it starts the main_tuning_task in a new thread.
+    """
+    logging.info(f"Received command from controller: '{command}'")
+    
+    if command:
+
+        logging.info("Acknowledged received the following command: " + command)
+        # Start the main tuning logic in a non-blocking background thread
+        return {"status": "ok", "message": "Thanks for the command."}
+    else:
+        logging.warning(f"Unknown command: '{command}'")
+        return {"status": "error", "message": f"Unknown command: {command}"}
+
+
+
+logging.basicConfig(level=logging.INFO, format='%(name)s - %(levelname)s - %(message)s')
+
+def contact_controller(message: str):
+    # The controller's API is at http://controller:9000
+    # The name 'controller' works because they are in the same Docker network.
+    controller_url = "http://controller:9000/from-worker"
+    payload = { "sender": "llm_agent", "content": message }
+    
+    logging.info(f"LLM Agent is online. Attempting to contact controller at {controller_url}")
+    
+    # Retry connecting to the controller in case it's not ready yet
+    for i in range(10): # Retry for ~50 seconds
+        try:
+            response = requests.post(controller_url, json=payload, timeout=10)
+            response.raise_for_status()
+            logging.info(f"Successfully contacted controller. Response: {response.json()}")
+            return
+        except requests.exceptions.RequestException as e:
+            logging.warning(f"Could not contact controller (attempt {i+1}/10): {e}. Retrying in 5 seconds...")
+            time.sleep(5)
+    
+    logging.error("Failed to contact controller after multiple attempts. Exiting.")
+    exit(1)
+
+
+
+
+
 # ... (main function remains unchanged) ...
 def main():
     parser = argparse.ArgumentParser(description="Auto-Tuner for LLM Generation.")
@@ -175,29 +232,12 @@ def main():
     print(f"\nRECOMMENDED GENERATION HYPERPARAMETERS: {best_hps}")
 
 
-def wait_for_start_signal(port=8989):
-    """Binds to a TCP port and waits for the 'start' message."""
-    
-    host = '0.0.0.0' 
-    
-    print(f"[Auto-Tuner] Waiting for controller signal on {host}:{port}")
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        
-        server.bind((host, port))
-        
-        server.listen(1)
-        conn, addr = server.accept()
-        with conn:
-            print(f"[Auto-Tuner] Connection received from {addr}")
-            msg = conn.recv(1024).decode().strip()
-            print(f"[Auto-Tuner] Received command: '{msg}'")
-            if msg.lower() != "start":
-                print("[Auto-Tuner] Unexpected message, exiting.")
-                exit(1)
-    print("[Auto-Tuner] Start signal received. Proceeding with main execution.")
 
 
 if __name__ == "__main__":
-    wait_for_start_signal()
+    contact_controller("LLM Agent is online and ready for tasks.")
+        
+    logging.info("LLM worker now listening for commands on port 8000...")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
     main()
