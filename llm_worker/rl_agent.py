@@ -1,5 +1,4 @@
-# auto_tuner_agent.py (Optimized for High-VRAM GPU)
-import os
+# auto_tuner_agent.py (Optimized for High-VRAM GPU) import os
 import socket
 import time
 import requests
@@ -235,9 +234,8 @@ def main():
 
 
 if __name__ == "__main__":
-    contact_controller("LLM Agent is online and ready for tasks.")
-        
+    #contact_controller("LLM Agent is online and ready for tasks.")
     logging.info("LLM worker now listening for commands on port 8000...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    #uvicorn.run(app, host="0.0.0.0", port=8000)
 
     main()

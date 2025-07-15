@@ -13,7 +13,8 @@ import argparse
 import pathlib
 import yaml
 import logging
-import signal from typing import List, Dict, Union, Optional, Any
+import signal
+from typing import List, Dict, Union, Optional, Any
 
 from influxdb_client import InfluxDBClient, WriteApi
 
@@ -82,7 +83,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
     Starts any necessary subprocess threads using Config
     Returns a list of metadata for each thread
     """
-
     if Config.options is None:
         logging.error("Config is None: parsing failed... Exiting")
         sys.exit(1)
@@ -175,20 +175,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
 
     return process_metadata
 
-def send_command_to_llm_worker(command: str):
-    """
-    Sends a command to the LLM worker's API.
-    """
-    llm_worker_url = "http://llm_worker:8000/command"
-    logging.info(f"Sending command '{command}' to LLM worker at {llm_worker_url}")
-    try:
-        # We send the command as a simple string in the request body
-        response = requests.post(llm_worker_url, json=command, timeout=15)
-        response.raise_for_status()
-        logging.info(f"LLM worker replied: {response.json()}")
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to send command to LLM worker: {e}")
-
 
 if __name__ == '__main__':
 
@@ -202,7 +188,6 @@ if __name__ == '__main__':
     configure()
     global process_metadata
     process_metadata = start_subprocess_threads()
-    uvicorn.run(app, host="0.0.0.0", port=9000)
 
     while True:
         time.sleep(1)

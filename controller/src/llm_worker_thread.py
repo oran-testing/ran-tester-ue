@@ -50,23 +50,6 @@ class llm_worker:
                 "NVIDIA_DRIVER_CAPABILITIES": "all"
             }
 
-            # network_mode="host" is crucial for port communication via localhost
-            self.docker_container = self.docker_client.containers.run(
-                image=self.image_name,
-                name=self.container_name,
-                environment=environment,
-                volumes={
-                    "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
-                    uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
-                    "/tmp": {"bind": "/tmp", "mode": "rw"},
-                    self.llm_config: {"bind": "/llm.conf", "mode": "ro"}
-                },
-                privileged=True,
-                cap_add=["SYS_NICE", "SYS_PTRACE"],
-                network_mode="host",
-                detach=True
-            )
-
             device_requests = [
                 DeviceRequest(
                     count=-1,
@@ -82,7 +65,8 @@ class llm_worker:
                  name=self.container_name,
                  environment=environment,
                  volumes={
-                     self.llm_config: {"bind": "/llm.yaml", "mode": "ro"}
+                     self.llm_config: {"bind": "/llm.yaml", "mode": "ro"},
+                    f"{os.getenv('DOCKER_SYSTEM_DIRECTORY')}/.llm_worker_cache": {"bind": "/app/huggingface_cache", "mode": "rw"}
                  },
                  privileged=True,
                  cap_add=["SYS_NICE", "SYS_PTRACE"],

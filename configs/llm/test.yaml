@@ -1,1 +1,2 @@
 model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
+base_prompt: "run an attack that is a jammer and a sniffer and rtue, just basic configs"

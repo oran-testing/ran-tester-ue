@@ -22,4 +22,5 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . .
 
-ENTRYPOINT ["python3", "main.py", "--config", "/llm.yaml"]
+ENTRYPOINT ["python3", "main.py", "--config", "/llm.yaml", "--log-level", "INFO"]
+#ENTRYPOINT ["python3", "rl_agent.py"]

@@ -12,6 +12,10 @@ from typing import List, Dict, Union, Optional, Any
 import argparse
 import pathlib
 
+import requests
+
+from validator import ResponseValidator
+
 
 class Config:
     filename : str = ""
@@ -66,19 +70,52 @@ if __name__ == '__main__':
         sys.exit(1)
     logging.debug(f"DOCKER_CONTROLLER_API_IP: {control_ip}")
 
+    model_str = Config.options.get("model", None)
+    if not model_str:
+        logging.error("Model not specified")
+        sys.exit(1)
+
+    logging.info("="*20 + " LOADING BASE MODEL (HIGH PRECISION) " + "="*20)
+    logging.info(f"Using model: {model_str}")
+
     model = AutoModelForCausalLM.from_pretrained(
-        Config.options.get("model", ""),
+        model_str,
         torch_dtype=torch.bfloat16,
         device_map="auto"
     )
 
-    tokenizer = AutoTokenizer.from_pretrained(Config.options.get("model", ""))
+    tokenizer = AutoTokenizer.from_pretrained(model_str)
 
-    prompt = "make me a poem about a wizard"
-    outputs = model.generate(**inputs, max_new_tokens=100)
-    generated = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    logging.debug(generated)
+    logging.info("="*20 + " MODEL LOADED " + "="*20)
+
+    # TODO: explain using base prompt (from config)
+    base_prompt = Config.options.get("base_prompt", None)
+    if not base_prompt:
+        raise RuntimeError(f"base prompt not provided in {Config.filename}")
+
+    generation_config = GenerationConfig(
+        max_new_tokens=250,
+        pad_token_id=tokenizer.eos_token_id,
+        do_sample=True
+    )
+
+    logging.debug("="*20 + " EXECUTING PROMPT " + "="*20)
+
+    prompts = [base_prompt]
+    inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
+    output_tokens = model.generate(**inputs, generation_config=generation_config)
+    full_texts = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
+
+    # TODO: class that verifies configuration and gets other info (endpoint, data to send, what component etc)
+
+    logging.debug(full_texts)
 
     while True:
-        logging.debug("Finished...")
+        # TODO: loop over the following steps
+        # 1. get a message from the model
+        # 2. verify the information and config (if fails go back to 1)
+        # 3. send the message to controller endpoint
+        # 4. prompt model again with message error or success
+        endpoint_str, request_json = validator.process(response_str)
+        status = requests.post(endpoint_str, request_json)
         time.sleep(1)
