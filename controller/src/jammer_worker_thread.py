@@ -58,7 +58,7 @@ class jammer:
                 "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
             }
 
-            self.network_name = "docker_metrics"
+            self.network_name = "rt_metrics"
             self.docker_container = self.docker_client.containers.run(
                 network=self.network_name,
                 image=self.image_name,

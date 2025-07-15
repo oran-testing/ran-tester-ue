@@ -13,17 +13,7 @@ import argparse
 import pathlib
 import yaml
 import logging
-import signal
-from typing import List, Dict, Union, Optional, Any
-
-
-from fastapi import FastAPI
-from pydantic import BaseModel
-import threading
-import requests
-import uvicorn
-import time
-
+import signal from typing import List, Dict, Union, Optional, Any
 
 from influxdb_client import InfluxDBClient, WriteApi
 
@@ -37,9 +27,8 @@ from rtue_worker_thread import rtue
 from jammer_worker_thread import jammer
 from sniffer_worker_thread import sniffer
 from decoder_worker_thread import decoder
-# from llm_worker_thread import llm_config
+from llm_worker_thread import llm_worker
 from rach_worker_thread import rach_agent
-
 
 
 def handle_signal(signum, frame):
@@ -173,7 +162,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         except KeyError:
             raise RuntimeError(f"Invalid process type {process_config['type']}")
 
-        logging.debug("USING CONFIG: {process_config['config_file']}")
         process_handle = process_class(influxdb_client, Config.docker_client)
 
         process_metadata.append({
@@ -186,24 +174,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         process_handle.start(process_config)
 
     return process_metadata
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-app = FastAPI()
-
-class Message(BaseModel):
-    sender: str
-    content: str
-
-@app.post("/from-worker")
-async def receive_message_from_llm(msg: Message):
-    logging.info(f"SUCCESS! Message received from '{msg.sender}': '{msg.content}'")
-    # Here you can trigger other logic based on the message
-    send_command_to_llm_worker("start_tuning")
-    return {"status": "ok", "message": "Controller acknowledges message and has sent something back"}
-
-def run_api():
-    uvicorn.run(app, host="0.0.0.0", port=9000)
-
 
 def send_command_to_llm_worker(command: str):
     """
@@ -233,7 +203,6 @@ if __name__ == '__main__':
     global process_metadata
     process_metadata = start_subprocess_threads()
     uvicorn.run(app, host="0.0.0.0", port=9000)
-
 
     while True:
         time.sleep(1)

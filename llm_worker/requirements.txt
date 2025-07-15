@@ -1,9 +1,12 @@
+PyYAML==6.0.2
+pathlib==1.0.1
+argparse==1.4.0
+mypy==1.13.0
 torch
 bitsandbytes
 transformers
 accelerate
 scipy
 tqdm
-fastapi          
-uvicorn[standard]  
-#scikit-optimize
+fastapi
+uvicorn[standard]

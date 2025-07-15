@@ -19,13 +19,11 @@ services:
       context: controller
     env_file:
       - .env
-    depends_on:
-      # - influxdb
-      # - grafana
-      - llm_worker
     networks:
       metrics:
         ipv4_address: 172.19.1.7
+      control:
+        ipv4_address: ${DOCKER_CONTROLLER_API_IP:-172.20.1.7}
     configs:
       - controller.yml
     ports:
@@ -48,46 +46,24 @@ services:
         ipv4_address: 172.19.1.5
     profiles:
      - system
-  llm_worker:
-    build:
-      context: ./llm_worker/
-      dockerfile: Dockerfile.alpine # Tells Docker to build using the llm_worker/Dockerfile
-    image: llm_image # This is the name of the image you will build locally with the Dockerfile
-    ports:
-      - "8000:8000" # Expose port 8000 for the FastAPI app
-    networks:
-      metrics:
-        ipv4_address: 172.19.1.8
-    # This is how the LLM container can find the controller container
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    # To use GPUs, we need the deploy block
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    profiles:
+
+  grafana:
+     image: rtu/grafana
+     build:
+       context: grafana
+     volumes:
+       - grafana-storage:/var/lib/grafana:rw
+     env_file:
+       - .env
+     depends_on:
+       - influxdb
+     ports:
+       - 3300:${GRAFANA_PORT}
+     networks:
+       metrics:
+         ipv4_address: 172.19.1.6
+     profiles:
       - system
-  # grafana:
-  #   image: rtu/grafana
-  #   build:
-  #     context: grafana
-  #   volumes:
-  #     - grafana-storage:/var/lib/grafana:rw
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - influxdb
-  #   ports:
-  #     - 3300:${GRAFANA_PORT}
-  #   networks:
-  #     metrics:
-  #       ipv4_address: 172.19.1.6
-  #   profiles:
-  #    - system
 
   components_base:
     image: ghcr.io/oran-testing/components_base
@@ -135,19 +111,24 @@ services:
     profiles:
       - components
 
-      
-  # NOTE: temporarily disable sniffer
-  # sniffer:
-  #  image: ghcr.io/oran-testing/5g-sniffer
-  #  build:
-  #    context: ./5g-sniffer
-  #    dockerfile: Dockerfile.alpine
-  #  depends_on:
-  #    - components_base
-  #  env_file:
-  #    .env
-  #  profiles:
-  #    - components
+  llm_worker:
+    image: ghcr.io/oran-testing/llm_worker
+    env_file:
+      - .env
+    build:
+      context: ./llm_worker/
+      dockerfile: Dockerfile.alpine
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    profiles:
+      - components
 
 configs:
   controller.yml:
@@ -159,9 +140,17 @@ volumes:
   grafana-storage:
 
 networks:
+  default:
+    driver: bridge
   metrics:
-    name: docker_metrics
+    name: rt_metrics
     ipam:
       driver: default
       config:
         - subnet: 172.19.1.0/24
+  control:
+    name: rt_control
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.1.0/24

@@ -5,27 +5,32 @@ import socket
 import logging
 import docker
 from datetime import datetime
+
+from docker.types import DeviceRequest
 from influxdb_client import InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-class llm_config:
+class llm_worker:
     def __init__(self, influxdb_client, docker_client):
         self.influxdb_client = influxdb_client
         self.docker_client = docker_client
         self.docker_container = None
 
     def start(self, process_config):
+        # configuration
         self.llm_config = process_config["config_file"]
         self.container_name = process_config["id"]
-        self.llm_args = process_config.get("args", [""])
-        # This is the name of the image you will build locally with the Dockerfile
-        self.image_name = "llm_image"
+        self.image_name = "ghcr.io/oran-testing/llm_worker"
 
-        # Verify the local image exists
-        try:
-            self.docker_client.images.get(self.image_name)
-        except docker.errors.ImageNotFound:
-            raise RuntimeError(f"Docker image {self.image_name} not found. Build it first using the provided Dockerfile.")
+        # verify image
+        image_exists = False
+        for img in self.docker_client.images.list():
+            image_tags = [image_tag.split(':')[0] for image_tag in img.tags]
+            if self.image_name in image_tags:
+                image_exists = True
+                break
+        if not image_exists:
+            raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
 
         # Remove old container if it exists to ensure a clean start
         try:
@@ -37,19 +42,14 @@ class llm_config:
         except Exception as e:
             raise RuntimeError(f"Failed to remove old container: {e}")
 
-        rf_config = process_config["rf"]
-        if rf_config["type"] != "b200":
-            raise RuntimeError(f"Unsupported RF type: {rf_config['type']}")
-        uhd_images_dir = rf_config["images_dir"]
-
-        # Launch the container
         try:
             environment = {
                 "CONFIG": self.llm_config,
-                "ARGS": " ".join(self.llm_args),
-                "UHD_IMAGES_DIR": uhd_images_dir,
+                "CONTROL_IP": os.getenv("DOCKER_CONTROLLER_API_IP"),
+                "NVIDIA_VISIBLE_DEVICES": "all",
+                "NVIDIA_DRIVER_CAPABILITIES": "all"
             }
-            
+
             # network_mode="host" is crucial for port communication via localhost
             self.docker_container = self.docker_client.containers.run(
                 image=self.image_name,
@@ -67,11 +67,29 @@ class llm_config:
                 detach=True
             )
 
-            logging.info(f"[llm_worker] Container '{self.container_name}' started.")
-            time.sleep(5) 
+            device_requests = [
+                DeviceRequest(
+                    count=-1,
+                    capabilities=[["gpu"]],
+                    driver="nvidia"
+                )
+            ]
 
-            self.send_start_signal_to_llm("localhost", 8989)
-
+            self.network_name = "rt_control"
+            self.docker_network = self.docker_client.networks.get(self.network_name)
+            self.docker_container = self.docker_client.containers.run(
+                 image=self.image_name,
+                 name=self.container_name,
+                 environment=environment,
+                 volumes={
+                     self.llm_config: {"bind": "/llm.yaml", "mode": "ro"}
+                 },
+                 privileged=True,
+                 cap_add=["SYS_NICE", "SYS_PTRACE"],
+                 network=self.network_name,
+                 detach=True,
+                 device_requests=device_requests,
+            )
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
 
         except docker.errors.APIError as e:
