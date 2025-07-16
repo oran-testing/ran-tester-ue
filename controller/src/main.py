@@ -26,6 +26,7 @@ class Config:
     options : Optional[Dict[str,Any]] = None
     log_level : int = logging.DEBUG
     docker_client = None
+    influxdb_client : InfluxDBClient = None
 
 
 from rtue_worker_thread import rtue
@@ -103,7 +104,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
     if not influxdb_host or not influxdb_port or not influxdb_org or not influxdb_token:
         raise RuntimeError("Influxdb environment is not complete! Ensure .env is configured and passed properly")
 
-    influxdb_client = InfluxDBClient(
+    Config.influxdb_client = InfluxDBClient(
         f"http://{influxdb_host}:{influxdb_port}",
         org=influxdb_org,
         token=influxdb_token
@@ -159,6 +160,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         permissions = []
         if "permissions" in process_config.keys():
             permissions = process_config["permissions"]
+        process_config["permissions"] = permissions
 
         process_class = None
         try:
@@ -166,7 +168,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         except KeyError:
             raise RuntimeError(f"Invalid process type {process_config['type']}")
 
-        process_handle = process_class(influxdb_client, Config.docker_client)
+        process_handle = process_class(Config.influxdb_client, Config.docker_client)
         process_token = None
         if hasattr(process_handle, "get_token"):
             process_token = process_handle.get_token()
@@ -213,6 +215,10 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         self._set_headers(401)
         self.wfile.write(json.dumps({"error":"Unauthorized"}).encode("utf-8"))
 
+    def _send_nonexistent(self):
+        self._set_headers(404)
+        self.wfile.write(json.dumps({"error":"Endpoint not found"}).encode("utf-8"))
+
     def get_components(self):
         global process_metadata
         is_valid_token, perms = self._get_permissions()
@@ -233,9 +239,127 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         self._set_headers()
         self.wfile.write(json.dumps({"running": response_list}).encode("utf-8"))
 
+    def start_component(self):
+        global process_metadata
+        is_valid_token, perms = self._get_permissions()
+        if not is_valid_token:
+            self._send_unauthorized()
+            return
+
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        payload = {}
+        try:
+            payload = json.decode(post_data)
+        except json.JSONDecodeError:
+            self._set_headers(403)
+            self.wfile.write(json.dumps({"error":"malformed request"}).encode("utf-8"))
+            return
+
+        if "id" not in payload.keys() or "type" not in payload.keys() or "config_str" not in payload.keys():
+            self._set_headers(403)
+            self.wfile.write(json.dumps({"error":"Missing required fields"}).encode("utf-8"))
+            return
+
+        for process_config in process_metadata:
+            if process_config["id"] == payload["id"]:
+                self._set_headers(403)
+                self.wfile.write(json.dumps({"error":"ID conflict with existing component"}).encode("utf-8"))
+                return
+
+        if not os.is_dir("/host/.generated/")
+            os.mkdir("/host/.generated")
+
+        file_ext = "yaml"
+        if payload["type"] == "rtue":
+            file_ext = "conf"
+        elif payload["type"] == "sniffer":
+            file_ext = "toml"
+
+        config_file = f"/host/.generated/{payload["id"]}.{file_ext}"
+
+        with open(config_file, "w") as f:
+            f.write(payload["config_str"])
+
+        process_class = None
+        try:
+            process_class = globals()[payload["type"]]
+        except KeyError:
+            self._set_headers(403)
+            self.wfile.write(json.dumps({"error":f"Invalid process type {payload['type'}"}).encode("utf-8"))
+            return
+
+        process_handle = process_class(Config.influxdb_client, Config.docker_client)
+
+        new_process_config = {
+            "config_file": config_file,
+            "id": payload["id"],
+            "type": payload["type"],
+            "rf": {
+                "type": "b200",
+                "uhd_images_dir": "/usr/share/uhd/images/"
+            }
+        }
+
+        process_metadata.append({
+            'id': payload['id'],
+            'type': payload['type'],
+            'config': new_process_config,
+            'handle': process_handle,
+            'token': {None: []}
+        })
+        process_handle.start(new_process_config)
+
+        self._set_headers()
+        self.wfile.write(json.dumps({"msg":f"process started: {payload['id'}"}).encode("utf-8"))
+
+    def stop_component(self):
+        global process_metadata
+        is_valid_token, perms = self._get_permissions()
+        if not is_valid_token:
+            self._send_unauthorized()
+            return
+
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        payload = {}
+        try:
+            payload = json.decode(post_data)
+        except json.JSONDecodeError:
+            self._send_unauthorized()
+            return
+
+        if "id" not in payload.keys():
+            self._set_headers(403)
+            self.wfile.write(json.dumps({"error":"Missing required fields"}).encode("utf-8"))
+            return
+
+        for i, process_config in process_metadata.enumerate():
+            if process_config["id"] == payload["id"]:
+                if process_config["type"] not in perms:
+                    continue
+                process_config["handle"].stop()
+                self._set_headers()
+                self.wfile.write(json.dumps({"id":process_config["id"]}).encode("utf-8"))
+                process_metadata.remove(i)
+                return
+        self._set_headers(404)
+        self.wfile.write(json.dumps({"error":"Component with ID does not exist"}).encode("utf-8"))
+
+
     def do_GET(self):
-        if self.path.startswith("/components"):
+        if self.path.startswith("/list"):
             self.get_components()
+        else:
+            self._send_nonexistent
+
+    def do_POST(self):
+        if self.path.startswith("/start"):
+            self.start_component()
+        elif self.path.startswith("/stop"):
+            self.stop_component()
+        else:
+            self._send_nonexistent
 
 
 

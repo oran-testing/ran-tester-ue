@@ -3,7 +3,9 @@ from transformers import (
     AutoTokenizer, GenerationConfig,
     AutoModelForCausalLM
 )
+import urllib3
 import yaml
+import json
 import logging
 import time
 import os
@@ -55,67 +57,70 @@ def configure() -> None:
 if __name__ == '__main__':
 
     if os.geteuid() != 0:
-        logging.error("The LLM worker must be run as root.")
-        sys.exit(1)
+        raise RuntimeError("The LLM worker must be run as root.")
 
     if not torch.cuda.is_available():
-        logging.error("Pass GPU into container!!")
-        sys.exit(1)
-
-    configure()
+        raise RuntimeError("GPU is not passed into container!!!")
 
     control_ip = os.getenv("CONTROL_IP")
     if not control_ip:
-        logging.error("variable CONTROL_IP is not set, exiting...")
-        sys.exit(1)
-    logging.debug(f"DOCKER_CONTROLLER_API_IP: {control_ip}")
+        raise RuntimeError("CONTROL_IP is not set in environment")
+
+    control_token = os.getenv("CONTROL_TOKEN")
+    if not control_token:
+        raise RuntimeError("CONTROL_TOKEN is not set in environment")
+
+    control_port = os.getenv("CONTROL_PORT")
+    if not control_port:
+        raise RuntimeError("CONTROL_PORT is not set in environment")
+
+    try:
+        control_port = int(control_port)
+    except RuntimeError:
+        raise RuntimeError("control port is not an integer")
+
+    configure()
 
     model_str = Config.options.get("model", None)
     if not model_str:
         logging.error("Model not specified")
         sys.exit(1)
 
+    base_prompt = Config.options.get("base_prompt", None)
+    if not base_prompt:
+        raise RuntimeError(f"base prompt not provided in {Config.filename}")
+
+
+    # Configure and test model
     logging.info("="*20 + " LOADING BASE MODEL (HIGH PRECISION) " + "="*20)
     logging.info(f"Using model: {model_str}")
-
     model = AutoModelForCausalLM.from_pretrained(
         model_str,
         torch_dtype=torch.bfloat16,
         device_map="auto"
     )
-
     tokenizer = AutoTokenizer.from_pretrained(model_str)
 
     logging.info("="*20 + " MODEL LOADED " + "="*20)
-
-    # TODO: explain using base prompt (from config)
-    base_prompt = Config.options.get("base_prompt", None)
-    if not base_prompt:
-        raise RuntimeError(f"base prompt not provided in {Config.filename}")
-
     generation_config = GenerationConfig(
         max_new_tokens=250,
         pad_token_id=tokenizer.eos_token_id,
         do_sample=True
     )
-
     logging.debug("="*20 + " EXECUTING PROMPT " + "="*20)
-
 
     current_task = "Jam the network at 1.5 GHz"
     prompts = base_prompt + current_task
     inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
     output_tokens = model.generate(**inputs, generation_config=generation_config)
     response_str = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
+    logging.info("Response from model:", response_str[0])
 
-    # TODO: class that verifies configuration and gets other info (endpoint, data to send, what component etc)
-    while True:
-        time.sleep(1)
+    # Setup control API info
+    control_url = f"https://{control_ip}:{control_port}"
+    auth_header = f"Bearer {control_token}"
 
-    validator = ResponseValidator(response_str[0])
-    logging.debug("Response from model:", response_str[0])
-
-    logging.debug(response_str)
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
     while True:
@@ -125,30 +130,27 @@ if __name__ == '__main__':
         # 3. send the message to controller endpoint
         # 4. prompt model again with message error or success
 
+        current_endpoint = "/list"
+        headers = {
+            "Authorization": auth_header,
+            "Accept": "application/json",
+            "User-Agent": "llm_worker/1.0",
+        }
 
         try:
-            logging.info("Processing LLM response...")
-            logging.info("Validating configuration...")
+            response = requests.get(
+                url=f"{control_url}{current_endpoint}",
+                headers=headers,
+                verify=False
+            )
+            if response.status_code == 200:
+                data = response.json()
+                logging.info(json.dumps(data, indent=2))
+            else:
+                logging.error(f"Error: {response.status_code} - {response.text}")
 
-            validated_data = validator.process_response()
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Failed to commuicate with controller: {e}")
 
-            endpoint_type = validated_data.get("type")  # 'jammer' or 'sniffer'
-            request_json = validated_data
-            logging.info(f"Validated data: {validated_data}")
 
-        except Exception as e:
-            logging.error(f"Validation failed: {e}")
-            logging.error(f"Validation errors: {validator.errors}")
-            
-            error_details = "; ".join(validator.errors) if validator.errors else str(e)
-            next_prompt = base_prompt + f"Previous configuration was invalid: {error_details}. Please provide a corrected RF system configuration for: {current_task}"
 
-        logging.info("Generating next response...")
-        inputs = tokenizer(next_prompt, return_tensors="pt", padding=True, truncation=True).to(model.device)
-        output_tokens = model.generate(**inputs, generation_config=generation_config)
-        response_str = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
-        
-        validator = ResponseValidator(response_str[0])
-        
-        time.sleep(1)
-    

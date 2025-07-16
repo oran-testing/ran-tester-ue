@@ -73,7 +73,7 @@ class llm_worker:
                  environment=environment,
                  volumes={
                      self.llm_config: {"bind": "/llm.yaml", "mode": "ro"},
-                    f"{os.getenv('DOCKER_SYSTEM_DIRECTORY')}/.llm_worker_cache": {"bind": "/app/huggingface_cache", "mode": "rw"}
+                    f"{os.getenv('DOCKER_SYSTEM_DIRECTORY')}/.llm_worker_cache": {"bind": "/app/huggingface_cache", "mode": "rw"},
                  },
                  privileged=True,
                  cap_add=["SYS_NICE", "SYS_PTRACE"],
