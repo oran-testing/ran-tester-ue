@@ -14,6 +14,7 @@ import tomllib
 import configparser
 import os
 import re
+import json
 
 class ResponseValidator:
     """Validates and processes configuration responses for RF attack systems.
@@ -85,6 +86,93 @@ class ResponseValidator:
             return [self._normalize_config_values(item) 
                    for item in config]
         return self._convert_scientific_notation(config)
+
+    def _extract_type_and_id(self) -> tuple:
+        """Extract type and id from response text.
+        
+        Returns:
+            Tuple of (type, id) parsed from response, or (None, None) if not found
+        """
+        type_value = None
+        id_value = None
+        
+        # Look for type pattern in response
+        type_patterns = [
+            r'type:\s*["\']?([^"\'\s]+)["\']?',
+            r'type\s*=\s*["\']?([^"\'\s]+)["\']?',
+            r'- type:\s*["\']?([^"\'\s]+)["\']?'
+        ]
+        
+        for pattern in type_patterns:
+            match = re.search(pattern, self.response, re.IGNORECASE)
+            if match:
+                type_value = match.group(1)
+                break
+        
+        # Look for id pattern in response
+        id_patterns = [
+            r'id:\s*["\']?([^"\'\s]+)["\']?',
+            r'id\s*=\s*["\']?([^"\'\s]+)["\']?',
+            r'- id:\s*["\']?([^"\'\s]+)["\']?'
+        ]
+        
+        for pattern in id_patterns:
+            match = re.search(pattern, self.response, re.IGNORECASE)
+            if match:
+                id_value = match.group(1)
+                break
+        
+        return type_value, id_value
+
+    def _config_to_string(self, config: dict, endpoint: str) -> str:
+        """Convert configuration parameters to string format.
+        
+        Args:
+            config: Configuration dictionary
+            endpoint: The endpoint type ('jammer' or 'sniffer')
+            
+        Returns:
+            Configuration as formatted string
+        """
+        if endpoint == "jammer":
+            # Format jammer config as YAML-like string
+            lines = []
+            for key, value in config.items():
+                if isinstance(value, str):
+                    lines.append(f"{key}: \"{value}\"")
+                else:
+                    lines.append(f"{key}: {value}")
+            return "\n".join(lines)
+        
+        elif endpoint == "sniffer":
+            # Format sniffer config as TOML-like string
+            lines = []
+            
+            # Add sniffer section
+            if "sniffer" in config:
+                lines.append("[sniffer]")
+                for key, value in config["sniffer"].items():
+                    if isinstance(value, str):
+                        lines.append(f"{key} = \"{value}\"")
+                    else:
+                        lines.append(f"{key} = {value}")
+                lines.append("")
+            
+            # Add PDCCH sections
+            if "pdcch" in config:
+                for pdcch_config in config["pdcch"]:
+                    lines.append("[[pdcch]]")
+                    for key, value in pdcch_config.items():
+                        if isinstance(value, str):
+                            lines.append(f"{key} = \"{value}\"")
+                        else:
+                            lines.append(f"{key} = {value}")
+                    lines.append("")
+            
+            return "\n".join(lines)
+        
+        # Fallback to JSON string
+        return json.dumps(config, indent=2)
 
     def extract_config(self) -> dict:
         """Extract configuration from response text.
@@ -265,33 +353,48 @@ class ResponseValidator:
             endpoint: Target endpoint ('jammer'/'sniffer')
             
         Returns:
-            Structured JSON request dictionary
+            Structured JSON request dictionary in new format
             
         Raises:
-            ValueError: For unknown endpoint types
+            ValueError: For unknown endpoint types or missing type/id
         """
+        # Extract type and id from response
+        type_value, id_value = self._extract_type_and_id()
+        
+        if not type_value:
+            raise ValueError("Could not extract 'type' from response")
+        if not id_value:
+            raise ValueError("Could not extract 'id' from response")
+        
         if endpoint == "jammer":
-            return {
-                "endpoint": "jammer",
-                "parameters": {
-                    **config,
-                    "initial_phase": config.get("initial_phase", 0),
-                    "output_iq_file": config.get("output_iq_file", "output.fc32"),
-                    "write_iq": config.get("write_iq", False)
-                }
+            # Add default parameters for jammer
+            jammer_config = {
+                **config,
+                "initial_phase": config.get("initial_phase", 0),
+                "output_iq_file": config.get("output_iq_file", "output.fc32"),
+                "write_iq": config.get("write_iq", False)
             }
+            
+            return {
+                "type": type_value,
+                "id": id_value,
+                "config_file": self._config_to_string(jammer_config, "jammer")
+            }
+            
         elif endpoint == "sniffer":
             return {
-                "endpoint": "sniffer",
-                "parameters": config
+                "type": type_value, 
+                "id": id_value,
+                "config_file": self._config_to_string(config, "sniffer")
             }
+            
         raise ValueError(f"Unknown endpoint: {endpoint}")
 
     def process_response(self) -> dict:
         """Execute full validation pipeline.
         
         Returns:
-            Compiled JSON request
+            Compiled JSON request in new format
             
         Raises:
             ValueError: If any validation step fails
@@ -317,6 +420,9 @@ class ResponseValidator:
 
 if __name__ == "__main__":
     test_response = """
+    type: jammer
+    id: jammer_test_001
+    
     ### YAML Output:
     ```yaml
     amplitude: 0.9

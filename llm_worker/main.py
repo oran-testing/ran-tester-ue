@@ -101,14 +101,19 @@ if __name__ == '__main__':
 
     logging.debug("="*20 + " EXECUTING PROMPT " + "="*20)
 
-    prompts = [base_prompt]
+
+    current_task = "Jam the network at 1.5 GHz"
+    prompts = base_prompt + current_task
     inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
     output_tokens = model.generate(**inputs, generation_config=generation_config)
-    full_texts = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
+    response_str = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
 
     # TODO: class that verifies configuration and gets other info (endpoint, data to send, what component etc)
 
-    logging.debug(full_texts)
+    validator = ResponseValidator(response_str[0])
+    logging.debug("Response from model:", response_str[0])
+
+    logging.debug(response_str)
 
     while True:
         # TODO: loop over the following steps
@@ -116,6 +121,31 @@ if __name__ == '__main__':
         # 2. verify the information and config (if fails go back to 1)
         # 3. send the message to controller endpoint
         # 4. prompt model again with message error or success
-        endpoint_str, request_json = validator.process(response_str)
-        status = requests.post(endpoint_str, request_json)
+
+
+        try:
+            logging.info("Processing LLM response...")
+            logging.info("Validating configuration...")
+
+            validated_data = validator.process_response()
+
+            endpoint_type = validated_data.get("type")  # 'jammer' or 'sniffer'
+            request_json = validated_data
+            logging.info(f"Validated data: {validated_data}")
+
+        except Exception as e:
+            logging.error(f"Validation failed: {e}")
+            logging.error(f"Validation errors: {validator.errors}")
+            
+            error_details = "; ".join(validator.errors) if validator.errors else str(e)
+            next_prompt = base_prompt + f"Previous configuration was invalid: {error_details}. Please provide a corrected RF system configuration for: {current_task}"
+
+        logging.info("Generating next response...")
+        inputs = tokenizer(next_prompt, return_tensors="pt", padding=True, truncation=True).to(model.device)
+        output_tokens = model.generate(**inputs, generation_config=generation_config)
+        response_str = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
+        
+        validator = ResponseValidator(response_str[0])
+        
         time.sleep(1)
+    
