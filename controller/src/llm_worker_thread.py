@@ -4,6 +4,7 @@ import threading
 import socket
 import logging
 import docker
+import secrets
 from datetime import datetime
 
 from docker.types import DeviceRequest
@@ -15,6 +16,10 @@ class llm_worker:
         self.influxdb_client = influxdb_client
         self.docker_client = docker_client
         self.docker_container = None
+        self.access_token = secrets.token_urlsafe(32)
+
+    def get_token(self):
+        return self.access_token
 
     def start(self, process_config):
         # configuration
@@ -46,6 +51,8 @@ class llm_worker:
             environment = {
                 "CONFIG": self.llm_config,
                 "CONTROL_IP": os.getenv("DOCKER_CONTROLLER_API_IP"),
+                "CONTROL_PORT": os.getenv("DOCKER_CONTROLLER_API_PORT"),
+                "CONTROL_TOKEN": self.access_token,
                 "NVIDIA_VISIBLE_DEVICES": "all",
                 "NVIDIA_DRIVER_CAPABILITIES": "all"
             }

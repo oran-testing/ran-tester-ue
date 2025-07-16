@@ -1,12 +1,15 @@
 #!/usr/bin/python3
 
 import os
+import ssl
 import time
 import sys
 import shutil
 import docker
 from datetime import datetime
 import websockets
+import json
+import http.server
 
 import uuid
 import argparse
@@ -23,6 +26,7 @@ class Config:
     options : Optional[Dict[str,Any]] = None
     log_level : int = logging.DEBUG
     docker_client = None
+
 
 from rtue_worker_thread import rtue
 from jammer_worker_thread import jammer
@@ -111,10 +115,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
     process_ids = []
     for process_config in Config.options.get("processes", []):
 
-        if process_config.get("id") == "llm_worker":
-            logging.info("Controller is intentionally skipping the 'llm_worker' startup, as it's managed externally by Docker Compose.")
-            continue
-
         if "id" not in process_config.keys():
             raise RuntimeError("id field required for each process")
 
@@ -156,6 +156,10 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
             sleep_time = float(process_config["sleep_ms"])/1000.0
             time.sleep(sleep_time)
 
+        permissions = []
+        if "permissions" in process_config.keys():
+            permissions = process_config["permissions"]
+
         process_class = None
         try:
             process_class = globals()[process_config["type"]]
@@ -163,17 +167,71 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
             raise RuntimeError(f"Invalid process type {process_config['type']}")
 
         process_handle = process_class(influxdb_client, Config.docker_client)
+        process_token = None
+        if hasattr(process_handle, "get_token"):
+            process_token = process_handle.get_token()
 
         process_metadata.append({
             'id': process_config['id'],
             'type': process_config['type'],
             'config': process_config,
             'handle': process_handle,
+            'token': {process_token: permissions}
         })
 
         process_handle.start(process_config)
 
+    for obj in process_metadata:
+        logging.debug(f"{obj['id']} {obj['token']}")
     return process_metadata
+
+class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
+    def _get_permissions(self):
+        global process_list
+        is_valid_token = False
+        permissions = []
+        auth_header = self.headers.get("Authorization")
+        if not auth_header.startswith("Bearer "):
+            return False, []
+        token = auth_header.removeprefix("Bearer").strip()
+        for process_config in process_list:
+            is_valid_token = process_config["token"].keys()[0] == token
+            if is_valid_token:
+                permissions = process_config["token"][token]
+                break
+        return is_valid_token, permissions
+
+    def _set_headers(self, code=200):
+        self.send_response(code)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+
+    def _send_unauthorized(self):
+        self._set_headers(401)
+        self.wfile.write(json.dumps({"error":"Unauthorized"}).encode("utf-8"))
+
+    def get_components(self):
+        global process_list
+        is_valid_token, perms = self._get_permissions()
+        if not is_valid_token:
+            self._send_unauthorized()
+            return
+
+        response_json = {}
+        for process_config in process_list:
+            if process_config["type"] not in perms:
+                continue
+            response_json[process_config["id"]] = {
+                "type": process_config["type"],
+                "config": process_config["config_file"],
+            }
+        self._set_headers()
+        self.wfile.write(json.dumps({"running": response_json}).encode("utf-8"))
+
+    def do_GET(self):
+        if self.path.startswith("/components"):
+            self.get_components()
+
 
 
 if __name__ == '__main__':
@@ -182,6 +240,20 @@ if __name__ == '__main__':
         logging.error("The RAN Tester UE controller must be run as root.")
         sys.exit(1)
 
+    control_ip = os.getenv("DOCKER_CONTROLLER_API_IP", None)
+    if not control_ip:
+        raise RuntimeError("environment variable DOCKER_CONTROLLER_API_IP not set")
+        sys.exit(1)
+
+    control_port = os.getenv("DOCKER_CONTROLLER_API_PORT", None)
+    if not control_port:
+        raise RuntimeError("environment variable DOCKER_CONTROLLER_API_PORT not set")
+        sys.exit(1)
+    try:
+        control_port = int(control_port)
+    except RuntimeError:
+        raise RuntimeError("DOCKER_CONTROLLER_API_PORT is not a valid integer")
+
     global process_list
     process_list = []
 
@@ -189,5 +261,12 @@ if __name__ == '__main__':
     global process_metadata
     process_metadata = start_subprocess_threads()
 
-    while True:
-        time.sleep(1)
+    server = http.server.HTTPServer((control_ip, control_port), SystemControlHandler)
+
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(certfile="/server.pem", keyfile="/server.key")
+    server.socket = context.wrap_socket(server.socket, server_side=True)
+
+    logging.debug(f"control API setup on https://{control_ip}:{control_port}")
+
+    server.serve_forever()

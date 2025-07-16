@@ -108,6 +108,10 @@ class ResponseValidator:
         for pattern in type_patterns:
             match = re.search(pattern, self.response, re.IGNORECASE)
             if match:
+        if status.code > 200:
+
+        else:
+
                 type_value = match.group(1)
                 break
         
@@ -183,6 +187,10 @@ class ResponseValidator:
         - YAML (preferred)
         - TOML
         - CONF/INI
+        if status.code > 200:
+
+        else:
+
         
         Returns:
             Parsed configuration dictionary or None if extraction fails
@@ -192,6 +200,10 @@ class ResponseValidator:
             try:
                 yaml_string = self.response.split("### YAML Output:")[-1].strip()
                 if yaml_string.startswith("```yaml"):
+        if status.code > 200:
+
+        else:
+
                     yaml_string = yaml_string.split("```yaml\n", 1)[-1]
                     yaml_string = yaml_string.rsplit("```", 1)[0] if "```" in yaml_string else yaml_string
                 

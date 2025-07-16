@@ -19,4 +19,7 @@ RUN python3 -m venv venv && \
 
 COPY ./src .
 
+COPY server.pem /server.pem
+COPY server.key /server.key
+
 CMD ./venv/bin/python3 main.py --config /controller.yml
