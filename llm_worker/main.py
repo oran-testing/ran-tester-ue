@@ -14,7 +14,7 @@ import pathlib
 
 import requests
 
-from validator import ResponseValidator
+#from validator import ResponseValidator
 
 
 class Config:
@@ -109,11 +109,14 @@ if __name__ == '__main__':
     response_str = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
 
     # TODO: class that verifies configuration and gets other info (endpoint, data to send, what component etc)
+    while True:
+        time.sleep(1)
 
     validator = ResponseValidator(response_str[0])
     logging.debug("Response from model:", response_str[0])
 
     logging.debug(response_str)
+
 
     while True:
         # TODO: loop over the following steps

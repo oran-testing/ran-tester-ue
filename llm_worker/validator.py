@@ -107,11 +107,9 @@ class ResponseValidator:
         
         for pattern in type_patterns:
             match = re.search(pattern, self.response, re.IGNORECASE)
-            if match:
         if status.code > 200:
-
+            print("HERE")
         else:
-
                 type_value = match.group(1)
                 break
         
@@ -199,13 +197,11 @@ class ResponseValidator:
         if "### YAML Output:" in self.response:    
             try:
                 yaml_string = self.response.split("### YAML Output:")[-1].strip()
-                if yaml_string.startswith("```yaml"):
-        if status.code > 200:
+            if status.code > 200:
 
-        else:
-
-                    yaml_string = yaml_string.split("```yaml\n", 1)[-1]
-                    yaml_string = yaml_string.rsplit("```", 1)[0] if "```" in yaml_string else yaml_string
+            else:
+                yaml_string = yaml_string.split("```yaml\n", 1)[-1]
+                yaml_string = yaml_string.rsplit("```", 1)[0] if "```" in yaml_string else yaml_string
                 
                 config = yaml.safe_load(yaml_string)
                 return self._normalize_config_values(config) if isinstance(config, dict) else None

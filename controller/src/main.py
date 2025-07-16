@@ -187,17 +187,20 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
 
 class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
     def _get_permissions(self):
-        global process_list
+        global process_metadata
         is_valid_token = False
         permissions = []
         auth_header = self.headers.get("Authorization")
         if not auth_header.startswith("Bearer "):
             return False, []
         token = auth_header.removeprefix("Bearer").strip()
-        for process_config in process_list:
-            is_valid_token = process_config["token"].keys()[0] == token
+        for process_config in process_metadata:
+            for existing_tok in process_config["token"].keys():
+                is_valid_token = existing_tok == token
+                if is_valid_token:
+                    permissions = process_config["token"][token]
+                    break
             if is_valid_token:
-                permissions = process_config["token"][token]
                 break
         return is_valid_token, permissions
 
@@ -211,22 +214,24 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps({"error":"Unauthorized"}).encode("utf-8"))
 
     def get_components(self):
-        global process_list
+        global process_metadata
         is_valid_token, perms = self._get_permissions()
         if not is_valid_token:
             self._send_unauthorized()
             return
 
-        response_json = {}
-        for process_config in process_list:
+        response_list = []
+        for process_config in process_metadata:
             if process_config["type"] not in perms:
                 continue
-            response_json[process_config["id"]] = {
+            response_list.append({
+                "id": process_config["id"],
                 "type": process_config["type"],
-                "config": process_config["config_file"],
-            }
+                "config_file": process_config["config"]["config_file"],
+                "permissions": process_config["config"]["permissions"]
+            })
         self._set_headers()
-        self.wfile.write(json.dumps({"running": response_json}).encode("utf-8"))
+        self.wfile.write(json.dumps({"running": response_list}).encode("utf-8"))
 
     def do_GET(self):
         if self.path.startswith("/components"):

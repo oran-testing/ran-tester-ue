@@ -6,3 +6,4 @@ processes:
       - sniffer
       - jammer
       - rtue
+      - llm_worker
