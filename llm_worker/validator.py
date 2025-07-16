@@ -58,13 +58,15 @@ class ResponseValidator:
                 try:
                     return float(value)
                 except ValueError:
-                    pass
+                    self.errors.append(f"Failed to convert scientific notation: {value}")
+                    return value
             
             # Fallback to regular number conversion
             try:
                 return float(value) if '.' in value else int(value)
             except ValueError:
-                pass
+                self.errors.append(f"Failed to convert to number: {value}")
+                return value
         
         return value
 
@@ -245,6 +247,7 @@ class ResponseValidator:
             Endpoint type ('jammer'/'sniffer') or None if undetermined
         """
         if not config:
+            self.errors.append("Empty configuration provided")
             return None
             
         # Jammer identification criteria
@@ -256,6 +259,7 @@ class ResponseValidator:
         if "sniffer" in config or "pdcch" in config:
             return "sniffer"
             
+        self.errors.append("Could not determine endpoint type from configuration")
         return None
 
     def validate_config_jammer(self, config: dict) -> bool:
@@ -267,6 +271,7 @@ class ResponseValidator:
         Returns:
             True if validation passes, False otherwise
         """
+        valid = True
         required_keys = {
             "center_frequency": (int, float),
             "bandwidth": (int, float),
@@ -281,25 +286,25 @@ class ResponseValidator:
         for key, types in required_keys.items():
             if key not in config:
                 self.errors.append(f"Missing required parameter: {key}")
-                return False
-            if not isinstance(config[key], types):
-                self.errors.append(f"Invalid type for {key}. Expected {types}")
-                return False
+                valid = False
+            elif not isinstance(config[key], types):
+                self.errors.append(f"Invalid type for {key}. Expected {types}, got {type(config[key])}")
+                valid = False
         
         # Validate parameter value ranges
-        if config["center_frequency"] <= 0:
+        if "center_frequency" in config and config["center_frequency"] <= 0:
             self.errors.append("Center frequency must be > 0")
-            return False
+            valid = False
             
-        if config["bandwidth"] <= 0:
+        if "bandwidth" in config and config["bandwidth"] <= 0:
             self.errors.append("Bandwidth must be > 0")
-            return False
+            valid = False
             
-        if not (0 <= config["amplitude"] <= 1):
-            self.errors.append("Amplitude must be 0-1")
-            return False
+        if "amplitude" in config and not (0 <= config["amplitude"] <= 1):
+            self.errors.append("Amplitude must be between 0 and 1")
+            valid = False
             
-        return True
+        return valid
 
     def validate_config_sniffer(self, config: dict) -> bool:
         """Validate sniffer configuration parameters.
@@ -310,9 +315,12 @@ class ResponseValidator:
         Returns:
             True if validation passes, False otherwise
         """
+        valid = True
+        
         if "sniffer" not in config:
             self.errors.append("Missing [sniffer] section")
-            return False
+            valid = False
+            return valid
             
         sniffer_config = config["sniffer"]
         
@@ -328,22 +336,22 @@ class ResponseValidator:
         for param, param_type in required_sniffer_params.items():
             if param not in sniffer_config:
                 self.errors.append(f"Missing sniffer parameter: {param}")
-                return False
-            if not isinstance(sniffer_config[param], param_type):
-                self.errors.append(f"Invalid type for sniffer.{param}")
-                return False
+                valid = False
+            elif not isinstance(sniffer_config[param], param_type):
+                self.errors.append(f"Invalid type for sniffer.{param}. Expected {param_type}, got {type(sniffer_config[param])}")
+                valid = False
         
         # Validate PDCCH configurations
         if "pdcch" not in config:
             self.errors.append("Missing [[pdcch]] section")
-            return False
+            valid = False
+        else:
+            pdcch_configs = config["pdcch"]
+            if not isinstance(pdcch_configs, list) or not pdcch_configs:
+                self.errors.append("PDCCH config must be a non-empty list")
+                valid = False
             
-        pdcch_configs = config["pdcch"]
-        if not isinstance(pdcch_configs, list) or not pdcch_configs:
-            self.errors.append("PDCCH config must be non-empty list")
-            return False
-            
-        return True
+        return valid
 
     def compile_to_json(self, config: dict, endpoint: str) -> dict:
         """Compile validated config to JSON request format.
@@ -355,90 +363,75 @@ class ResponseValidator:
         Returns:
             Structured JSON request dictionary in new format
             
-        Raises:
-            ValueError: For unknown endpoint types or missing type/id
+        Returns None if compilation fails
         """
         # Extract type and id from response
         type_value, id_value = self._extract_type_and_id()
         
         if not type_value:
-            raise ValueError("Could not extract 'type' from response")
+            self.errors.append("Could not extract 'type' from response")
+            return None
         if not id_value:
-            raise ValueError("Could not extract 'id' from response")
+            self.errors.append("Could not extract 'id' from response")
+            return None
         
-        if endpoint == "jammer":
-            # Add default parameters for jammer
-            jammer_config = {
-                **config,
-                "initial_phase": config.get("initial_phase", 0),
-                "output_iq_file": config.get("output_iq_file", "output.fc32"),
-                "write_iq": config.get("write_iq", False)
-            }
+        try:
+            if endpoint == "jammer":
+                # Add default parameters for jammer
+                jammer_config = {
+                    **config,
+                    "initial_phase": config.get("initial_phase", 0),
+                    "output_iq_file": config.get("output_iq_file", "output.fc32"),
+                    "write_iq": config.get("write_iq", False)
+                }
+                
+                return {
+                    "type": type_value,
+                    "id": id_value,
+                    "config_file": self._config_to_string(jammer_config, "jammer")
+                }
+                
+            elif endpoint == "sniffer":
+                return {
+                    "type": type_value, 
+                    "id": id_value,
+                    "config_file": self._config_to_string(config, "sniffer")
+                }
             
-            return {
-                "type": type_value,
-                "id": id_value,
-                "config_file": self._config_to_string(jammer_config, "jammer")
-            }
-            
-        elif endpoint == "sniffer":
-            return {
-                "type": type_value, 
-                "id": id_value,
-                "config_file": self._config_to_string(config, "sniffer")
-            }
-            
-        raise ValueError(f"Unknown endpoint: {endpoint}")
+            self.errors.append(f"Unknown endpoint: {endpoint}")
+            return None
+        except Exception as e:
+            self.errors.append(f"Failed to compile config: {str(e)}")
+            return None
 
     def process_response(self) -> dict:
         """Execute full validation pipeline.
         
         Returns:
-            Compiled JSON request in new format
-            
-        Raises:
-            ValueError: If any validation step fails
+            Compiled JSON request in new format if successful, None otherwise
+            All errors are collected in self.errors
         """
+        self.errors = []  # Reset errors at start of processing
+        
         config = self.extract_config()
         if not config:
-            raise ValueError("No valid configuration found")
+            self.errors.append("No valid configuration found")
+            return None
             
         endpoint = self.determine_endpoint(config)
         if not endpoint:
-            raise ValueError("Could not determine endpoint")
+            self.errors.append("Could not determine endpoint type")
+            return None
             
+        validation_success = False
         if endpoint == "jammer":
-            if not self.validate_config_jammer(config):
-                raise ValueError("Jammer validation failed")
+            validation_success = self.validate_config_jammer(config)
         elif endpoint == "sniffer":
-            if not self.validate_config_sniffer(config):
-                raise ValueError("Sniffer validation failed")
-                
+            validation_success = self.validate_config_sniffer(config)
+            
+        if not validation_success:
+            self.errors.append(f"{endpoint.capitalize()} validation failed")
+            return None
+            
         self.validated_data = self.compile_to_json(config, endpoint)
         return self.validated_data
-
-
-if __name__ == "__main__":
-    test_response = """
-    type: jammer
-    id: jammer_test_001
-    
-    ### YAML Output:
-    ```yaml
-    amplitude: 0.9
-    amplitude_width: 0.1
-    center_frequency: "9.15e8"
-    bandwidth: "1e7"
-    tx_gain: 55
-    sampling_freq: "2e7"
-    num_samples: 20000
-    ```
-    """
-    
-    validator = ResponseValidator(test_response)
-    try:
-        result = validator.process_response()
-        print("Validation successful:", result)
-    except ValueError as e:
-        print("Validation failed:", e)
-        print("Details:", validator.errors)
