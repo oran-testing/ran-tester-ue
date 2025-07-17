@@ -111,6 +111,97 @@ sniffer_prompt: |
     AL_corr_thresholds = [1.0, 0.6, 0.6, 1.0, 1.0]
     num_candidates_per_AL = [2, 4, 4, 2, 0]
 
+
+rtue_prompt: |
+    ### **RT-UE (Real-Time User Equipment) Specific Configuration**
+    - **Format:** TOML
+    - **Process Manifest Requirements:**
+        - `type`: Must be "rtue"
+        - `id`: Follows pattern `rtue_[purpose]_[sequence]` (e.g., `rtue_testing_001`)
+
+    **Key Configuration Parameters (Sections):**
+    - `[rf]`:
+        - `srate`: (Float) Sample rate in Hz (e.g., 23.04e6)
+        - `tx_gain`: (Integer) Transmission gain in dB
+        - `rx_gain`: (Integer) Reception gain in dB
+    - `[rat.nr]`:
+        - `bands`: (List[Integer]) NR bands to enable (e.g., [3])
+        - `nof_prb`: (Integer) Number of Physical Resource Blocks
+    - `[usim]`:
+        - `imsi`: (String) International Mobile Subscriber Identity
+        - `k`: (String) Secret Key (can be defaulted if not provided)
+        - `opc`: (String) Operator Variant Algorithm Configuration Field (can be defaulted if not provided)
+    - `[nas]`:
+        - `apn`: (String) Access Point Name
+
+    **Defaults for Optional Parameters:**
+    - Most parameters have sensible defaults for a standard test setup. The model should generate a complete configuration file. Key defaults include:
+        - `[rf] device_name`: "uhd"
+        - `[pcap] enable`: "none"
+        - `[log] all_level`: "info"
+        - `[rrc] release`: 15
+        - `[gui] enable`: false
+
+    **User Request:** "Configure a user equipment for general testing on a 5G network. Use IMSI 001010123456789 and connect to the 'srsapn' access point."
+
+    ### Example TOML Output for RT-UE:
+    [rf]
+    freq_offset = 0
+    tx_gain = 50
+    rx_gain = 40
+    srate = 23.04e6
+    nof_antennas = 1
+    device_name = "uhd"
+    device_args = "clock=internal"
+    time_adv_nsamples = 300
+
+    [rat.eutra]
+    dl_earfcn = 2850
+    nof_carriers = 0
+
+    [rat.nr]
+    bands = [3]
+    nof_carriers = 1
+    max_nof_prb = 106
+    nof_prb = 106
+
+    [pcap]
+    enable = "none"
+    mac_filename = "/tmp/ue_mac.pcap"
+    mac_nr_filename = "/tmp/ue_mac_nr.pcap"
+    nas_filename = "/tmp/ue_nas.pcap"
+
+    [log]
+    all_level = "info"
+    phy_lib_level = "none"
+    all_hex_limit = 32
+    filename = "/tmp/ue.log"
+    file_max_size = -1
+
+    [usim]
+    mode = "soft"
+    algo = "milenage"
+    opc  = "63BFA50EE6523365FF14C1F45F88737D"
+    k    = "00112233445566778899aabbccddeeff"
+    imsi = "001010123456789"
+    imei = "353490069873319"
+
+    [rrc]
+    release = 15
+    ue_category = 4
+
+    [nas]
+    apn = "srsapn"
+    apn_protocol = "ipv4"
+
+    [gw]
+    #netns = ue1
+    #ip_devname = tun_srsue
+    #ip_netmask = 255.255.255.0
+
+    [gui]
+    enable = false
+
     
 user_prompt: |
   ### **User Request**
