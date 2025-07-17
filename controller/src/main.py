@@ -250,43 +250,52 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         post_data = self.rfile.read(content_length)
         payload = {}
         try:
-            payload = json.decode(post_data)
+            payload = json.loads(post_data)
         except json.JSONDecodeError:
             self._set_headers(403)
             self.wfile.write(json.dumps({"error":"malformed request"}).encode("utf-8"))
             return
 
-        if "id" not in payload.keys() or "type" not in payload.keys() or "config_str" not in payload.keys():
-            self._set_headers(403)
-            self.wfile.write(json.dumps({"error":"Missing required fields"}).encode("utf-8"))
-            return
-
-        for process_config in process_metadata:
-            if process_config["id"] == payload["id"]:
-                self._set_headers(403)
-                self.wfile.write(json.dumps({"error":"ID conflict with existing component"}).encode("utf-8"))
+        logging.debug(f"{payload.keys()}")
+        if not all(k in payload for k in ("id", "type", "config_str", "rf")):
+                self._set_headers(400)
+                self.wfile.write(json.dumps({"error": "Missing required fields: id, type, config_str"}).encode("utf-8"))
                 return
 
-        if not os.is_dir("/host/.generated/")
-            os.mkdir("/host/.generated")
+        if not all(k in payload["rf"] for k in ("images_dir", "type")):
+                self._set_headers(400)
+                self.wfile.write(json.dumps({"error": "Missing required fields for rf: type, images_dir"}).encode("utf-8"))
+                return
 
-        file_ext = "yaml"
-        if payload["type"] == "rtue":
-            file_ext = "conf"
-        elif payload["type"] == "sniffer":
-            file_ext = "toml"
+        if any(p["id"] == payload["id"] for p in process_metadata):
+                self._set_headers(409)
+                self.wfile.write(json.dumps({"error": "ID conflict with existing component"}).encode("utf-8"))
+                return
 
-        config_file = f"/host/.generated/{payload["id"]}.{file_ext}"
+        if not os.path.isdir("/host/.generated/"):
+            os.makedirs("/host/.generated", exist_ok=True)
 
-        with open(config_file, "w") as f:
-            f.write(payload["config_str"])
+        file_ext = {
+            "rtue": "conf",
+            "sniffer": "toml"
+        }.get(payload["type"], "yaml")
+
+        config_file = f"/host/.generated/{payload['id']}.{file_ext}"
+
+        try:
+            with open(config_file, "w") as f:
+                f.write(payload["config_str"])
+        except IOError as e:
+            self._set_headers(500)
+            self.wfile.write(json.dumps({"error":f"Failed to write config to file {config_file}"}))
+            return
 
         process_class = None
         try:
             process_class = globals()[payload["type"]]
         except KeyError:
             self._set_headers(403)
-            self.wfile.write(json.dumps({"error":f"Invalid process type {payload['type'}"}).encode("utf-8"))
+            self.wfile.write(json.dumps({"error":f"Invalid process type {payload['type']}"}).encode("utf-8"))
             return
 
         process_handle = process_class(Config.influxdb_client, Config.docker_client)
@@ -295,10 +304,8 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
             "config_file": config_file,
             "id": payload["id"],
             "type": payload["type"],
-            "rf": {
-                "type": "b200",
-                "uhd_images_dir": "/usr/share/uhd/images/"
-            }
+            "rf": payload["rf"],
+            "permissions": [],
         }
 
         process_metadata.append({
@@ -311,7 +318,7 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         process_handle.start(new_process_config)
 
         self._set_headers()
-        self.wfile.write(json.dumps({"msg":f"process started: {payload['id'}"}).encode("utf-8"))
+        self.wfile.write(json.dumps({"msg":f"process started: {payload['id']}"}).encode("utf-8"))
 
     def stop_component(self):
         global process_metadata
@@ -324,7 +331,7 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         post_data = self.rfile.read(content_length)
         payload = {}
         try:
-            payload = json.decode(post_data)
+            payload = json.loads(post_data)
         except json.JSONDecodeError:
             self._send_unauthorized()
             return

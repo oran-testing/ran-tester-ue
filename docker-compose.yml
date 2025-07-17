@@ -9,7 +9,7 @@ services:
       # Allow access to system level docker configuration
       - /root/.docker:/root/.docker
       # Allow access to all configurations under the current directory
-      - ${DOCKER_SYSTEM_DIRECTORY}:/host:ro
+      - ${DOCKER_SYSTEM_DIRECTORY}:/host:rw
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - CONFIG=${DOCKER_CONTROLLER_INIT_CONFIG:-configs/basic_ue_zmq.yaml}
@@ -103,6 +103,18 @@ services:
     image: ghcr.io/oran-testing/uu-agent
     build:
       context: ./uu-agent
+      dockerfile: Dockerfile.alpine
+    depends_on:
+      - components_base
+    env_file:
+      - .env
+    profiles:
+      - components
+
+  sniffer:
+    image: ghcr.io/oran-testing/5g-sniffer
+    build:
+      context: ./5g-sniffer/
       dockerfile: Dockerfile.alpine
     depends_on:
       - components_base

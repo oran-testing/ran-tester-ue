@@ -1,5 +1,4 @@
-import torch
-from transformers import (
+import torch from transformers import (
     AutoTokenizer, GenerationConfig,
     AutoModelForCausalLM
 )
@@ -52,6 +51,66 @@ def configure() -> None:
     with open(str(args.config), 'r') as file:
         Config.options = yaml.safe_load(file)
 
+def list_processes(control_url, auth_header):
+    current_endpoint = "/list"
+    headers = {
+        "Authorization": auth_header,
+        "Accept": "application/json",
+        "User-Agent": "llm_worker/1.0",
+    }
+
+    try:
+        response = requests.get(
+            url=f"{control_url}{current_endpoint}",
+            headers=headers,
+            verify=False
+        )
+        if response.status_code == 200:
+            data = response.json()
+            logging.debug(json.dumps(data, indent=2))
+            return True, data
+        else:
+            logging.error(f"Error: {response.status_code} - {response.text}")
+            return False, {"error": response.text}
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to commuicate with controller: {e}")
+        return False, {"error":str(e)}
+
+    return False, {"error":"how did you get here?"}
+
+def start_process(control_url, auth_header, json_payload):
+    current_endpoint = "/start"
+    headers = {
+        "Authorization": auth_header,
+        "Accept": "application/json",
+        "User-Agent": "llm_worker/1.0",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        response = requests.post(
+            url=f"{control_url}{current_endpoint}",
+            headers=headers,
+            json=json_payload,
+            verify=False
+        )
+        if response.status_code == 200:
+            data = response.json()
+            logging.debug(json.dumps(data, indent=2))
+            return True, data
+        else:
+            logging.error(f"Error: {response.status_code} - {response.text}")
+            return False, {"error": response.text}
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to commuicate with controller: {e}")
+        return False, {"error":str(e)}
+
+    return False, {"error":"how did you get here?"}
+
+
+
 
 
 if __name__ == '__main__':
@@ -92,8 +151,8 @@ if __name__ == '__main__':
 
 
     # Configure and test model
-    logging.info("="*20 + " LOADING BASE MODEL (HIGH PRECISION) " + "="*20)
-    logging.info(f"Using model: {model_str}")
+    logging.debug("="*20 + " LOADING BASE MODEL (HIGH PRECISION) " + "="*20)
+    logging.debug(f"Using model: {model_str}")
     model = AutoModelForCausalLM.from_pretrained(
         model_str,
         torch_dtype=torch.bfloat16,
@@ -101,7 +160,7 @@ if __name__ == '__main__':
     )
     tokenizer = AutoTokenizer.from_pretrained(model_str)
 
-    logging.info("="*20 + " MODEL LOADED " + "="*20)
+    logging.debug("="*20 + " MODEL LOADED " + "="*20)
     generation_config = GenerationConfig(
         max_new_tokens=250,
         pad_token_id=tokenizer.eos_token_id,
@@ -114,7 +173,7 @@ if __name__ == '__main__':
     inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
     output_tokens = model.generate(**inputs, generation_config=generation_config)
     response_str = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
-    logging.info("Response from model:", response_str[0])
+    logging.info(f"Response from model: {response_str}")
 
     # Setup control API info
     control_url = f"https://{control_ip}:{control_port}"
@@ -130,27 +189,150 @@ if __name__ == '__main__':
         # 3. send the message to controller endpoint
         # 4. prompt model again with message error or success
 
-        current_endpoint = "/list"
-        headers = {
-            "Authorization": auth_header,
-            "Accept": "application/json",
-            "User-Agent": "llm_worker/1.0",
+        list_processes(control_url, auth_header)
+        time.sleep(1)
+        json_payload = {
+            "id": "rtue_uhd_1",
+            "type": "rtue",
+            "config_str": """
+[rf]
+freq_offset = 0
+tx_gain = 50
+rx_gain = 40
+srate = 23.04e6
+nof_antennas = 1
+
+device_name = uhd
+device_args = clock=internal
+time_adv_nsamples = 300
+
+[rat.eutra]
+dl_earfcn = 2850
+nof_carriers = 0
+
+[rat.nr]
+bands = 3
+nof_carriers = 1
+max_nof_prb = 106
+nof_prb = 106
+
+[pcap]
+enable = none
+mac_filename = /tmp/ue_mac.pcap
+mac_nr_filename = /tmp/ue_mac_nr.pcap
+nas_filename = /tmp/ue_nas.pcap
+
+[log]
+all_level = info
+phy_lib_level = none
+all_hex_limit = 32
+filename = /tmp/ue.log
+file_max_size = -1
+
+[usim]
+mode = soft
+algo = milenage
+opc  = 63BFA50EE6523365FF14C1F45F88737D
+k    = 00112233445566778899aabbccddeeff
+imsi = 001010123456780
+imei = 353490069873319
+
+[rrc]
+release = 15
+ue_category = 4
+
+[nas]
+apn = srsapn
+apn_protocol = ipv4
+
+[gw]
+#netns = ue1
+#ip_devname = tun_srsue
+#ip_netmask = 255.255.255.0
+
+[gui]
+enable = false
+            """,
+            "rf": {
+                "type": "b200",
+                "images_dir": "/usr/share/uhd/images/",
+            }
+        }
+        start_process(control_url, auth_header, json_payload)
+        list_processes(control_url, auth_header)
+        time.sleep(1)
+
+        json_payload = {
+            "id": "jammer_uhd_1",
+            "type": "jammer",
+            "config_str": """
+amplitude: 0.7
+amplitude_width: 0.05
+center_frequency: 1.842e9
+bandwidth: 80e6
+initial_phase: 0
+sampling_freq: 40e6
+num_samples: 20000
+output_iq_file: "output.fc32"
+output_csv_file: "output.csv"
+write_iq: false
+write_csv: true
+device_args: "type=b200"
+tx_gain: 70
+            """,
+            "rf": {
+                "type": "b200",
+                "images_dir": "/usr/share/uhd/images/",
+            }
         }
 
-        try:
-            response = requests.get(
-                url=f"{control_url}{current_endpoint}",
-                headers=headers,
-                verify=False
-            )
-            if response.status_code == 200:
-                data = response.json()
-                logging.info(json.dumps(data, indent=2))
-            else:
-                logging.error(f"Error: {response.status_code} - {response.text}")
+        start_process(control_url, auth_header, json_payload)
+        list_processes(control_url, auth_header)
+        time.sleep(1)
 
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Failed to commuicate with controller: {e}")
+        json_payload = {
+            "id": "sniffer_uhd_1",
+            "type": "sniffer",
+            "config_str": """
+[sniffer]
+file_path = "/home/oran-testbed/5g-sniffer/iq_1842MHz_pdcch_traffic.fc32"
+sample_rate = 23040000
+frequency = 1842500000
+nid_1 = 1
+ssb_numerology = 0
+#rf_args = "type=b200,master_clock_rate=23.04e6"
+
+
+[[pdcch]]
+coreset_id = 1
+subcarrier_offset = 426
+num_prbs = 30
+numerology = 0
+dci_sizes_list = [41]
+scrambling_id_start = 1
+scrambling_id_end = 10
+rnti_start = 17921
+rnti_end = 17930
+interleaving_pattern = "non-interleaved"
+coreset_duration = 1
+AL_corr_thresholds = [1, 0.5, 0.5, 1, 1]
+num_candidates_per_AL = [0, 4, 4, 0, 0]
+            """,
+            "rf": {
+                "type": "b200",
+                "images_dir": "/usr/share/uhd/images/",
+            }
+        }
+
+
+        start_process(control_url, auth_header, json_payload)
+        list_processes(control_url, auth_header)
+        time.sleep(10000)
+
+
+
+
+
 
 
 
