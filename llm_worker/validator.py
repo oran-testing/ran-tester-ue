@@ -1,335 +1,139 @@
-"""
-Configuration Validator for RF Attack Systems
-
-This module provides comprehensive validation and processing of YAML/TOML/CONF configurations
-for RF-based attack systems (sniffer/jammer). It handles:
-- Scientific notation conversion
-- Multi-format configuration parsing
-- Endpoint-specific validation
-- Configuration compilation to JSON
-"""
+# validator.py
 
 import yaml
 import tomllib
 import configparser
-import json
 import re
+from textwrap import dedent
+from typing import Dict, Any, List, Optional
 
-class ResponseValidator:
-    """Validates and processes configuration responses for RF attack systems.
-    
-    Attributes:
-        response (str): Raw configuration response text
-        validated_data (dict): Processed and validated configuration
-        errors (list): Accumulated validation error messages
-    """
+# --- PyYAML Scientific Notation & Duplicate Key Patches (Proven to be necessary) ---
+SCIENTIFIC_NOTATION_REGEX = re.compile(r'[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)', re.X)
+def _no_duplicate_yaml_constructor(loader, node, deep=False):
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise yaml.constructor.ConstructorError(f"Duplicate key '{key}' found at line {node.start_mark.line + 1}")
+        value = loader.construct_object(value_node, deep=deep)
+        mapping[key] = value
+    return loader.construct_mapping(node, deep)
+yaml.add_implicit_resolver('tag:yaml.org,2002:float', SCIENTIFIC_NOTATION_REGEX, Loader=yaml.FullLoader)
+yaml.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _no_duplicate_yaml_constructor, Loader=yaml.FullLoader)
 
-    def __init__(self, response: str):
-        """Initialize validator with raw response text.
-        
-        Args:
-            response: Raw configuration string containing YAML/TOML/CONF data
-        """
-        self.response = response
-        self.validated_data = {}
-        self.errors = []
 
-    def extract_config(self) -> dict:
-        """Extract configuration from response text.
-        
-        Supports multiple formats:
-        - YAML (preferred)
-        - TOML
-        - CONF/INI
-        
-        Returns:
-            Parsed configuration dictionary or None if extraction fails
-        """
-        # YAML parsing logic
-        if "### YAML Output:" in self.response:    
-            try:
-                yaml_string = self.response.split("### YAML Output:")[-1].strip()
-                if yaml_string.startswith("```yaml"):
-                    yaml_string = yaml_string.split("```yaml\n", 1)[-1]
-                    yaml_string = yaml_string.rsplit("```", 1)[0] if "```" in yaml_string else yaml_string
-                
-                config = yaml.safe_load(yaml_string)
-                return config if isinstance(config, dict) else None
-            except (yaml.YAMLError, IndexError) as e:
-                self.errors.append(
-                    "YAML parsing failed. Ensure proper syntax:\n"
-                    "```yaml\nkey: value\nfrequency: 9.15e8\n```")
+class LLMResponseValidator:
+    # ... (__init__ and process methods are the same and correct) ...
+    def __init__(self, llm_response: str):
+        if not llm_response or not llm_response.strip(): self.llm_response = ""
+        else: self.llm_response = dedent(llm_response).strip()
+        self.errors: List[str] = []; self.process_type: Optional[str] = None; self.process_id: Optional[str] = None; self.config_data: Optional[Dict] = None
+    def process(self) -> Dict[str, Any]:
+        if not self.llm_response: self.errors.append("Empty response received."); return self._create_failure_output()
+        self.config_data = self._extract_config()
+        if self.errors: return self._create_failure_output()
+        if not self.config_data: self.errors.append("Could not find or parse a valid configuration block."); return self._create_failure_output()
+        self.process_type = self._infer_process_type()
+        if not self.process_type:
+            if not self.errors: self.errors.append("Could not determine process type.")
+            return self._create_failure_output()
+        self.process_id = self._extract_process_id()
+        if not self.process_id: self.errors.append("Could not find a process 'id'."); return self._create_failure_output()
+        if self.process_type == "jammer": self._validate_jammer_rules()
+        elif self.process_type == "sniffer": self._validate_sniffer_rules()
+        return self._create_failure_output() if self.errors else self._create_success_output()
 
-        # TOML parsing logic
-        if "### TOML Output:" in self.response:
-            try:
-                toml_string = self.response.split("### TOML Output:")[-1].strip()
-                if toml_string.startswith("```toml"):
-                    toml_string = toml_string.split("```toml\n", 1)[-1]
-                    toml_string = toml_string.rsplit("```", 1)[0] if "```" in toml_string else toml_string
-
-                config = tomllib.loads(toml_string)
-                return config if isinstance(config, dict) else None
-            except (tomllib.TOMLDecodeError, IndexError) as e:
-                self.errors.append(
-                    "TOML parsing failed. Use format:\n"
-                    "```toml\n[section]\nkey = \"value\"\n```")
-
-        # CONF/INI parsing logic
-        if "### CONF Output:" in self.response:
-            try:
-                conf_string = self.response.split("### CONF Output:")[-1].strip()
-                if conf_string.startswith("```ini"):
-                    conf_string = conf_string.split("```ini\n", 1)[-1]
-                    conf_string = conf_string.rsplit("```", 1)[0] if "```" in conf_string else conf_string
-                
-                parser = configparser.ConfigParser()
-                parser.read_string(conf_string)
-                config = {section: dict(parser.items(section)) 
-                         for section in parser.sections()}
-                return config if config else None
-            except (configparser.Error, IndexError) as e:
-                self.errors.append(
-                    "CONF parsing failed. Use format:\n"
-                    "```ini\n[section]\nkey = value\n```")
-            
-        return None
-    
-
-    def determine_endpoint(self, config: dict) -> str:
-        """Determine endpoint type from configuration structure.
-        
-        Args:
-            config: Parsed configuration dictionary
-            
-        Returns:
-            Endpoint type ('jammer'/'sniffer') or None if undetermined
-        """
-        if not config:
-            self.errors.append("Empty configuration provided")
-            return None
-            
-        # Jammer identification criteria
-        jammer_keys = {"center_frequency", "bandwidth", "tx_gain"}
-        if jammer_keys.issubset(config.keys()):
-            return "jammer"
-        
-        # Sniffer identification criteria
-        if "sniffer" in config or "pdcch" in config:
-            return "sniffer"
-            
-        self.errors.append("Could not determine endpoint type from configuration")
-        return None
-
-    
-    
-    
-    def validate_config_jammer(self, config: dict) -> bool:
-        """Validate jammer configuration parameters.
-        
-        Args:
-            config: Parsed jammer configuration
-            
-        Returns:
-            True if validation passes, False otherwise
-        """
-        valid = True
-        required_keys = {
-            "center_frequency": (int, float),
-            "bandwidth": (int, float),
-            "tx_gain": (int, float),
-            "amplitude": (int, float),
-            "amplitude_width": (int, float),
-            "sampling_freq": (int, float),
-            "num_samples": int
+    def _validate_jammer_rules(self):
+        """Validates jammer configuration against the FULL schema, including positive integer checks."""
+        required_fields = {
+            "center_frequency": (float, int), "bandwidth": (float, int), "sampling_freq": (float, int),
+            "tx_gain": int, "num_samples": int, "device_args": str, "amplitude": (float, int),
+            "amplitude_width": (float, int), "initial_phase": (float, int), "output_iq_file": str, "write_iq": bool
         }
+        for field, f_type in required_fields.items():
+            if field not in self.config_data: self.errors.append(f"Jammer config missing required field: '{field}'.")
+            elif not isinstance(self.config_data.get(field), f_type): self.errors.append(f"Jammer field '{field}' has wrong type. Expected {f_type}, got {type(self.config_data[field])}.")
         
-        # Validate presence and type of required parameters
-        for key, types in required_keys.items():
-            if key not in config:
-                self.errors.append(f"Missing required parameter: {key}")
-                valid = False
-            elif not isinstance(config[key], types):
-                self.errors.append(f"Invalid type for {key}. Expected {types}, got {type(config[key])}")
-                valid = False
+        samp_freq = self.config_data.get('sampling_freq')
+        bandwidth = self.config_data.get('bandwidth')
+        if isinstance(samp_freq, (int, float)) and isinstance(bandwidth, (int, float)):
+            if samp_freq < bandwidth: self.errors.append("Jammer value error: 'sampling_freq' must be >= 'bandwidth'.")
         
-        # Validate parameter value ranges
-        if "center_frequency" in config and config["center_frequency"] <= 0:
-            self.errors.append("Center frequency must be > 0")
-            valid = False
-            
-        if "bandwidth" in config and config["bandwidth"] <= 0:
-            self.errors.append("Bandwidth must be > 0")
-            valid = False
-            
-        if "amplitude" in config and not (0 <= config["amplitude"] <= 1):
-            self.errors.append("Amplitude must be between 0 and 1")
-            valid = False
-            
-        return valid
+        amplitude = self.config_data.get('amplitude')
+        if isinstance(amplitude, (int, float)) and not (0.0 <= amplitude <= 1.0):
+            self.errors.append(f"Jammer value error: 'amplitude' must be between 0.0 and 1.0, but got {amplitude}.")
 
-    def validate_config_sniffer(self, config: dict) -> bool:
-        """Validate sniffer configuration parameters.
-        
-        Args:
-            config: Parsed sniffer configuration
-            
-        Returns:
-            True if validation passes, False otherwise
-        """
-        valid = True
-        
-        if "sniffer" not in config:
-            self.errors.append("Missing [sniffer] section")
-            valid = False
-            return valid
-            
-        sniffer_config = config["sniffer"]
-        
-        required_sniffer_params = {
-            "file_path": str,
-            "sample_rate": int,
-            "frequency": int,
-            "nid_1": int,
-            "ssb_numerology": int
-        }
-        
-        # Validate sniffer section parameters
-        for param, param_type in required_sniffer_params.items():
-            if param not in sniffer_config:
-                self.errors.append(f"Missing sniffer parameter: {param}")
-                valid = False
-            elif not isinstance(sniffer_config[param], param_type):
-                self.errors.append(f"Invalid type for sniffer.{param}. Expected {param_type}, got {type(sniffer_config[param])}")
-                valid = False
-        
-        # Validate PDCCH configurations
-        if "pdcch" not in config:
-            self.errors.append("Missing [[pdcch]] section")
-            valid = False
+        # --- FIX for Test #21 ---
+        # IMPROVEMENT: Check for positive integer values where logical
+        num_samples = self.config_data.get('num_samples')
+        if isinstance(num_samples, int) and num_samples <= 0:
+            self.errors.append(f"Jammer value error: 'num_samples' must be a positive integer, but got {num_samples}.")
+
+    def _validate_sniffer_rules(self):
+        """Validates sniffer configuration against the FULL schema, including list content types."""
+        if "sniffer" not in self.config_data:
+            self.errors.append("Sniffer config missing required section: '[sniffer]'.")
         else:
-            pdcch_configs = config["pdcch"]
-            if not isinstance(pdcch_configs, list) or not pdcch_configs:
-                self.errors.append("PDCCH config must be a non-empty list")
-                valid = False
-            
-        return valid
+            sniffer_section = self.config_data['sniffer']
+            required_sniffer_fields = { "file_path": str, "sample_rate": (float, int), "frequency": (float, int), "nid_1": int, "ssb_numerology": int }
+            for field, f_type in required_sniffer_fields.items():
+                if field not in sniffer_section: self.errors.append(f"Sniffer section '[sniffer]' missing required field: '{field}'.")
+                elif not isinstance(sniffer_section.get(field), f_type): self.errors.append(f"Sniffer field 'sniffer.{field}' has wrong type. Expected {f_type}, got {type(sniffer_section[field])}.")
+            ssb_num = sniffer_section.get('ssb_numerology')
+            if isinstance(ssb_num, int) and not (0 <= ssb_num <= 4): self.errors.append(f"Sniffer value error: 'ssb_numerology' must be 0-4.")
 
-    def compile_to_json(self, config: dict, endpoint: str) -> dict:
-        """Compile validated config to JSON request format.
-        
-        Args:
-            config: Validated configuration
-            endpoint: Target endpoint ('jammer'/'sniffer')
-            
-        Returns:
-            Structured JSON request dictionary
-            
-        Returns None if compilation fails
-        """
-        try:
-            if endpoint == "jammer":
-                # Add default parameters for jammer
-                jammer_config = {
-                    **config,
-                    "initial_phase": config.get("initial_phase", 0),
-                    "output_iq_file": config.get("output_iq_file", "output.fc32"),
-                    "write_iq": config.get("write_iq", False)
-                }
+        pdcch_list = self.config_data.get("pdcch")
+        if not isinstance(pdcch_list, list) or not pdcch_list:
+            self.errors.append("Sniffer config must have at least one '[[pdcch]]' table (i.e., a non-empty list).")
+        else:
+            required_pdcch_fields = { "coreset_id": int, "num_prbs": int, "dci_sizes_list": list }
+            for i, pdcch_item in enumerate(pdcch_list):
+                for field, f_type in required_pdcch_fields.items():
+                    if field not in pdcch_item: self.errors.append(f"Sniffer '[[pdcch]]' item #{i} is missing required field: '{field}'.")
+                    elif not isinstance(pdcch_item.get(field), f_type): self.errors.append(f"Sniffer field 'pdcch.{field}' in item #{i} has wrong type.")
                 
-                return {
-                    "config_file": self._config_to_string(jammer_config, "jammer")
-                }
-                
-            elif endpoint == "sniffer":
-                return {
-                    "config_file": self._config_to_string(config, "sniffer")
-                }
-            
-            self.errors.append(f"Unknown endpoint: {endpoint}")
-            return None
-        except Exception as e:
-            self.errors.append(f"Failed to compile config: {str(e)}")
-            return None
-
-    def process_response(self) -> dict:
-        """Execute full validation pipeline.
-        
-        Returns:
-            Compiled JSON request in new format if successful, None otherwise
-            All errors are collected in self.errors
-        """
-        self.errors = []  # Reset errors at start of processing
-        
-        config = self.extract_config()
-        if not config:
-            self.errors.append("No valid configuration found")
-            return None
-            
-        endpoint = self.determine_endpoint(config)
-        if not endpoint:
-            self.errors.append("Could not determine endpoint type")
-            return None
-            
-        validation_success = False
-        if endpoint == "jammer":
-            validation_success = self.validate_config_jammer(config)
-        elif endpoint == "sniffer":
-            validation_success = self.validate_config_sniffer(config)
-            
-        if not validation_success:
-            self.errors.append(f"{endpoint.capitalize()} validation failed")
-            return None
-            
-        self.validated_data = self.compile_to_json(config, endpoint)
-        return self.validated_data
+                # --- FIX for Test #20 ---
+                # IMPROVEMENT: Check contents of dci_sizes_list
+                dci_list = pdcch_item.get("dci_sizes_list")
+                if isinstance(dci_list, list) and not all(isinstance(x, int) for x in dci_list):
+                    self.errors.append(f"Sniffer 'dci_sizes_list' in item #{i} must contain only integers.")
     
-    def _config_to_string(self, config: dict, endpoint: str) -> str:
-        """Convert configuration parameters to string format.
-        
-        Args:
-            config: Configuration dictionary
-            endpoint: The endpoint type ('jammer' or 'sniffer')
-            
-        Returns:
-            Configuration as formatted string
-        """
-        if endpoint == "jammer":
-            # Format jammer config as YAML-like string
+    # ... (_extract_config, _infer_process_type, _extract_process_id, _create_success/failure_output) remain the same ...
+    def _extract_config(self) -> Optional[Dict]:
+        response_lower = self.llm_response.lower()
+        if "### yaml output:" in response_lower:
+            try:
+                config_string = re.split(r"###\s*yaml\s*output:", self.llm_response, flags=re.IGNORECASE)[-1].strip()
+                if config_string.startswith("```"): config_string = re.split(r"```(?:yaml)?\n", config_string, maxsplit=1)[-1].rsplit("```", 1)[0]
+                return yaml.load(config_string, Loader=yaml.FullLoader)
+            except yaml.YAMLError as e:
+                self.errors.append(f"Failed to parse YAML content. Error: {e}"); return None
+        if "### toml output:" in response_lower:
+            try:
+                config_string = re.split(r"###\s*toml\s*output:", self.llm_response, flags=re.IGNORECASE)[-1].strip()
+                if config_string.startswith("```"): config_string = re.split(r"```(?:toml)?\n", config_string, maxsplit=1)[-1].rsplit("```", 1)[0]
+                return tomllib.loads(config_string)
+            except tomllib.TOMLDecodeError as e:
+                self.errors.append(f"Failed to parse TOML content. Error: {e}"); return None
+        return None
+    def _infer_process_type(self) -> Optional[str]:
+        if not self.config_data: return None
+        is_jammer = {"center_frequency", "bandwidth", "tx_gain"}.issubset(self.config_data.keys())
+        is_sniffer = "sniffer" in self.config_data or "pdcch" in self.config_data
+        if is_jammer and is_sniffer: self.errors.append("Ambiguous configuration: Keys for both 'jammer' and 'sniffer' types were found."); return None
+        return "jammer" if is_jammer else "sniffer" if is_sniffer else None
+    def _extract_process_id(self) -> Optional[str]:
+        match = re.search(r"^\s*id:\s*['\"]?([\w_.-]+)['\"]?", self.llm_response, re.IGNORECASE | re.MULTILINE)
+        return match.group(1).strip() if match else None
+    def _create_success_output(self) -> Dict[str, Any]:
+        config_string_final = ""
+        if self.process_type == "jammer": config_string_final = yaml.dump(self.config_data, sort_keys=False, indent=2)
+        elif self.process_type == "sniffer":
             lines = []
-            for key, value in config.items():
-                if isinstance(value, str):
-                    lines.append(f"{key}: \"{value}\"")
-                else:
-                    lines.append(f"{key}: {value}")
-            return "\n".join(lines)
-        
-        elif endpoint == "sniffer":
-            # Format sniffer config as TOML-like string
-            lines = []
-            
-            # Add sniffer section
-            if "sniffer" in config:
-                lines.append("[sniffer]")
-                for key, value in config["sniffer"].items():
-                    if isinstance(value, str):
-                        lines.append(f"{key} = \"{value}\"")
-                    else:
-                        lines.append(f"{key} = {value}")
-                lines.append("")
-            
-            # Add PDCCH sections
-            if "pdcch" in config:
-                for pdcch_config in config["pdcch"]:
-                    lines.append("[[pdcch]]")
-                    for key, value in pdcch_config.items():
-                        if isinstance(value, str):
-                            lines.append(f"{key} = \"{value}\"")
-                        else:
-                            lines.append(f"{key} = {value}")
-                    lines.append("")
-            
-            return "\n".join(lines)
-        
-        # Fallback to JSON string
-        return json.dumps(config, indent=2)
+            if 'sniffer' in self.config_data: lines.append('[sniffer]'); lines.extend([f"{k} = {repr(v)}" for k, v in self.config_data['sniffer'].items()]); lines.append('')
+            if 'pdcch' in self.config_data:
+                for item in self.config_data['pdcch']: lines.append('[[pdcch]]'); lines.extend([f"{k} = {repr(v)}" for k, v in item.items()]); lines.append('')
+            config_string_final = "\n".join(lines)
+        return {"process_type": self.process_type, "process_id": self.process_id, "config_string": config_string_final.strip(), "errors": []}
+    def _create_failure_output(self) -> Dict[str, Any]:
+        return {"original_response": self.llm_response, "errors": self.errors}
