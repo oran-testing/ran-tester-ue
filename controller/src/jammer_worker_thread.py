@@ -108,12 +108,12 @@ class jammer:
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
                 self.influx_push(write_api, bucket='rtusystem', record_time_key="time", 
                             record={
-                                "measurement": "jammer_log",
+                                "measurement": "component_log",
                                 "tags": {
                                     "testbed": "default",
-                                    "jammer_data_identifier": self.container_name,
+                                    "id": self.container_name,
                                 },
-                            "fields": {"jammer_stdout_log": message_text},
+                            "fields": {"stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )

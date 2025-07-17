@@ -125,13 +125,12 @@ class rtue:
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
                 self.influx_push(write_api, bucket='rtusystem', record_time_key="time", 
                             record={
-                                "measurement": "ue_info",
+                                "measurement": "component_log",
                                 "tags": {
-                                    "pci": "test",
-                                    "ue_data_identifier": f"{self.container_name}",
-                                    "testbed": "testing",
+                                    "id": f"{self.container_name}",
+                                    "testbed": "default",
                                 },
-                            "fields": {"rtue_stdout_log": message_text},
+                            "fields": {"stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )

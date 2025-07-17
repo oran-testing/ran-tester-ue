@@ -6,7 +6,7 @@ import time
 import sys
 import shutil
 import docker
-from datetime import datetime
+from datetime import datetime, timezone
 import websockets
 import json
 import http.server
@@ -239,6 +239,55 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         self._set_headers()
         self.wfile.write(json.dumps({"running": response_list}).encode("utf-8"))
 
+    def get_component_logs(self):
+        is_valid_token, perms = self._get_permissions()
+        if not is_valid_token:
+            self._send_unauthorized()
+            return
+
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        payload = {}
+        try:
+            payload = json.loads(post_data)
+        except json.JSONDecodeError:
+            self._set_headers(403)
+            self.wfile.write(json.dumps({"error":"malformed request"}).encode("utf-8"))
+            return
+
+        if not all(k in payload for k in ("id", "type")):
+                self._set_headers(400)
+                self.wfile.write(json.dumps({"error": "Missing required fields: id, type"}).encode("utf-8"))
+                return
+
+        influx_bucket = "rtusystem"
+        influx_id = payload["id"]
+        global controller_init_time
+
+        query = f'''
+            from(bucket: "{influx_bucket}")
+            |> range(start: {controller_init_time})
+            |> filter(fn: (r) => r._measurement == "component_log")
+            |> filter(fn: (r) => r["id"] == "{influx_id}")
+            |> filter(fn: (r) => r._field == "stdout_log")
+            |> sort(columns: ["_time"])
+        '''
+
+        query_api = Config.influxdb_client.query_api()
+        result = query_api.query(org=Config.influxdb_client.org, query=query)
+
+        logs = []
+        for table in result:
+            for record in table.records:
+                logs.append({
+                    "time": record.get_time().isoformat(),
+                    "message": record.get_value()
+                })
+
+        self._set_headers()
+        self.wfile.write(json.dumps({"logs":logs}).encode("utf-8"))
+
+
     def start_component(self):
         global process_metadata
         is_valid_token, perms = self._get_permissions()
@@ -337,18 +386,18 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if "id" not in payload.keys():
-            self._set_headers(403)
-            self.wfile.write(json.dumps({"error":"Missing required fields"}).encode("utf-8"))
+            self._set_headers(400)
+            self.wfile.write(json.dumps({"error":"Missing required field id"}).encode("utf-8"))
             return
 
-        for i, process_config in process_metadata.enumerate():
+        for i, process_config in enumerate(process_metadata):
             if process_config["id"] == payload["id"]:
                 if process_config["type"] not in perms:
                     continue
                 process_config["handle"].stop()
                 self._set_headers()
                 self.wfile.write(json.dumps({"id":process_config["id"]}).encode("utf-8"))
-                process_metadata.remove(i)
+                del process_metadata[i]
                 return
         self._set_headers(404)
         self.wfile.write(json.dumps({"error":"Component with ID does not exist"}).encode("utf-8"))
@@ -358,19 +407,24 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         if self.path.startswith("/list"):
             self.get_components()
         else:
-            self._send_nonexistent
+            self._send_nonexistent()
 
     def do_POST(self):
         if self.path.startswith("/start"):
             self.start_component()
         elif self.path.startswith("/stop"):
             self.stop_component()
+        elif self.path.startswith("/logs"):
+            self.get_component_logs()
         else:
-            self._send_nonexistent
+            self._send_nonexistent()
 
 
 
 if __name__ == '__main__':
+    global controller_init_time
+    controller_init_time = f"{datetime.now().astimezone(timezone.utc)
+        .isoformat().replace("+00:00", "Z")}"
 
     if os.geteuid() != 0:
         logging.error("The RAN Tester UE controller must be run as root.")

@@ -1,4 +1,5 @@
-import torch from transformers import (
+import torch
+from transformers import (
     AutoTokenizer, GenerationConfig,
     AutoModelForCausalLM
 )
@@ -12,7 +13,6 @@ import sys
 from typing import List, Dict, Union, Optional, Any
 import argparse
 import pathlib
-
 import requests
 
 #from validator import ResponseValidator
@@ -22,6 +22,32 @@ class Config:
     filename : str = ""
     options : Optional[Dict[str,Any]] = None
     log_level : int = logging.DEBUG
+
+def verify_env():
+    if os.geteuid() != 0:
+        raise RuntimeError("The LLM worker must be run as root.")
+
+    if not torch.cuda.is_available():
+        raise RuntimeError("GPU is not passed into container!!!")
+
+    control_ip = os.getenv("CONTROL_IP")
+    if not control_ip:
+        raise RuntimeError("CONTROL_IP is not set in environment")
+
+    control_token = os.getenv("CONTROL_TOKEN")
+    if not control_token:
+        raise RuntimeError("CONTROL_TOKEN is not set in environment")
+
+    control_port = os.getenv("CONTROL_PORT")
+    if not control_port:
+        raise RuntimeError("CONTROL_PORT is not set in environment")
+
+    try:
+        control_port = int(control_port)
+    except RuntimeError:
+        raise RuntimeError("control port is not an integer")
+
+    return control_ip, control_port, control_token
 
 def configure() -> None:
     """
@@ -67,7 +93,7 @@ def list_processes(control_url, auth_header):
         )
         if response.status_code == 200:
             data = response.json()
-            logging.debug(json.dumps(data, indent=2))
+            logging.info(json.dumps(data, indent=2))
             return True, data
         else:
             logging.error(f"Error: {response.status_code} - {response.text}")
@@ -109,34 +135,77 @@ def start_process(control_url, auth_header, json_payload):
 
     return False, {"error":"how did you get here?"}
 
+def stop_process(control_url, auth_header, process_id):
+    current_endpoint = "/stop"
+    headers = {
+        "Authorization": auth_header,
+        "Accept": "application/json",
+        "User-Agent": "llm_worker/1.0",
+        "Content-Type": "application/json",
+    }
+
+    json_payload = {
+        "id": process_id
+    }
+
+    try:
+        response = requests.post(
+            url=f"{control_url}{current_endpoint}",
+            headers=headers,
+            json=json_payload,
+            verify=False
+        )
+        if response.status_code == 200:
+            data = response.json()
+            logging.debug(json.dumps(data, indent=2))
+            return True, data
+        else:
+            logging.error(f"Error: {response.status_code} - {response.text}")
+            return False, {"error": response.text}
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to commuicate with controller: {e}")
+        return False, {"error":str(e)}
+
+    return False, {"error":"how did you get here?"}
+
+def get_process_logs(control_url, auth_header, json_payload):
+    current_endpoint = "/logs"
+    headers = {
+        "Authorization": auth_header,
+        "Accept": "application/json",
+        "User-Agent": "llm_worker/1.0",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        response = requests.post(
+            url=f"{control_url}{current_endpoint}",
+            headers=headers,
+            json=json_payload,
+            verify=False
+        )
+        if response.status_code == 200:
+            data = response.json()
+            logging.info(json.dumps(data, indent=2))
+            return True, data
+        else:
+            logging.error(f"Error: {response.status_code} - {response.text}")
+            return False, {"error": response.text}
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Failed to commuicate with controller: {e}")
+        return False, {"error":str(e)}
+
+    return False, {"error":"how did you get here?"}
+
 
 
 
 
 if __name__ == '__main__':
 
-    if os.geteuid() != 0:
-        raise RuntimeError("The LLM worker must be run as root.")
-
-    if not torch.cuda.is_available():
-        raise RuntimeError("GPU is not passed into container!!!")
-
-    control_ip = os.getenv("CONTROL_IP")
-    if not control_ip:
-        raise RuntimeError("CONTROL_IP is not set in environment")
-
-    control_token = os.getenv("CONTROL_TOKEN")
-    if not control_token:
-        raise RuntimeError("CONTROL_TOKEN is not set in environment")
-
-    control_port = os.getenv("CONTROL_PORT")
-    if not control_port:
-        raise RuntimeError("CONTROL_PORT is not set in environment")
-
-    try:
-        control_port = int(control_port)
-    except RuntimeError:
-        raise RuntimeError("control port is not an integer")
+    control_ip, control_port, control_token = verify_env()
 
     configure()
 
@@ -188,6 +257,12 @@ if __name__ == '__main__':
         # 2. verify the information and config (if fails go back to 1)
         # 3. send the message to controller endpoint
         # 4. prompt model again with message error or success
+        json_payload = {
+            "id": "llm_worker_1",
+            "type": "llm_worker",
+        }
+        get_process_logs(control_url, auth_header, json_payload)
+        time.sleep(1)
 
         list_processes(control_url, auth_header)
         time.sleep(1)
@@ -195,63 +270,63 @@ if __name__ == '__main__':
             "id": "rtue_uhd_1",
             "type": "rtue",
             "config_str": """
-[rf]
-freq_offset = 0
-tx_gain = 50
-rx_gain = 40
-srate = 23.04e6
-nof_antennas = 1
+    [rf]
+    freq_offset = 0
+    tx_gain = 50
+    rx_gain = 40
+    srate = 23.04e6
+    nof_antennas = 1
 
-device_name = uhd
-device_args = clock=internal
-time_adv_nsamples = 300
+    device_name = uhd
+    device_args = clock=internal
+    time_adv_nsamples = 300
 
-[rat.eutra]
-dl_earfcn = 2850
-nof_carriers = 0
+    [rat.eutra]
+    dl_earfcn = 2850
+    nof_carriers = 0
 
-[rat.nr]
-bands = 3
-nof_carriers = 1
-max_nof_prb = 106
-nof_prb = 106
+    [rat.nr]
+    bands = 3
+    nof_carriers = 1
+    max_nof_prb = 106
+    nof_prb = 106
 
-[pcap]
-enable = none
-mac_filename = /tmp/ue_mac.pcap
-mac_nr_filename = /tmp/ue_mac_nr.pcap
-nas_filename = /tmp/ue_nas.pcap
+    [pcap]
+    enable = none
+    mac_filename = /tmp/ue_mac.pcap
+    mac_nr_filename = /tmp/ue_mac_nr.pcap
+    nas_filename = /tmp/ue_nas.pcap
 
-[log]
-all_level = info
-phy_lib_level = none
-all_hex_limit = 32
-filename = /tmp/ue.log
-file_max_size = -1
+    [log]
+    all_level = info
+    phy_lib_level = none
+    all_hex_limit = 32
+    filename = /tmp/ue.log
+    file_max_size = -1
 
-[usim]
-mode = soft
-algo = milenage
-opc  = 63BFA50EE6523365FF14C1F45F88737D
-k    = 00112233445566778899aabbccddeeff
-imsi = 001010123456780
-imei = 353490069873319
+    [usim]
+    mode = soft
+    algo = milenage
+    opc  = 63BFA50EE6523365FF14C1F45F88737D
+    k    = 00112233445566778899aabbccddeeff
+    imsi = 001010123456780
+    imei = 353490069873319
 
-[rrc]
-release = 15
-ue_category = 4
+    [rrc]
+    release = 15
+    ue_category = 4
 
-[nas]
-apn = srsapn
-apn_protocol = ipv4
+    [nas]
+    apn = srsapn
+    apn_protocol = ipv4
 
-[gw]
+    [gw]
 #netns = ue1
 #ip_devname = tun_srsue
 #ip_netmask = 255.255.255.0
 
-[gui]
-enable = false
+    [gui]
+    enable = false
             """,
             "rf": {
                 "type": "b200",
@@ -266,19 +341,19 @@ enable = false
             "id": "jammer_uhd_1",
             "type": "jammer",
             "config_str": """
-amplitude: 0.7
-amplitude_width: 0.05
-center_frequency: 1.842e9
-bandwidth: 80e6
-initial_phase: 0
-sampling_freq: 40e6
-num_samples: 20000
-output_iq_file: "output.fc32"
-output_csv_file: "output.csv"
-write_iq: false
-write_csv: true
-device_args: "type=b200"
-tx_gain: 70
+    amplitude: 0.7
+    amplitude_width: 0.05
+    center_frequency: 1.842e9
+    bandwidth: 80e6
+    initial_phase: 0
+    sampling_freq: 40e6
+    num_samples: 20000
+    output_iq_file: "output.fc32"
+    output_csv_file: "output.csv"
+    write_iq: false
+    write_csv: true
+    device_args: "type=b200"
+    tx_gain: 70
             """,
             "rf": {
                 "type": "b200",
@@ -294,29 +369,29 @@ tx_gain: 70
             "id": "sniffer_uhd_1",
             "type": "sniffer",
             "config_str": """
-[sniffer]
-file_path = "/home/oran-testbed/5g-sniffer/iq_1842MHz_pdcch_traffic.fc32"
-sample_rate = 23040000
-frequency = 1842500000
-nid_1 = 1
-ssb_numerology = 0
+    [sniffer]
+    file_path = "/home/oran-testbed/5g-sniffer/iq_1842MHz_pdcch_traffic.fc32"
+    sample_rate = 23040000
+    frequency = 1842500000
+    nid_1 = 1
+    ssb_numerology = 0
 #rf_args = "type=b200,master_clock_rate=23.04e6"
 
 
-[[pdcch]]
-coreset_id = 1
-subcarrier_offset = 426
-num_prbs = 30
-numerology = 0
-dci_sizes_list = [41]
-scrambling_id_start = 1
-scrambling_id_end = 10
-rnti_start = 17921
-rnti_end = 17930
-interleaving_pattern = "non-interleaved"
-coreset_duration = 1
-AL_corr_thresholds = [1, 0.5, 0.5, 1, 1]
-num_candidates_per_AL = [0, 4, 4, 0, 0]
+    [[pdcch]]
+    coreset_id = 1
+    subcarrier_offset = 426
+    num_prbs = 30
+    numerology = 0
+    dci_sizes_list = [41]
+    scrambling_id_start = 1
+    scrambling_id_end = 10
+    rnti_start = 17921
+    rnti_end = 17930
+    interleaving_pattern = "non-interleaved"
+    coreset_duration = 1
+    AL_corr_thresholds = [1, 0.5, 0.5, 1, 1]
+    num_candidates_per_AL = [0, 4, 4, 0, 0]
             """,
             "rf": {
                 "type": "b200",
@@ -327,12 +402,8 @@ num_candidates_per_AL = [0, 4, 4, 0, 0]
 
         start_process(control_url, auth_header, json_payload)
         list_processes(control_url, auth_header)
+        time.sleep(1)
+
+        stop_process(control_url, auth_header, "rtue_uhd_1")
+        list_processes(control_url, auth_header)
         time.sleep(10000)
-
-
-
-
-
-
-
-
