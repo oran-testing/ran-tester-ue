@@ -1,7 +1,7 @@
 processes:
   - type: "llm_worker"
     id: "llm_worker_1"
-    config_file: "configs/llm/test.yaml"
+    config_file: "configs/llm/basic_jam.yaml"
     permissions:
       - sniffer
       - jammer
