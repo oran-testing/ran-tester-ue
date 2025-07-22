@@ -93,7 +93,7 @@ class ResponseValidator:
         return {
             "type": self.config_type,
             "id": self.parsed_data.get("id"),
-            "config": config_string
+            "config_str": config_string
         }
     
     def _format_validated_data(self, validated_data: dict) -> str:

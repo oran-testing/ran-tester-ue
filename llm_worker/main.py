@@ -177,7 +177,7 @@ if __name__ == '__main__':
                 logging.info("Validation successful! Extracting final components.")
                 final_config_type = validated_data.get('type')
                 final_config_id = validated_data.get('id')
-                final_config_string = validated_data.get('config')
+                final_config_string = validated_data.get('config_str')
                 break
 
             logging.warning("Validation failed. Preparing to self-correct.")
@@ -208,10 +208,21 @@ if __name__ == '__main__':
         # --- Final Outcome Logic (with controller API call) ---
         if final_config_string:
             logging.info("="*20 + " FINAL VALIDATED CONFIGURATION " + "="*20)
-            json_payload = {"type": final_config_type, "id": final_config_id, "config": final_config_string}
+
+            logging.info("--- PREPARING TO SEND PAYLOAD ---")
+            logging.info(f"Value of final_config_id: {final_config_id} (Type: {type(final_config_id)})")
+            logging.info(f"Value of final_config_type: {final_config_type} (Type: {type(final_config_type)})")
+            # For the config string, let's also check if it's just whitespace
+            is_string_blank = isinstance(final_config_string, str) and not final_config_string.strip()
+            logging.info(f"Value of final_config_string is blank: {is_string_blank} (Length: {len(final_config_string)})")
+            logging.info(f"--- END OF PAYLOAD PREP ---")
+
+
+            json_payload = {"id": final_config_id, "type": final_config_type, "config_str": final_config_string}
+
             logging.info(f"Attempting to start process with controller...")
-            logging.debug(f"Payload being sent: {json.dumps(json_payload, indent=2)}")
-            
+            logging.info(f"Payload being sent: {json.dumps(json_payload, indent=2)}")
+            json_payload["rf"] = {"type":"b200","images_dir":"/usr/share/uhd/images"}
             success, response_data = start_process(control_url, auth_header, json_payload)
             if success:
                 logging.info("Successfully sent start command to controller.")
