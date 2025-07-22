@@ -37,7 +37,7 @@
       "options": {
         "dedupStrategy": "none",
         "enableInfiniteScrolling": false,
-        "enableLogDetails": true,
+        "enableLogDetails": false,
         "prettifyLogMessage": true,
         "showCommonLabels": false,
         "showLabels": false,
