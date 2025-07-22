@@ -124,6 +124,9 @@ def generate_response(model, tokenizer, prompt_content: str) -> str:
     return tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
 
 
+    
+
+
 if __name__ == '__main__':
     control_ip, control_port, control_token = verify_env()
     configure()
@@ -139,6 +142,23 @@ if __name__ == '__main__':
     logging.debug(f"using model: {model_str}")
     model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained(model_str)
+
+    # TODO: use llm for intent determination
+    # user_request_text = Config.options.get("user_prompt", "")
+    # intent_prompt = Config.options.get("planner_prompt", "")
+
+    # user_request = generate_response(model, tokenizer, intent_prompt + user_request_text)
+
+    # logging.info(f"The output of intent generator: {user_request}")
+    # validator = ResponseValidator(user_request, config_type="intent")
+    # validated_data = validator.validate()
+
+    # config_type = validated_data.get("config_type")
+    # prompt = f"{config_type}_prompt"
+    # system_prompt = Config.options.get("prompt", "")
+    # original_prompt_content = system_prompt + user_request
+
+    # logging.info(f"original prompt: {original_prompt_content}")
 
     # --- Intent Determination Logic ---
     user_request_text = Config.options.get("user_prompt", "")

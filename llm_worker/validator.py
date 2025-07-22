@@ -44,19 +44,22 @@ class ResponseValidator:
             'id', 'rf_srate', 'rf_tx_gain', 'rf_rx_gain', 'rat_nr_bands',
             'rat_nr_nof_prb', 'usim_imsi', 'nas_apn'
         ]
-        
+
         # Defines all possible valid keys for an RT-UE config and their types for validation.
         self.rtue_full_schema = {
             "id": str, "rf_freq_offset": int, "rf_tx_gain": int, "rf_rx_gain": int,
             "rf_srate": (float, int), "rf_nof_antennas": int, "rf_device_name": str,
             "rf_device_args": str, "rf_time_adv_nsamples": int, "rat_eutra_dl_earfcn": int,
-            "rat_eutra_nof_carriers": int, "rat_nr_bands": list, "rat_nr_nof_carriers": int,
+            "rat_eutra_nof_carriers": int, "rat_nr_bands": int, "rat_nr_nof_carriers": int,
             "rat_nr_max_nof_prb": int, "rat_nr_nof_prb": int, "pcap_enable": str,
             "pcap_mac_filename": str, "pcap_mac_nr_filename": str, "pcap_nas_filename": str,
             "log_all_level": str, "log_phy_lib_level": str, "log_all_hex_limit": int,
             "log_filename": str, "log_file_max_size": int, "usim_mode": str, "usim_algo": str,
             "usim_opc": str, "usim_k": str, "usim_imsi": str, "usim_imei": str, "rrc_release": int,
-            "rrc_ue_category": int, "nas_apn": str, "nas_apn_protocol": str, "gui_enable": bool
+            "rrc_ue_category": int, "nas_apn": str, "nas_apn_protocol": str, "gui_enable": bool, "gw_ip_devname": str,
+            "gw_ip_netmask": str, "general_metrics_influxdb_enable": bool, "general_metrics_influxdb_url": str,
+            "general_metrics_influxdb_port": int, "general_metrics_influxdb_org": str, "general_metrics_influxdb_token": str,
+            "general_metrics_influxdb_bucket":str, "general_metrics_period_secs": float, "general_ue_data_identifier": str
         } 
 
     def validate(self) -> dict | None:
@@ -65,6 +68,11 @@ class ResponseValidator:
 
         self.parsed_data = self._parse_json(json_str)
         if not self.parsed_data: return None # Exit early if JSON is invalid
+
+        # if self.config_type == "intent":
+        #     return {
+        #         "config_type": self.parsed_data["component"]
+        #     }
 
         # Branch validation logic based on the config type determined in main.py
         if self.config_type == "jammer":
@@ -135,7 +143,7 @@ class ResponseValidator:
         section_map = {
             'rf': 'rf_', 'rat.eutra': 'rat_eutra_', 'rat.nr': 'rat_nr_',
             'pcap': 'pcap_', 'log': 'log_', 'usim': 'usim_', 'rrc': 'rrc_',
-            'nas': 'nas_', 'gui': 'gui_'
+            'nas': 'nas_', 'gui': 'gui_', 'gw':'gw_', 'general': 'general_'
         }
 
         config = configparser.ConfigParser()
@@ -204,3 +212,6 @@ class ResponseValidator:
         if data.get("sample_rate", 0) <= 0: self.errors.append("sample_rate must be > 0")
         if data.get("pdcch_num_prbs", 0) <= 0: self.errors.append("pdcch_num_prbs must be > 0")
         if not (0 <= data.get("ssb_numerology") <= 4): self.errors.append("ssb_numerology must be >= 0 and <= 4")
+
+
+
