@@ -109,16 +109,16 @@ rtue_prompt: |
   {
     "id": "String, Example: rtue_testing_001",
     "rf_freq_offset": "Integer, Default: 0",
-    "rf_tx_gain": "Integer, Optimal Range: 40-60, Default: 50",
-    "rf_rx_gain": "Integer, Optimal Range: 30-50, Default: 40",
-    "rf_srate": "Float, Must be a standard 5G sample rate (e.g., 15.36e6, 23.04e6), Default: 23.04e6",
-    "rf_nof_antennas": "Integer, Default: 1",
-    "rf_device_name": "String, Default: 'uhd'",
-    "rf_device_args": "String, Default: 'clock=internal'",
-    "rf_time_adv_nsamples": "Integer, Default: 300",
+    "rf_tx_gain": "Integer, Optimal Range: 40-60",
+    "rf_rx_gain": "Integer, Optimal Range: 30-50",
+    "rf_srate": "Float, Must be a standard 5G sample rate (e.g., 15.36e6, 23.04e6)",
+    "rf_nof_antennas": "Default: 1",
+    "rf_device_name": "String, (e.g. uhd, zmq, file) Default: 'uhd'",
+    "rf_device_args": "String, (standard UHD or ZMQ arguments depending on rf_device_name) Default: 'clock=internal'",
+    "rf_time_adv_nsamples": "Integer, number of samples to offset in RF, Default: 300",
     "rat_eutra_dl_earfcn": "Integer, Default for a common test band: 2850",
     "rat_eutra_nof_carriers": "Integer, Default: 0 (Disables E-UTRA)",
-    "rat_nr_bands": "List[Integer], A list of 5G NR bands, Default: [3]",
+    "rat_nr_bands": "Integer, An integer signifying the number of bands, Default: 3",
     "rat_nr_nof_carriers": "Integer, Default: 1",
     "rat_nr_max_nof_prb": "Integer, Number of Physical Resource Blocks, Default for a 20MHz channel: 106",
     "rat_nr_nof_prb": "Integer, Set equal to max_nof_prb, Default: 106",
@@ -126,18 +126,29 @@ rtue_prompt: |
     "pcap_mac_filename": "String, Default: '/tmp/ue_mac.pcap'",
     "pcap_mac_nr_filename": "String, Default: '/tmp/ue_mac_nr.pcap'",
     "pcap_nas_filename": "String, Default: '/tmp/ue_nas.pcap'",
-    "usim_mode": "String, Default: 'soft'",
-    "usim_algo": "String, Default: 'milenage'",
-    "usim_opc": "String, Hexadecimal Key, Default: '63BFA50EE6523365FF14C1F45F88737D'",
-    "usim_k": "String, Hexadecimal Key, Default: '00112233445566778899aabbccddeeff'",
-    "usim_imsi": "String, Inferred from user request",
-    "usim_imei": "String, Default: '353490069873319'",
+    "usim_mode": "String, Always put: 'soft'",
+    "usim_algo": "String, Always put: 'milenage'",
+    "usim_opc": "String, Hexadecimal Key, Always use: '63BFA50EE6523365FF14C1F45F88737D'",
+    "usim_k": "String, Hexadecimal Key, Always use: '00112233445566778899aabbccddeeff'",
+    "usim_imsi": "String, Always use: 001010123456789",
+    "usim_imei": "String, Always use: '353490069873319'",
     "rrc_release": "Integer, 3GPP Release version, Default: 15",
     "rrc_ue_category": "Integer, UE Category, Default: 4",
-    "nas_apn": "String, Inferred from user request",
+    "nas_apn": "String, Default: srsapn",
     "nas_apn_protocol": "String, Default: 'ipv4'",
-    "gui_enable": "Boolean, Default: false"
+    "gui_enable": "Boolean, Always put: false",
+    "gw_ip_devname": "String, Always put: tun_rtue",
+    "gw_ip_netmask": "String, Always put: 255.255.255.0",
+    "general_metrics_influxdb_enable": "Boolean, Always put: true",
+    "general_metrics_influxdb_url": "String, Always put: influxdb",
+    "general_metrics_influxdb_port": "Integer, Always put: 8086",
+    "general_metrics_influxdb_org": "String, Always put: rtu",
+    "general_metrics_influxdb_token": "String, Always put: 605bc59413b7d5457d181ccf20f9fda15693f81b068d70396cc183081b264f3b",
+    "general_metrics_influxdb_bucket": "String, Always put: rtusystem",
+    "general_metrics_period_secs": "float, Always put: 0.5",
+    "general_ue_data_identifier": "string, Always put: generic_zmq"
   }
+
 
   ** DO NOT explain anything. DO NOT include code blocks or formatting.**
   **Come up with realistic values based on the user's request.**
@@ -146,6 +157,42 @@ rtue_prompt: |
 
   ### USER REQUEST:
 
+# user_prompt: |
+#   ### **User Request**
+#   - "Generate a rtue configuration, add clock=external to the device_args for UHD"
+
 user_prompt: |
   ### **User Request**
   - "Generate a rtue configuration"
+
+planner_prompt: |
+  You are an RF engineering assistant. Your job is to get the user prompt and determine the sequence of steps based on the user prompt.
+
+  Available sequence of steps:
+  1. start a jammer
+  2. start a sniffer
+  3. start a rtue
+
+  components: jammer/sniffer/rtue
+  Return the json as follows:
+  {
+    "component": "{component}",
+  }
+
+  ### Example User Request:
+  I want to test the rtue
+
+  ### Example output:
+  {
+    "component": "rtue"
+  }
+
+  ### Example User Request:
+  Generate a config to jam a target
+
+  ### Example output:
+  {
+    "component": "jammer"
+  }
+
+  **ONLY OUPUT THE ABOVE JSON AND NOTHING ELSE**
