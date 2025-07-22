@@ -1,3 +1,5 @@
+# main.py
+
 import torch
 from transformers import (
     AutoTokenizer, GenerationConfig,
@@ -15,7 +17,7 @@ import argparse
 import pathlib
 import requests
 
-#from validator import ResponseValidator
+from validator import ResponseValidator
 
 
 class Config:
@@ -26,35 +28,24 @@ class Config:
 def verify_env():
     if os.geteuid() != 0:
         raise RuntimeError("The LLM worker must be run as root.")
-
     if not torch.cuda.is_available():
         raise RuntimeError("GPU is not passed into container!!!")
-
     control_ip = os.getenv("CONTROL_IP")
     if not control_ip:
         raise RuntimeError("CONTROL_IP is not set in environment")
-
     control_token = os.getenv("CONTROL_TOKEN")
     if not control_token:
         raise RuntimeError("CONTROL_TOKEN is not set in environment")
-
     control_port = os.getenv("CONTROL_PORT")
     if not control_port:
         raise RuntimeError("CONTROL_PORT is not set in environment")
-
     try:
         control_port = int(control_port)
     except RuntimeError:
         raise RuntimeError("control port is not an integer")
-
     return control_ip, control_port, control_token
 
 def configure() -> None:
-    """
-    Reads in CLI arguments
-    Parses YAML config
-    Configures logging
-    """
     parser = argparse.ArgumentParser(
         description="RAN tester UE process controller")
     parser.add_argument(
@@ -65,207 +56,177 @@ def configure() -> None:
                     help="Set the logging level. Options: DEBUG, INFO, WARNING, ERROR, CRITICAL")
     args = parser.parse_args()
     Config.log_level = getattr(logging, args.log_level.upper(), 1)
-
     if not isinstance(Config.log_level, int):
         raise ValueError(f"Invalid log level: {args.log_level}")
-
     logging.basicConfig(level=Config.log_level,
                     format='%(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
-
     Config.filename = args.config
     with open(str(args.config), 'r') as file:
         Config.options = yaml.safe_load(file)
 
+
 def list_processes(control_url, auth_header):
     current_endpoint = "/list"
-    headers = {
-        "Authorization": auth_header,
-        "Accept": "application/json",
-        "User-Agent": "llm_worker/1.0",
-    }
-
+    headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0"}
     try:
-        response = requests.get(
-            url=f"{control_url}{current_endpoint}",
-            headers=headers,
-            verify=False
-        )
+        response = requests.get(url=f"{control_url}{current_endpoint}", headers=headers, verify=False)
         if response.status_code == 200:
-            data = response.json()
-            logging.info(json.dumps(data, indent=2))
-            return True, data
-        else:
-            logging.error(f"Error: {response.status_code} - {response.text}")
-            return False, {"error": response.text}
-
+            return True, response.json()
+        return False, {"error": response.text}
     except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to commuicate with controller: {e}")
         return False, {"error":str(e)}
-
-    return False, {"error":"how did you get here?"}
 
 def start_process(control_url, auth_header, json_payload):
     current_endpoint = "/start"
-    headers = {
-        "Authorization": auth_header,
-        "Accept": "application/json",
-        "User-Agent": "llm_worker/1.0",
-        "Content-Type": "application/json",
-    }
-
+    headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
     try:
-        response = requests.post(
-            url=f"{control_url}{current_endpoint}",
-            headers=headers,
-            json=json_payload,
-            verify=False
-        )
+        response = requests.post(url=f"{control_url}{current_endpoint}", headers=headers, json=json_payload, verify=False)
         if response.status_code == 200:
-            data = response.json()
-            logging.debug(json.dumps(data, indent=2))
-            return True, data
-        else:
-            logging.error(f"Error: {response.status_code} - {response.text}")
-            return False, {"error": response.text}
-
+            return True, response.json()
+        return False, {"error": response.text}
     except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to commuicate with controller: {e}")
         return False, {"error":str(e)}
-
-    return False, {"error":"how did you get here?"}
 
 def stop_process(control_url, auth_header, process_id):
     current_endpoint = "/stop"
-    headers = {
-        "Authorization": auth_header,
-        "Accept": "application/json",
-        "User-Agent": "llm_worker/1.0",
-        "Content-Type": "application/json",
-    }
-
-    json_payload = {
-        "id": process_id
-    }
-
+    headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
+    json_payload = {"id": process_id}
     try:
-        response = requests.post(
-            url=f"{control_url}{current_endpoint}",
-            headers=headers,
-            json=json_payload,
-            verify=False
-        )
+        response = requests.post(url=f"{control_url}{current_endpoint}", headers=headers, json=json_payload, verify=False)
         if response.status_code == 200:
-            data = response.json()
-            logging.debug(json.dumps(data, indent=2))
-            return True, data
-        else:
-            logging.error(f"Error: {response.status_code} - {response.text}")
-            return False, {"error": response.text}
-
+            return True, response.json()
+        return False, {"error": response.text}
     except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to commuicate with controller: {e}")
         return False, {"error":str(e)}
-
-    return False, {"error":"how did you get here?"}
 
 def get_process_logs(control_url, auth_header, json_payload):
     current_endpoint = "/logs"
-    headers = {
-        "Authorization": auth_header,
-        "Accept": "application/json",
-        "User-Agent": "llm_worker/1.0",
-        "Content-Type": "application/json",
-    }
-
+    headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
     try:
-        response = requests.post(
-            url=f"{control_url}{current_endpoint}",
-            headers=headers,
-            json=json_payload,
-            verify=False
-        )
+        response = requests.post(url=f"{control_url}{current_endpoint}", headers=headers, json=json_payload, verify=False)
         if response.status_code == 200:
-            data = response.json()
-            logging.info(json.dumps(data, indent=2))
-            return True, data
-        else:
-            logging.error(f"Error: {response.status_code} - {response.text}")
-            return False, {"error": response.text}
-
+            return True, response.json()
+        return False, {"error": response.text}
     except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to commuicate with controller: {e}")
         return False, {"error":str(e)}
 
-    return False, {"error":"how did you get here?"}
+def generate_response(model, tokenizer, prompt_content: str) -> str:
 
-
-
+    messages = [{"role": "user", "content": prompt_content}]
+    formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
+    generation_config = GenerationConfig(max_new_tokens=1024, do_sample=False, pad_token_id=tokenizer.eos_token_id)
+    with torch.no_grad():
+        output_tokens = model.generate(**inputs, generation_config=generation_config)
+    input_length = inputs['input_ids'].shape[1]
+    newly_generated_tokens = output_tokens[0, input_length:]
+    return tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
 
 
 if __name__ == '__main__':
-
     control_ip, control_port, control_token = verify_env()
-
     configure()
-
-    model_str = Config.options.get("model", None)
-    if not model_str:
-        logging.error("Model not specified")
-        sys.exit(1)
-
-
-    # Setup control API info
     control_url = f"https://{control_ip}:{control_port}"
     auth_header = f"Bearer {control_token}"
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-    # Configure and test model
+    # --- Model Setup ---
+    model_str = Config.options.get("model", None)
+    if not model_str:
+        logging.error("Model not specified")
+        sys.exit(1)
     logging.debug(f"using model: {model_str}")
-    model = AutoModelForCausalLM.from_pretrained(
-        model_str,
-        torch_dtype=torch.bfloat16,
-        device_map="auto"
-    )
+    model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained(model_str)
-    generation_config = GenerationConfig(
-        max_new_tokens=250,
-        pad_token_id=tokenizer.eos_token_id,
-        do_sample=True
-    )
 
-    base_prompt = Config.options.get("base_prompt", None)
-    if not base_prompt:
-        raise RuntimeError(f"base prompt not provided in {Config.filename}")
+    # --- Intent Determination Logic ---
+    user_request_text = Config.options.get("user_prompt", "")
+    config_type, system_prompt = None, ""
+    if "sniffer" in user_request_text.lower():
+        config_type, system_prompt = "sniffer", Config.options.get("sniffer_prompt", "")
+    elif "jam" in user_request_text.lower():
+        config_type, system_prompt = "jammer", Config.options.get("jammer_prompt", "")
+    elif "rtue" in user_request_text.lower():
+        config_type, system_prompt = "rtue", Config.options.get("rtue_prompt", "")
+    else:
+        logging.warning("Could not determine config type from user prompt. Using raw prompt.")
+        system_prompt, user_request_text = user_request_text, ""
+    original_prompt_content = system_prompt + user_request_text
 
-    jammer_prompt = Config.options.get("jammer_prompt", None)
-    if not jammer_prompt:
-        raise RuntimeError(f"jammer prompt not provided in {Config.filename}")
+    # ---Initial Generation ---
+    logging.info("="*20 + " EXECUTING PROMPT " + "="*20)
+    current_response_text = generate_response(model, tokenizer, original_prompt_content)
+    logging.info("="*20 + " MODEL GENERATED OUTPUT " + "="*20)
+    logging.info(f"'{current_response_text}'")
+    logging.info("="*20 + " END OF MODEL OUTPUT " + "="*20)
 
-    sniffer_prompt = Config.options.get("sniffer_prompt", None)
-    if not sniffer_prompt:
-        raise RuntimeError(f"sniffer prompt not provided in {Config.filename}")
+    # --- Validation and Self-Correction Loop ---
+    if config_type in ['sniffer', 'jammer', 'rtue']:
+        logging.info(f"Config type is '{config_type}'. Starting validation and self-correction loop.")
+        final_config_type, final_config_id, final_config_string = None, None, None
+        max_attempts = 25
+        attempt_count = 1
 
-    rtue_prompt = Config.options.get("rtue_prompt", None)
-    if not rtue_prompt:
-        raise RuntimeError(f"rtue prompt not provided in {Config.filename}")
+        while attempt_count <= max_attempts:
+            logging.info("="*40 + f" VALIDATION ATTEMPT {attempt_count} of {max_attempts} " + "="*40)
+            validator = ResponseValidator(current_response_text, config_type=config_type)
+            validated_data = validator.validate()
 
-    user_prompt = Config.options.get("user_prompt", None)
-    if not user_prompt:
-        raise RuntimeError(f"user prompt not provided in {Config.filename}")
+            if validated_data:
+                logging.info("Validation successful! Extracting final components.")
+                final_config_type = validated_data.get('type')
+                final_config_id = validated_data.get('id')
+                final_config_string = validated_data.get('config')
+                break
 
+            logging.warning("Validation failed. Preparing to self-correct.")
+            attempt_count += 1
+            if attempt_count > max_attempts:
+                logging.error("Maximum correction attempts reached."); break
+            error_details = "\n".join([f"- {e}" for e in validator.get_errors()])
+            logging.warning(f"Validation Errors:\n{error_details}")
+            
+            # uncomment later if memory becomes an issue
 
-    while True:
-        # TODO: loop over the following steps
-        # 1. get a message from the model
-        # 2. verify the information and config (if fails go back to 1)
-        # 3. send the message to controller endpoint
-        # 4. prompt model again with message error or success
-        time.sleep(1)
-        all_prompt = base_prompt + jammer_prompt + sniffer_prompt + rtue_prompt + user_prompt
-        prompts = [all_prompt]
-        inputs = tokenizer(prompts, return_tensors="pt", padding=True, truncation=True).to(model.device)
-        output_tokens = model.generate(**inputs, generation_config=generation_config)
-        response_str = tokenizer.batch_decode(output_tokens, skip_special_tokens=True)
-        logging.info(response_str[-1])
+            # if torch.cuda.is_available():
+            #     logging.info("Clearing CUDA cache to prevent out-of-memory errors.")
+            #     torch.cuda.empty_cache()
 
+            correction_prompt_content = (
+                f"The previous JSON configuration you provided was invalid for the following reasons:\n"
+                f"{error_details}\n\n"
+                f"Please regenerate the entire, corrected JSON object based on the original request.\n"
+                f"--- ORIGINAL REQUEST ---\n{original_prompt_content}"
+            )
+            logging.info("Generating corrected response...")
+            current_response_text = generate_response(model, tokenizer, correction_prompt_content)
+            logging.info("="*20 + f" CORRECTED OUTPUT (ATTEMPT {attempt_count}) " + "="*20)
+            logging.info(f"'{current_response_text}'")
+            logging.info("="*20 + " END OF CORRECTED OUTPUT " + "="*20)
+
+        # --- Final Outcome Logic (with controller API call) ---
+        if final_config_string:
+            logging.info("="*20 + " FINAL VALIDATED CONFIGURATION " + "="*20)
+            json_payload = {"type": final_config_type, "id": final_config_id, "config": final_config_string}
+            logging.info(f"Attempting to start process with controller...")
+            logging.debug(f"Payload being sent: {json.dumps(json_payload, indent=2)}")
+            
+            success, response_data = start_process(control_url, auth_header, json_payload)
+            if success:
+                logging.info("Successfully sent start command to controller.")
+                logging.info(f"Controller response: {response_data}")
+            else:
+                logging.error("Failed to start process via controller.")
+                logging.error(f"Controller error: {response_data}")
+                sys.exit(1)
+            logging.info("Script finished successfully.")
+        else:
+            logging.error("="*20 + " SCRIPT FAILED " + "="*20)
+            logging.error(f"Could not obtain a valid '{config_type}' configuration after all attempts.")
+            sys.exit(1)
+    else:
+        logging.warning(f"Skipping validation loop: No validation rules defined for config type '{config_type}'.")
+        logging.info("="*20 + " FINAL UNVALIDATED OUTPUT " + "="*20)
+        logging.info(current_response_text)
+        logging.info("Script finished.")
