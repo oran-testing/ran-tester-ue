@@ -19,6 +19,7 @@ class jammer:
 
     def start(self, process_config):
         self.jammer_config = process_config["config_file"]
+        logging.debug(f"JAMMER CONFIG: {self.jammer_config}")
         self.container_name = process_config["id"]
 
         self.image_name = "ghcr.io/oran-testing/jammer"
@@ -58,7 +59,7 @@ class jammer:
                 "UHD_IMAGES_DIR": os.getenv("UHD_IMAGES_DIR")
             }
 
-            self.network_name = "docker_metrics"
+            self.network_name = "rt_metrics"
             self.docker_container = self.docker_client.containers.run(
                 network=self.network_name,
                 image=self.image_name,
@@ -108,12 +109,12 @@ class jammer:
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
                 self.influx_push(write_api, bucket='rtusystem', record_time_key="time", 
                             record={
-                                "measurement": "jammer_log",
+                                "measurement": "component_log",
                                 "tags": {
-                                    "testbed": "default",
-                                    "jammer_data_identifier": self.container_name,
+                                    "id": self.container_name,
+                                    "msg_uuid": uuid.uuid4(),
                                 },
-                            "fields": {"jammer_stdout_log": message_text},
+                            "fields": {"stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )

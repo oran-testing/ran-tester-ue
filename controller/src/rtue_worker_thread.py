@@ -73,7 +73,7 @@ class rtue:
             }
 
 
-            self.network_name = "docker_metrics"
+            self.network_name = "rt_metrics"
             self.docker_network = self.docker_client.networks.get(self.network_name)
             self.docker_container = self.docker_client.containers.run(
                 image=self.image_name,
@@ -125,13 +125,12 @@ class rtue:
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
                 self.influx_push(write_api, bucket='rtusystem', record_time_key="time", 
                             record={
-                                "measurement": "ue_info",
+                                "measurement": "component_log",
                                 "tags": {
-                                    "pci": "test",
-                                    "ue_data_identifier": f"{self.container_name}",
-                                    "testbed": "testing",
+                                    "id": f"{self.container_name}",
+                                    "msg_uuid": uuid.uuid4(),
                                 },
-                            "fields": {"rtue_stdout_log": message_text},
+                            "fields": {"stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )

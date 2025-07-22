@@ -6,9 +6,9 @@ processes:
       type: "b200"
       images_dir: "/usr/share/uhd/images/"
 
-  #- type: "sniffer"
-  #  id: "dci_sniffer_1"
-  #  config_file: "../5g-sniffer/MSU-Private5G184205.toml"
-  #  rf:
-  #    type: "b200"
-  #    images_dir: "/usr/share/uhd/images/"
+  - type: "sniffer"
+    id: "dci_sniffer_1"
+    config_file: "../5g-sniffer/MSU-Private5G184205.toml"
+    rf:
+      type: "b200"
+      images_dir: "/usr/share/uhd/images/"

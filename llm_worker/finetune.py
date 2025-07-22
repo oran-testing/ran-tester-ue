@@ -2,8 +2,7 @@ import json
 import torch
 from unsloth import FastLanguageModel, is_bfloat16_supported
 from datasets import load_dataset
-from transformers import TrainingArguments
-from trl import SFTTrainer
+from transformers import TrainingArguments from trl import SFTTrainer
 
 # ── Load the dataset ──────────────────────────────────────────────────────────
 dataset = load_dataset("json", data_files="sniffer_finetune_1000.jsonl", split="train")
@@ -51,8 +50,8 @@ model = FastLanguageModel.get_peft_model(
     model,
     r=16,
     target_modules=[
-        "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"
     ],
+    "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"
     lora_alpha=16,
     lora_dropout=0,
     bias="none",

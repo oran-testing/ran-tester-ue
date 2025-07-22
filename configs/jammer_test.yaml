@@ -1,0 +1,8 @@
+
+processes:
+  - type: "jammer"
+    id: "jammer_1"
+    config_file: .generated/jammer_1.yaml
+    rf:
+      type: "b200"
+      images_dir: /usr/share/uhd/images/

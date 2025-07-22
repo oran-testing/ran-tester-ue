@@ -52,7 +52,6 @@ class sniffer:
             raise RuntimeError(f"Invalid RF type for 5G sniffer: {rf_config['type']}")
 
         environment = {
-            "CONFIG": self.sniffer_config,
             "UHD_IMAGES_DIR": uhd_images_dir
         }
 
@@ -105,12 +104,12 @@ class sniffer:
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
                 self.influx_push(write_api, bucket='rtusystem', record_time_key="time", 
                             record={
-                                "measurement": "sniffer_log",
+                                "measurement": "component_log",
                                 "tags": {
-                                    "testbed": "default",
-                                    "sniffer_data_identifier": self.container_name,
+                                    "id": self.container_name,
+                                    "msg_uuid": uuid.uuid4(),
                                 },
-                            "fields": {"sniffer_stdout_log": message_text},
+                            "fields": {"stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )

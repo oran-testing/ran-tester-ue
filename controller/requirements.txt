@@ -5,7 +5,4 @@ uuid==1.30
 influxdb-client==1.46.0
 docker==7.1.0
 mypy==1.13.0
-websockets==14.0
-fastapi==0.110.1
-uvicorn==0.29.0
 requests==2.31.0
