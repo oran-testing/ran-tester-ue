@@ -34,7 +34,8 @@ jammer_prompt: |
     "output_csv_file": "output.csv",
     "write_iq": bool,
     "write_csv": bool,
-    "tx_gain": number
+    "tx_gain": number,
+    "device_args": string (standard UHD arguments for b200),
   }
 
   **DO NOT OMIT ANY FIELDS. DO NOT explain anything. DO NOT include code blocks or formatting.  DO NOT just copy the values from the example**
@@ -147,4 +148,4 @@ rtue_prompt: |
 
 user_prompt: |
   ### **User Request**
-  - "Generate a rtue configuration"
+  - "Generate a sniffer configuration"
