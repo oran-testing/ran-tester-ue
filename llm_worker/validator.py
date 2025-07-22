@@ -6,6 +6,8 @@ import json
 import logging
 import yaml
 import toml
+import configparser
+from io import StringIO
 
 class ResponseValidator:
     def __init__(self, raw_response: str, config_type: str = None):
@@ -124,35 +126,34 @@ class ResponseValidator:
             
         elif self.config_type == "rtue":
             # Delegate to the specific rtue formatter.
-            return self._format_rtue_toml(data_for_formatting)
+            return self._format_rtue_conf(data_for_formatting)
         return ""
         
 
-    def _format_rtue_toml(self, flat_data: dict) -> str:
-        # Maps the final TOML section names to the prefixes used in the flat JSON keys.
+    def _format_rtue_conf(self, flat_data: dict) -> str:
+
         section_map = {
             'rf': 'rf_', 'rat.eutra': 'rat_eutra_', 'rat.nr': 'rat_nr_',
             'pcap': 'pcap_', 'log': 'log_', 'usim': 'usim_', 'rrc': 'rrc_',
             'nas': 'nas_', 'gui': 'gui_'
         }
-        reconstructed_data = {}
-        for toml_section, prefix in section_map.items():
+
+        config = configparser.ConfigParser()
+        config.optionxform = str
+
+        for section_name, prefix in section_map.items():
             section_content = {}
-            # Find all keys in the flat data that belong to the current section.
             for flat_key, value in flat_data.items():
                 if flat_key.startswith(prefix):
-                    # "rf_tx_gain" becomes "tx_gain"
                     new_key = flat_key[len(prefix):]
-                    section_content[new_key] = value
-            # Only add the section to the TOML if keys for it were found.
+                    section_content[new_key] = str(value)
             if section_content:
-                current_level = reconstructed_data
-                # Handle nested sections like 'rat.nr' by splitting on the dot.
-                path = toml_section.split('.')
-                for part in path[:-1]:
-                    current_level = current_level.setdefault(part, {})
-                current_level[path[-1]] = section_content
-        return toml.dumps(reconstructed_data)
+                config[section_name] = section_content
+
+        # Write to string buffer in INI format
+        with StringIO() as output:
+            config.write(output)
+            return output.getvalue()
 
     def get_errors(self):
         return self.errors

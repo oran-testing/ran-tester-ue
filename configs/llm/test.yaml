@@ -148,4 +148,4 @@ rtue_prompt: |
 
 user_prompt: |
   ### **User Request**
-  - "Generate a sniffer configuration"
+  - "Generate a rtue configuration"
