@@ -128,7 +128,7 @@ class rtue:
                                 "measurement": "component_log",
                                 "tags": {
                                     "id": f"{self.container_name}",
-                                    "testbed": "default",
+                                    "msg_uuid": uuid.uuid4(),
                                 },
                             "fields": {"stdout_log": message_text},
                             "time": formatted_timestamp,

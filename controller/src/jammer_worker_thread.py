@@ -19,6 +19,7 @@ class jammer:
 
     def start(self, process_config):
         self.jammer_config = process_config["config_file"]
+        logging.debug(f"JAMMER CONFIG: {self.jammer_config}")
         self.container_name = process_config["id"]
 
         self.image_name = "ghcr.io/oran-testing/jammer"
@@ -110,8 +111,8 @@ class jammer:
                             record={
                                 "measurement": "component_log",
                                 "tags": {
-                                    "testbed": "default",
                                     "id": self.container_name,
+                                    "msg_uuid": uuid.uuid4(),
                                 },
                             "fields": {"stdout_log": message_text},
                             "time": formatted_timestamp,

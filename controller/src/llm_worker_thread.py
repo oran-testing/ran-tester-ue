@@ -1,5 +1,6 @@
 import time
 import os
+import uuid
 import threading
 import socket
 import logging
@@ -112,8 +113,8 @@ class llm_worker:
                     record={
                         "measurement": "component_log",
                         "tags": {
-                            "testbed": "default",
                             "id": self.container_name,
+                            "msg_uuid": uuid.uuid4(),
                         },
                         "fields": {"stdout_log": message_text},
                         "time": utc_timestamp,

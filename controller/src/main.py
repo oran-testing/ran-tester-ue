@@ -308,7 +308,7 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         logging.debug(f"{payload.keys()}")
         if not all(k in payload for k in ("id", "type", "config_str", "rf")):
                 self._set_headers(400)
-                self.wfile.write(json.dumps({"error": "Missing required fields: id, type, config_str"}).encode("utf-8"))
+                self.wfile.write(json.dumps({"error": "Missing required fields: id, type, config_str, rf"}).encode("utf-8"))
                 return
 
         if not all(k in payload["rf"] for k in ("images_dir", "type")):
@@ -338,6 +338,10 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
             self._set_headers(500)
             self.wfile.write(json.dumps({"error":f"Failed to write config to file {config_file}"}))
             return
+
+        # NOTE: config path must be translated to the host path
+        config_file = config_file.replace("/host", os.getenv("DOCKER_SYSTEM_DIRECTORY"))
+        logging.debug(f"Starting component with filename on host {config_file}")
 
         process_class = None
         try:
