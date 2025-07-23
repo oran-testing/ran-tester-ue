@@ -3,7 +3,7 @@ model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
 # model: codellama/CodeLlama-7b-Instruct-hf
 
 
-jammer_prompt: |
+jammer: |
   Your sole task is to take a user's RF jamming request and generate a **valid JSON object** containing the optimal configuration parameters.
   The configuration's goal is to start a jammer that can effectively jam the specified frequency.
 
@@ -22,7 +22,7 @@ jammer_prompt: |
 
   ### Example Output:
   {
-    "id": "jammer_sequence_number",
+    "id": "jammer_sequence_number", example: "jammer_01",
     "center_frequency": number,
     "bandwidth": number,
     "amplitude": number,
@@ -45,7 +45,7 @@ jammer_prompt: |
   ### USER REQUEST:
 
 
-sniffer_prompt: |
+sniffer: |
   You are an RF systems assistant. Your **only** job is to output a **valid JSON configuration** for a sniffer based on the user's high-level goal.
   The configuration's purpose is to capture signals at a specified frequency.
 
@@ -62,7 +62,7 @@ sniffer_prompt: |
 
   ### Example output:
   {
-    "id": "sniffer_sequence_number",
+    "id": "sniffer_sequence_number" example: "sniffer_01",
     "file_path": "/sniffer/captures/sniffer_01.fc32",
     "sample_rate": number,
     "frequency": number,
@@ -90,7 +90,7 @@ sniffer_prompt: |
   ### USER REQUEST:
 
 
-rtue_prompt: |
+rtue: |
   You are an RF systems assistant. Your **only** job is to output a **valid JSON configuration** for a sniffer based on the user's high-level goal.
   The configuration's purpose is to capture signals at a specified frequency.
 
@@ -163,17 +163,20 @@ rtue_prompt: |
 
 user_prompt: |
   ### **User Request**
-  - "Generate a rtue configuration"
+  - "Generate a jammer configuration and set the frequency to 5Ghz"
 
-planner_prompt: |
+intent_prompt: |
   You are an RF engineering assistant. Your job is to get the user prompt and determine the sequence of steps based on the user prompt.
 
   Available sequence of steps:
-  1. start a jammer
-  2. start a sniffer
-  3. start a rtue
+  1. generate a jammer configuration
+  2. generate a sniffer configuration
+  3. generate a rtue configuration
 
+  **Available components**
   components: jammer/sniffer/rtue
+
+  **Format schema
   Return the json as follows:
   {
     "component": "{component}",
@@ -195,4 +198,11 @@ planner_prompt: |
     "component": "jammer"
   }
 
-  **ONLY OUPUT THE ABOVE JSON AND NOTHING ELSE**
+  ### Example output:
+  {
+    "component": "sniffer"
+  }
+
+  **ONLY OUPUT A JSON AND NOTHING ELSE**
+
+  ### USER REQUEST:

@@ -62,6 +62,11 @@ class ResponseValidator:
             "general_metrics_influxdb_bucket":str, "general_metrics_period_secs": float, "general_ue_data_identifier": str
         } 
 
+        self.intent_schema = {
+            "component" : str,
+        }
+
+
     def validate(self) -> dict | None:
         json_str = self._extract_json()
         if not json_str: return None # Exit early if no JSON is found
@@ -69,10 +74,11 @@ class ResponseValidator:
         self.parsed_data = self._parse_json(json_str)
         if not self.parsed_data: return None # Exit early if JSON is invalid
 
-        # if self.config_type == "intent":
-        #     return {
-        #         "config_type": self.parsed_data["component"]
-        #     }
+        if self.config_type == "intent":
+            self._validate_schema(self.parsed_data, self.intent_schema, list(self.intent_schema.keys()))
+            return {
+                "config_type": self.parsed_data["component"]
+            }
 
         # Branch validation logic based on the config type determined in main.py
         if self.config_type == "jammer":
@@ -105,7 +111,9 @@ class ResponseValidator:
             "id": self.parsed_data.get("id"),
             "config_str": config_string
         }
-    
+
+
+
     def _format_validated_data(self, validated_data: dict) -> str:
         # Create a copy so we don't modify the original parsed data.
         data_for_formatting = validated_data.copy()

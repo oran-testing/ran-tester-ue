@@ -185,7 +185,6 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
     for obj in process_metadata:
         logging.debug(f"{obj['id']} {obj['token']}")
     return process_metadata
-# [Your existing imports... unchanged]
 
 class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
     def _get_permissions(self):

@@ -143,36 +143,16 @@ if __name__ == '__main__':
     model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained(model_str)
 
-    # TODO: use llm for intent determination
-    # user_request_text = Config.options.get("user_prompt", "")
-    # intent_prompt = Config.options.get("planner_prompt", "")
-
-    # user_request = generate_response(model, tokenizer, intent_prompt + user_request_text)
-
-    # logging.info(f"The output of intent generator: {user_request}")
-    # validator = ResponseValidator(user_request, config_type="intent")
-    # validated_data = validator.validate()
-
-    # config_type = validated_data.get("config_type")
-    # prompt = f"{config_type}_prompt"
-    # system_prompt = Config.options.get("prompt", "")
-    # original_prompt_content = system_prompt + user_request
-
-    # logging.info(f"original prompt: {original_prompt_content}")
-
-    # --- Intent Determination Logic ---
-    user_request_text = Config.options.get("user_prompt", "")
-    config_type, system_prompt = None, ""
-    if "sniffer" in user_request_text.lower():
-        config_type, system_prompt = "sniffer", Config.options.get("sniffer_prompt", "")
-    elif "jam" in user_request_text.lower():
-        config_type, system_prompt = "jammer", Config.options.get("jammer_prompt", "")
-    elif "rtue" in user_request_text.lower():
-        config_type, system_prompt = "rtue", Config.options.get("rtue_prompt", "")
-    else:
-        logging.warning("Could not determine config type from user prompt. Using raw prompt.")
-        system_prompt, user_request_text = user_request_text, ""
-    original_prompt_content = system_prompt + user_request_text
+    # using llm for intent determination
+    user_prompt = Config.options.get("user_prompt", "")
+    intent_prompt = Config.options.get("intent_prompt", "")
+    user_request = generate_response(model, tokenizer, intent_prompt + user_prompt)
+    validator = ResponseValidator(user_request, config_type="intent")
+    validated_data = validator.validate()
+    config_type = validated_data.get("config_type")
+    logging.info(f"Config type: {config_type}")
+    system_prompt = Config.options.get(f"{config_type}", "")
+    original_prompt_content = system_prompt + user_prompt
 
     # ---Initial Generation ---
     logging.info("="*20 + " EXECUTING PROMPT " + "="*20)
