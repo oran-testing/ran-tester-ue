@@ -63,7 +63,7 @@ class ResponseValidator:
         } 
 
         self.intent_schema = {
-            "component" : str,
+            "step": int, "component" : str, "action": str
         }
 
 
@@ -75,10 +75,36 @@ class ResponseValidator:
         if not self.parsed_data: return None # Exit early if JSON is invalid
 
         if self.config_type == "intent":
-            self._validate_schema(self.parsed_data, self.intent_schema, list(self.intent_schema.keys()))
-            return {
-                "config_type": self.parsed_data["component"]
-            }
+            # The output should be a list of step dictionaries.
+            if not isinstance(self.parsed_data, list):
+                self.errors.append("Expected a JSON array (list) of steps, but got a different type.")
+                return None
+            
+            if not self.parsed_data:
+                self.errors.append("The JSON array of steps is empty.")
+                return None
+
+            validated_steps = []
+            # Loop through each step object in the list.
+            for i, step_obj in enumerate(self.parsed_data):
+                if not isinstance(step_obj, dict):
+                    self.errors.append(f"Item {i} in the array is not a valid object (dictionary).")
+                    continue
+
+                # Validate the object against the schema.
+                self._validate_schema(step_obj, self.intent_schema, list(self.intent_schema.keys()))
+                
+                if step_obj.get("step") != i + 1:
+                    self.errors.append(f"Step numbering is incorrect at item {i}. Expected step {i+1}.")
+
+                validated_steps.append(step_obj)
+
+            if self.errors:
+                return None
+
+            # On success, return the validated list of steps.
+            # The structure is different from other configs, so it has its own return format.
+            return validated_steps
 
         # Branch validation logic based on the config type determined in main.py
         if self.config_type == "jammer":

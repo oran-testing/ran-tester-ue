@@ -127,17 +127,46 @@ def generate_response(model, tokenizer, prompt_content: str) -> str:
 def get_intent() -> str:    
     user_prompt = Config.options.get("user_prompt", "")
     intent_prompt = Config.options.get("intent_prompt", "")
-    user_request = generate_response(model, tokenizer, intent_prompt + user_prompt)
-    validator = ResponseValidator(user_request, config_type="intent")
-    validated_data = validator.validate()
-    config_type = validated_data.get("config_type")
-    logging.info(f"Config type: {config_type}")
 
-    return config_type if config_type else "Could not determine intent and complete prompt"
+    max_attempts = 5
+    attempt_count =1 
 
-    
+    while attempt_count <= max_attempts:
 
-def validation_loop(current_response_text: str) -> str:
+        user_request = generate_response(model, tokenizer, intent_prompt + user_prompt)
+        validator = ResponseValidator(user_request, config_type="intent")
+        validated_data = validator.validate()
+
+        if validated_data:
+            # config_type = validated_data.get("config_type")
+            # action = validated_data.get("action")
+            # logging.info(f"Config type: {config_type}\nRequired action: {action}")
+            logging.info({validated_data})
+            return validated_data
+        
+        logging.warning("Validation failed. Preparing to self-correct.")
+        attempt_count += 1
+        if attempt_count > max_attempts:
+            logging.error("Maximum correction attempts reached."); break
+        error_details = "\n".join([f"- {e}" for e in validator.get_errors()])
+        logging.warning(f"Validation Errors:\n{error_details}")
+        
+        correction_prompt_content = (
+            f"The previous JSON configuration you provided was invalid for the following reasons:\n"
+            f"{error_details}\n\n"
+            f"Please regenerate the entire, corrected JSON object based on the original request.\n"
+            f"--- ORIGINAL REQUEST ---\n{user_request}"
+        )
+
+        logging.info("Generating corrected response...")
+        current_response_text = generate_response(model, tokenizer, correction_prompt_content)
+        logging.info("="*20 + f" CORRECTED OUTPUT (ATTEMPT {attempt_count}) " + "="*20)
+        logging.info(f"'{current_response_text}'")
+        logging.info("="*20 + " END OF CORRECTED OUTPUT " + "="*20)    
+        
+
+
+def response_validation_loop(current_response_text: str) -> str:
     if config_type in ['sniffer', 'jammer', 'rtue']:
         logging.info(f"Config type is '{config_type}'. Starting validation and self-correction loop.")
         max_attempts = 25
@@ -202,9 +231,10 @@ if __name__ == '__main__':
     tokenizer = AutoTokenizer.from_pretrained(model_str)
 
     # using llm for intent determination
-    config_type = get_intent()
-    system_prompt, user_prompt = Config.options.get(f"{config_type}", ""), Config.options.get("user_prompt", "")
-    original_prompt_content = system_prompt + user_prompt
+    intent_output = get_intent()
+    config_type, action = intent_output.get("config_type"), intent_output.get("action")
+    system_prompt = Config.options.get(f"{config_type}", "")
+    original_prompt_content = system_prompt + action
 
     # ---Initial Generation ---
     logging.info("="*20 + " EXECUTING PROMPT " + "="*20)
@@ -215,37 +245,78 @@ if __name__ == '__main__':
 
 
     # --- Validation and Self-Correction Loop ---
-    validated_data = validation_loop(current_response_text)
+    validated_data = response_validation_loop(current_response_text)
     final_config_type = validated_data.get('type')
     final_config_id = validated_data.get('id')
     final_config_string = validated_data.get('config_str')
 
     # --- Final Outcome Logic (with controller API call) ---
-    if final_config_string:
+    if validated_data and validated_data.get('config_str'):
         logging.info("="*20 + " FINAL VALIDATED CONFIGURATION " + "="*20)
 
-        logging.info("--- PREPARING TO SEND PAYLOAD ---")
-        logging.info(f"Value of final_config_id: {final_config_id} (Type: {type(final_config_id)})")
-        logging.info(f"Value of final_config_type: {final_config_type} (Type: {type(final_config_type)})")
-        logging.info(f"Length of final_config_string: {len(final_config_string.strip())} (Type: {type(final_config_string)})")
-        logging.info(f"--- END OF PAYLOAD PREP ---")
 
 
-        json_payload = {"id": final_config_id, "type": final_config_type, "config_str": final_config_string}
-        logging.info(f"Attempting to start process with controller...")
-        logging.info(f"Payload being sent: {json.dumps(json_payload, indent=2)}")
-        json_payload["rf"] = {"type":"b200","images_dir":"/usr/share/uhd/images"}
-        success, response_data = start_process(control_url, auth_header, json_payload)
-        if success:
-            logging.info("Successfully sent start command to controller.")
-            logging.info(f"Controller response: {response_data}")
-        else:
+        controller_retry_max_attempts = 10
+        controller_attempt_count = 1
+        
+        while controller_attempt_count <= controller_retry_max_attempts:
+            # Extract latest validated data
+            final_config_type = validated_data.get('type')
+            final_config_id = validated_data.get('id')
+            final_config_string = validated_data.get('config_str')
+
+            logging.info("--- PREPARING TO SEND PAYLOAD ---")
+            logging.info(f"Value of final_config_id: {final_config_id} (Type: {type(final_config_id)})")
+            logging.info(f"Value of final_config_type: {final_config_type} (Type: {type(final_config_type)})")
+            logging.info(f"Length of final_config_string: {len(final_config_string.strip())}")
+            logging.info(f"--- END OF PAYLOAD PREP ---")
+
+            json_payload = {"id": final_config_id, "type": final_config_type, "config_str": final_config_string}
+            logging.info(f"Attempting to start process with controller (Attempt {controller_attempt_count}/{controller_retry_max_attempts})...")
+            logging.info(f"Payload being sent: {json.dumps(json_payload, indent=2)}")
+            json_payload["rf"] = {"type":"b200","images_dir":"/usr/share/uhd/images"}
+            
+            success, response_data = start_process(control_url, auth_header, json_payload)
+
+            if success:
+                logging.info("Successfully sent start command to controller.")
+                logging.info(f"Controller response: {response_data}")
+                logging.info("Script finished successfully.")
+                sys.exit(0) # Successful exit
+
+            # --- Handle Controller Rejection ---
             logging.error("Failed to start process via controller.")
-            logging.error(f"Controller error: {response_data}")
-            sys.exit(1)
-        logging.info("Script finished successfully.")
+            controller_error_details = response_data.get("error", "No error details from controller.")
+            logging.error(f"Controller error: {controller_error_details}")
+            
+            controller_attempt_count += 1
+            if controller_attempt_count > controller_retry_max_attempts:
+                logging.critical("Maximum controller retry attempts reached. Aborting script.")
+                sys.exit(1)
+
+            logging.warning("Attempting to generate a new configuration based on controller feedback.")
+
+            # Create a new prompt to correct the controller-level semantic error
+            controller_correction_prompt = (
+                f"The configuration you provided was syntactically valid, but the system controller REJECTED it for the following reason:\n"
+                f"{controller_error_details}\n\n"
+                f"This implies a logical or semantic error (e.g., an invalid parameter value, a resource conflict). "
+                f"Please analyze this feedback and regenerate the entire, corrected JSON object based on the original request.\n"
+                f"--- ORIGINAL REQUEST ---\n{original_prompt_content}"
+            )
+            
+            # Generate a new configuration based on controller feedback
+            current_response_text = generate_response(model, tokenizer, controller_correction_prompt)
+            
+            logging.info("="*20 + " RE-VALIDATING CONTROLLER CORRECTION " + "="*20)
+            validated_data = response_validation_loop(current_response_text, config_type, original_prompt_content)
+            
+            if not validated_data:
+                logging.error("The LLM produced a syntactically invalid configuration while trying to correct a controller error. Aborting.")
+                sys.exit(1)
+            
     else:
         logging.error("="*20 + " SCRIPT FAILED " + "="*20)
-        logging.error(f"Could not obtain a valid '{config_type}' configuration after all attempts.")
+        logging.error(f"Could not obtain a valid and non-empty '{config_type}' configuration after all attempts.")
         sys.exit(1)
 
