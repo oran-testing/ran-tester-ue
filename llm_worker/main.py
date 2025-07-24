@@ -124,26 +124,7 @@ def generate_response(model, tokenizer, prompt_content: str) -> str:
     return tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
 
 
-    
-
-
-if __name__ == '__main__':
-    control_ip, control_port, control_token = verify_env()
-    configure()
-    control_url = f"https://{control_ip}:{control_port}"
-    auth_header = f"Bearer {control_token}"
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-    # --- Model Setup ---
-    model_str = Config.options.get("model", None)
-    if not model_str:
-        logging.error("Model not specified")
-        sys.exit(1)
-    logging.debug(f"using model: {model_str}")
-    model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
-    tokenizer = AutoTokenizer.from_pretrained(model_str)
-
-    # using llm for intent determination
+def get_intent() -> str:    
     user_prompt = Config.options.get("user_prompt", "")
     intent_prompt = Config.options.get("intent_prompt", "")
     user_request = generate_response(model, tokenizer, intent_prompt + user_prompt)
@@ -151,20 +132,14 @@ if __name__ == '__main__':
     validated_data = validator.validate()
     config_type = validated_data.get("config_type")
     logging.info(f"Config type: {config_type}")
-    system_prompt = Config.options.get(f"{config_type}", "")
-    original_prompt_content = system_prompt + user_prompt
 
-    # ---Initial Generation ---
-    logging.info("="*20 + " EXECUTING PROMPT " + "="*20)
-    current_response_text = generate_response(model, tokenizer, original_prompt_content)
-    logging.info("="*20 + " MODEL GENERATED OUTPUT " + "="*20)
-    logging.info(f"'{current_response_text}'")
-    logging.info("="*20 + " END OF MODEL OUTPUT " + "="*20)
+    return config_type if config_type else "Could not determine intent and complete prompt"
 
-    # --- Validation and Self-Correction Loop ---
+    
+
+def validation_loop(current_response_text: str) -> str:
     if config_type in ['sniffer', 'jammer', 'rtue']:
         logging.info(f"Config type is '{config_type}'. Starting validation and self-correction loop.")
-        final_config_type, final_config_id, final_config_string = None, None, None
         max_attempts = 25
         attempt_count = 1
 
@@ -175,10 +150,7 @@ if __name__ == '__main__':
 
             if validated_data:
                 logging.info("Validation successful! Extracting final components.")
-                final_config_type = validated_data.get('type')
-                final_config_id = validated_data.get('id')
-                final_config_string = validated_data.get('config_str')
-                break
+                return validated_data
 
             logging.warning("Validation failed. Preparing to self-correct.")
             attempt_count += 1
@@ -205,39 +177,75 @@ if __name__ == '__main__':
             logging.info(f"'{current_response_text}'")
             logging.info("="*20 + " END OF CORRECTED OUTPUT " + "="*20)
 
-        # --- Final Outcome Logic (with controller API call) ---
-        if final_config_string:
-            logging.info("="*20 + " FINAL VALIDATED CONFIGURATION " + "="*20)
-
-            logging.info("--- PREPARING TO SEND PAYLOAD ---")
-            logging.info(f"Value of final_config_id: {final_config_id} (Type: {type(final_config_id)})")
-            logging.info(f"Value of final_config_type: {final_config_type} (Type: {type(final_config_type)})")
-            # For the config string, let's also check if it's just whitespace
-            is_string_blank = isinstance(final_config_string, str) and not final_config_string.strip()
-            logging.info(f"Value of final_config_string is blank: {is_string_blank} (Length: {len(final_config_string)})")
-            logging.info(f"--- END OF PAYLOAD PREP ---")
-
-
-            json_payload = {"id": final_config_id, "type": final_config_type, "config_str": final_config_string}
-
-            logging.info(f"Attempting to start process with controller...")
-            logging.info(f"Payload being sent: {json.dumps(json_payload, indent=2)}")
-            json_payload["rf"] = {"type":"b200","images_dir":"/usr/share/uhd/images"}
-            success, response_data = start_process(control_url, auth_header, json_payload)
-            if success:
-                logging.info("Successfully sent start command to controller.")
-                logging.info(f"Controller response: {response_data}")
-            else:
-                logging.error("Failed to start process via controller.")
-                logging.error(f"Controller error: {response_data}")
-                sys.exit(1)
-            logging.info("Script finished successfully.")
-        else:
-            logging.error("="*20 + " SCRIPT FAILED " + "="*20)
-            logging.error(f"Could not obtain a valid '{config_type}' configuration after all attempts.")
-            sys.exit(1)
     else:
         logging.warning(f"Skipping validation loop: No validation rules defined for config type '{config_type}'.")
         logging.info("="*20 + " FINAL UNVALIDATED OUTPUT " + "="*20)
         logging.info(current_response_text)
         logging.info("Script finished.")
+    
+
+
+if __name__ == '__main__':
+    control_ip, control_port, control_token = verify_env()
+    configure()
+    control_url = f"https://{control_ip}:{control_port}"
+    auth_header = f"Bearer {control_token}"
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    # --- Model Setup ---
+    model_str = Config.options.get("model", None)
+    if not model_str:
+        logging.error("Model not specified")
+        sys.exit(1)
+    logging.debug(f"using model: {model_str}")
+    model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
+    tokenizer = AutoTokenizer.from_pretrained(model_str)
+
+    # using llm for intent determination
+    config_type = get_intent()
+    system_prompt, user_prompt = Config.options.get(f"{config_type}", ""), Config.options.get("user_prompt", "")
+    original_prompt_content = system_prompt + user_prompt
+
+    # ---Initial Generation ---
+    logging.info("="*20 + " EXECUTING PROMPT " + "="*20)
+    current_response_text = generate_response(model, tokenizer, original_prompt_content)
+    logging.info("="*20 + " MODEL GENERATED OUTPUT " + "="*20)
+    logging.info(f"'{current_response_text}'")
+    logging.info("="*20 + " END OF MODEL OUTPUT " + "="*20)
+
+
+    # --- Validation and Self-Correction Loop ---
+    validated_data = validation_loop(current_response_text)
+    final_config_type = validated_data.get('type')
+    final_config_id = validated_data.get('id')
+    final_config_string = validated_data.get('config_str')
+
+    # --- Final Outcome Logic (with controller API call) ---
+    if final_config_string:
+        logging.info("="*20 + " FINAL VALIDATED CONFIGURATION " + "="*20)
+
+        logging.info("--- PREPARING TO SEND PAYLOAD ---")
+        logging.info(f"Value of final_config_id: {final_config_id} (Type: {type(final_config_id)})")
+        logging.info(f"Value of final_config_type: {final_config_type} (Type: {type(final_config_type)})")
+        logging.info(f"Length of final_config_string: {len(final_config_string.strip())} (Type: {type(final_config_string)})")
+        logging.info(f"--- END OF PAYLOAD PREP ---")
+
+
+        json_payload = {"id": final_config_id, "type": final_config_type, "config_str": final_config_string}
+        logging.info(f"Attempting to start process with controller...")
+        logging.info(f"Payload being sent: {json.dumps(json_payload, indent=2)}")
+        json_payload["rf"] = {"type":"b200","images_dir":"/usr/share/uhd/images"}
+        success, response_data = start_process(control_url, auth_header, json_payload)
+        if success:
+            logging.info("Successfully sent start command to controller.")
+            logging.info(f"Controller response: {response_data}")
+        else:
+            logging.error("Failed to start process via controller.")
+            logging.error(f"Controller error: {response_data}")
+            sys.exit(1)
+        logging.info("Script finished successfully.")
+    else:
+        logging.error("="*20 + " SCRIPT FAILED " + "="*20)
+        logging.error(f"Could not obtain a valid '{config_type}' configuration after all attempts.")
+        sys.exit(1)
+
