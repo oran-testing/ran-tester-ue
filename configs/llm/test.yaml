@@ -166,25 +166,24 @@ user_prompt: |
   - "Generate a jammer configuration and set the frequency to 5Ghz with tx gain 80"
 
 intent_prompt: |
-  You are an expert RF engineering assistant. Your task is to interpret a user's request and convert it into a precise, ordered sequence of machine-readable steps.
+  You are an expert RF engineering assistant. Your job is to convert the user's request into a precise, ordered list of configuration steps.
 
-  **The final output must be a single, valid JSON array.**
+  **Output must be a valid JSON array. No explanations.**
 
-  **Component & Action Library:**
-  - **rtue**: The "Real-Time User Equipment," which is the primary device being tested.
-    - action: "generate a rtue configuration"
-  - **sniffer**: A tool used to monitor or observe the `rtue`.
-    - action: "generate a sniffer configuration"
-  - **jammer**: A tool used to interfere with or "jam" the `rtue`.
-    - action: "generate a jammer configuration"
+  ---
+  **Allowed Components and Actions (use exactly):**
+  - "rtue": "generate a rtue configuration"
+  - "sniffer": "generate a sniffer configuration"
+  - "jammer": "generate a jammer configuration"
 
-  **Rules for Sequencing:**
-  1.  **RTUE First:** If the `rtue` is part of a test with other tools, its configuration is always the first step. It is the subject of the test.
-  2.  **Tools Second:** The `sniffer` and `jammer` are tools that act upon the `rtue`. They should be configured *after* the `rtue`.
-  3.  **Simple Requests:** If the request only involves one component, the output will be a JSON array with a single step.
+  Only use these exact actions. Do not invent or modify them.
 
-  **Required JSON Output Format:**
-  The output must be a JSON array `[]` containing one or more step objects `{}`. Each object must have three keys: `step`, `component`, and `action`.
+  ---
+  **Rules:**
+  - Only one step per component.
+  - If rtue is used, it must be step 1.
+  - Do not extract parameters like frequency or gain into separate steps — those are part of the configuration.
+  - Output only the structure below:
 
   [
     {
@@ -200,11 +199,10 @@ intent_prompt: |
   ]
 
   ---
-  ### Example 1: Single Component Request
-  **User Request:**
-  I want to jam a target.
+  **Examples**
 
-  **JSON Output:**
+  **User Request:** I want to jam a target.  
+  **Output:**
   [
     {
       "step": 1,
@@ -213,31 +211,8 @@ intent_prompt: |
     }
   ]
 
-  ---
-  ### Example 2: Multi-Component Request (Test & Observe)
-  **User Request:**
-  Test the sniffer with our rtue.
-
-  **JSON Output:**
-  [
-    {
-      "step": 1,
-      "component": "rtue",
-      "action": "generate a rtue configuration"
-    },
-    {
-      "step": 2,
-      "component": "sniffer",
-      "action": "generate a sniffer configuration"
-    }
-  ]
-
-  ---
-  ### Example 3: Complex Multi-Component Request (Test, Observe, & Interfere)
-  **User Request:**
-  I want to see what the sniffer picks up when we jam the rtue.
-
-  **JSON Output:**
+  **User Request:** Jam and sniff the rtue.  
+  **Output:**
   [
     {
       "step": 1,
@@ -255,3 +230,7 @@ intent_prompt: |
       "action": "generate a jammer configuration"
     }
   ]
+  **Allowed Components and Actions (use exactly):**
+  - "rtue": "generate a rtue configuration"
+  - "sniffer": "generate a sniffer configuration"
+  - "jammer": "generate a jammer configuration"

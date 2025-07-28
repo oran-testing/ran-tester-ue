@@ -201,14 +201,31 @@ class ResponseValidator:
         return self.errors
 
     def _extract_json(self):
-        # Find a JSON block, whether it's in a markdown code fence or not.
-        match = re.search(r"```(?:json)?\n([\s\S]*?)```", self.raw_response)
-        if match: return match.group(1).strip()
-        start = self.raw_response.find('{')
-        end = self.raw_response.rfind('}')
-        if start != -1 and end != -1: return self.raw_response[start:end+1]
-        self.errors.append("No valid JSON structure (e.g., '{...}') found.")
+        # Try extracting from markdown-style fenced code blocks first
+        fenced_blocks = re.findall(r"```(?:json)?\n([\s\S]*?)```", self.raw_response)
+        for block in fenced_blocks:
+            try:
+                parsed = json.loads(block.strip())
+                return block.strip()
+            except json.JSONDecodeError:
+                continue
+
+        # Fall back to trying the largest array or object in the text
+        bracket_pairs = [('[', ']'), ('{', '}')]
+        for open_bracket, close_bracket in bracket_pairs:
+            start = self.raw_response.find(open_bracket)
+            end = self.raw_response.rfind(close_bracket)
+            if start != -1 and end != -1:
+                candidate = self.raw_response[start:end+1].strip()
+                try:
+                    parsed = json.loads(candidate)
+                    return candidate
+                except json.JSONDecodeError:
+                    continue
+
+        self.errors.append("No valid JSON structure (array or object) could be parsed.")
         return None
+
 
     def _parse_json(self, json_str: str):
         try:

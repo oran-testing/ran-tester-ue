@@ -124,12 +124,12 @@ def generate_response(model, tokenizer, prompt_content: str) -> str:
     return tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
 
 
-def get_intent() -> str:    
+def get_intent() -> list[dict]:    
     user_prompt = Config.options.get("user_prompt", "")
     intent_prompt = Config.options.get("intent_prompt", "")
 
     max_attempts = 5
-    attempt_count =1 
+    attempt_count = 1 
 
     while attempt_count <= max_attempts:
 
@@ -138,16 +138,17 @@ def get_intent() -> str:
         validated_data = validator.validate()
 
         if validated_data:
-            # config_type = validated_data.get("config_type")
-            # action = validated_data.get("action")
-            # logging.info(f"Config type: {config_type}\nRequired action: {action}")
-            logging.info({validated_data})
+            # validated_data is a list of step dictionaries
+            for step in validated_data:
+                logging.info(f"[Intent Step] {step}")
             return validated_data
         
         logging.warning("Validation failed. Preparing to self-correct.")
         attempt_count += 1
         if attempt_count > max_attempts:
-            logging.error("Maximum correction attempts reached."); break
+            logging.error("Maximum correction attempts reached.")
+            break
+
         error_details = "\n".join([f"- {e}" for e in validator.get_errors()])
         logging.warning(f"Validation Errors:\n{error_details}")
         
@@ -162,7 +163,8 @@ def get_intent() -> str:
         current_response_text = generate_response(model, tokenizer, correction_prompt_content)
         logging.info("="*20 + f" CORRECTED OUTPUT (ATTEMPT {attempt_count}) " + "="*20)
         logging.info(f"'{current_response_text}'")
-        logging.info("="*20 + " END OF CORRECTED OUTPUT " + "="*20)    
+        logging.info("="*20 + " END OF CORRECTED OUTPUT " + "="*20)
+   
         
 
 
