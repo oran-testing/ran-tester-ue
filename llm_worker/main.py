@@ -87,7 +87,7 @@ def start_process(control_url, auth_header, json_payload):
         return False, {"error": response.text}
     except requests.exceptions.RequestException as e:
         return False, {"error":str(e)}
-
+ 
 def stop_process(control_url, auth_header, process_id):
     current_endpoint = "/stop"
     headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
@@ -124,48 +124,49 @@ def generate_response(model, tokenizer, prompt_content: str) -> str:
     return tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
 
 
-def get_intent() -> list[dict]:    
+def get_intent() -> list[dict]:
     user_prompt = Config.options.get("user_prompt", "")
     intent_prompt = Config.options.get("intent_prompt", "")
 
     max_attempts = 5
-    attempt_count = 1 
+    attempt_count = 1
+    current_prompt_content = intent_prompt.replace("{user_prompt}", user_prompt)
 
     while attempt_count <= max_attempts:
+        logging.info(f"Intent extraction attempt {attempt_count} of {max_attempts}")
+        logging.info(f"Prompt sent to model:\n{current_prompt_content}")
 
-        user_request = generate_response(model, tokenizer, intent_prompt + user_prompt)
-        validator = ResponseValidator(user_request, config_type="intent")
+        raw_response = generate_response(model, tokenizer, current_prompt_content)
+        logging.info(f"Model output:\n{raw_response}")
+
+        validator = ResponseValidator(raw_response, config_type="intent")
         validated_data = validator.validate()
 
         if validated_data:
-            # validated_data is a list of step dictionaries
-            for step in validated_data:
-                logging.info(f"[Intent Step] {step}")
+            logging.info(f"Intent extraction successful. Components: {validated_data}")
             return validated_data
-        
-        logging.warning("Validation failed. Preparing to self-correct.")
+
+        error_details = "\n".join(validator.get_errors())
+        logging.warning(f"Validation failed on attempt {attempt_count}")
+        logging.warning("Errors:\n" + error_details)
+
         attempt_count += 1
         if attempt_count > max_attempts:
-            logging.error("Maximum correction attempts reached.")
             break
 
-        error_details = "\n".join([f"- {e}" for e in validator.get_errors()])
-        logging.warning(f"Validation Errors:\n{error_details}")
-        
+        # Build correction prompt for next attempt
         correction_prompt_content = (
-            f"The previous JSON configuration you provided was invalid for the following reasons:\n"
+            f"The previous intent JSON you provided was invalid for the following reasons:\n"
             f"{error_details}\n\n"
-            f"Please regenerate the entire, corrected JSON object based on the original request.\n"
-            f"--- ORIGINAL REQUEST ---\n{user_request}"
+            f"Please regenerate the entire, corrected intent JSON object based on the original user request.\n"
+            f"--- ORIGINAL USER REQUEST ---\n{user_prompt}"
         )
+        logging.info(f"Correction prompt for regeneration:\n{correction_prompt_content}")
+        current_prompt_content = correction_prompt_content
 
-        logging.info("Generating corrected response...")
-        current_response_text = generate_response(model, tokenizer, correction_prompt_content)
-        logging.info("="*20 + f" CORRECTED OUTPUT (ATTEMPT {attempt_count}) " + "="*20)
-        logging.info(f"'{current_response_text}'")
-        logging.info("="*20 + " END OF CORRECTED OUTPUT " + "="*20)
+    logging.error("Max attempts reached. Intent extraction failed.")
+    return []
    
-        
 
 
 def response_validation_loop(current_response_text: str) -> str:

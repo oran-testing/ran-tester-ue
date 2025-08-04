@@ -62,12 +62,9 @@ class ResponseValidator:
             "general_metrics_influxdb_bucket":str, "general_metrics_period_secs": float, "general_ue_data_identifier": str
         } 
 
-        self.intent_schema = {
-            "step": int, "component" : str, "action": str
-        }
+        self.valid_components = {"rtue", "sniffer", "jammer"} 
 
-
-    def validate(self) -> dict | None:
+    def validate(self) -> dict | list | None:
         json_str = self._extract_json()
         if not json_str: return None # Exit early if no JSON is found
 
@@ -75,37 +72,16 @@ class ResponseValidator:
         if not self.parsed_data: return None # Exit early if JSON is invalid
 
         if self.config_type == "intent":
-            # The output should be a list of step dictionaries.
             if not isinstance(self.parsed_data, list):
-                self.errors.append("Expected a JSON array (list) of steps, but got a different type.")
+                self.errors.append("Intent must be a JSON array/list")
                 return None
+            logging.info(f"Validating intent list: {self.parsed_data}")
+            self._validate_intent_values(self.parsed_data)
             
-            if not self.parsed_data:
-                self.errors.append("The JSON array of steps is empty.")
-                return None
-
-            validated_steps = []
-            # Loop through each step object in the list.
-            for i, step_obj in enumerate(self.parsed_data):
-                if not isinstance(step_obj, dict):
-                    self.errors.append(f"Item {i} in the array is not a valid object (dictionary).")
-                    continue
-
-                # Validate the object against the schema.
-                self._validate_schema(step_obj, self.intent_schema, list(self.intent_schema.keys()))
-                
-                if step_obj.get("step") != i + 1:
-                    self.errors.append(f"Step numbering is incorrect at item {i}. Expected step {i+1}.")
-
-                validated_steps.append(step_obj)
-
             if self.errors:
                 return None
-
-            # On success, return the validated list of steps.
-            # The structure is different from other configs, so it has its own return format.
-            return validated_steps
-
+            return self.parsed_data
+            
         # Branch validation logic based on the config type determined in main.py
         if self.config_type == "jammer":
             # For jammer, all keys in its schema are considered required.
@@ -264,5 +240,13 @@ class ResponseValidator:
         if data.get("pdcch_num_prbs", 0) <= 0: self.errors.append("pdcch_num_prbs must be > 0")
         if not (0 <= data.get("ssb_numerology") <= 4): self.errors.append("ssb_numerology must be >= 0 and <= 4")
 
+    def _validate_intent_values(self, data: list) -> None:
+        """Validates a list of component names against valid_components set."""
+        if not all(isinstance(item, str) for item in data):
+            self.errors.append("All items in intent list must be strings")
+            return
 
-
+        invalid_components = [c for c in data if c not in self.valid_components]
+        if invalid_components:
+            self.errors.append(f"Invalid component(s) in intent list: {invalid_components}")
+            return
