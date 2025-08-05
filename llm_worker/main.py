@@ -215,7 +215,16 @@ def response_validation_loop(current_response_text: str, config_type:str, origin
         logging.info(current_response_text)
         logging.info("Script finished.")
     return None
-    
+
+def save_config_to_file(config_str: str, config_type: str, config_id: str, output_dir: str = "/host/configs"):
+    import os
+    os.makedirs(output_dir, exist_ok=True)
+    filename = f"{config_type}_{config_id}.toml"
+    filepath = os.path.join(output_dir, filename)
+    with open(filepath, "w") as f:
+        f.write(config_str)
+    logging.info(f"Config saved to: {filepath}")
+
 
 
 if __name__ == '__main__':
@@ -260,10 +269,10 @@ if __name__ == '__main__':
         final_config_id = validated_data.get('id')
         final_config_string = validated_data.get('config_str')
 
+        save_config_to_file(final_config_string, final_config_type, final_config_id)
         # --- Final Outcome Logic (with controller API call) ---
         if validated_data and validated_data.get('config_str'):
             logging.info("="*20 + " FINAL VALIDATED CONFIGURATION " + "="*20)
-
 
 
             controller_retry_max_attempts = 10
@@ -328,4 +337,10 @@ if __name__ == '__main__':
             logging.error("="*20 + " SCRIPT FAILED " + "="*20)
             logging.error(f"Could not obtain a valid and non-empty '{config_type}' configuration after all attempts.")
             sys.exit(1)
+
+
+
+    logging.info("Entering infinite loop to keep container alive for inspection.")
+    while True:
+        time.sleep(60)
 
