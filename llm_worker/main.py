@@ -19,6 +19,15 @@ import requests
 
 from validator import ResponseValidator
 
+# ============================================================================
+# KNOWLEDGE AUGMENTOR ADDITIONS (formerly "RAG")
+# - Assumes chroma/sentence-transformers are available in the environment.
+# - Adds a lightweight retrieval helper and prompt augmentation.
+# ============================================================================
+import chromadb  # <-- CHANGE: added
+from chromadb.utils import embedding_functions  # <-- CHANGE: added
+# ============================================================================
+
 
 class Config:
     filename : str = ""
@@ -226,6 +235,61 @@ def save_config_to_file(config_str: str, config_type: str, config_id: str, outpu
     logging.info(f"Config saved to: {filepath}")
 
 
+# ============================================================================
+# KNOWLEDGE AUGMENTOR: retrieval + prompt augmentation (RENAME FROM "RAG")
+# ============================================================================
+class KnowledgeAugmentor:
+    """
+    Minimal retrieval helper around ChromaDB to fetch domain snippets
+    and build a context string for prompt augmentation.
+    """
+    def __init__(self, db_dir="vector_db", collection_name="rf_knowledge", model_name="all-MiniLM-L6-v2"):
+        logging.info("Initializing KnowledgeAugmentor...")
+        sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=model_name)
+        db_client = chromadb.PersistentClient(path=db_dir)
+        self.collection = db_client.get_collection(name=collection_name, embedding_function=sentence_transformer_ef)
+        logging.info("KnowledgeAugmentor initialized.")
+
+    def retrieve_context(self, query: str, n_results: int = 3) -> str:
+        logging.info(f"[KnowledgeAugmentor] Retrieving context for query: '{query}'")
+        results = self.collection.query(query_texts=[query], n_results=n_results)
+        docs = results['documents'][0]
+        ctx = []
+        for i, doc in enumerate(docs):
+            source = results['metadatas'][0][i].get('source', 'unknown')
+            logging.info(f"  [Doc {i+1} from '{source}']: {doc[:120].strip().replace(chr(10),' ')}...")
+            ctx.append(f"- From {source}:\n{doc}")
+        return "\n\n".join(ctx).strip()
+
+    @staticmethod
+    def build_augmented_prompt(context: str, system_prompt_block: str, user_request: str) -> str:
+        """
+        Structured prompt used consistently across components.
+        - Context: retrieved engineering rules/examples
+        - Instructions: the schema/formatting portion of the system prompt
+        - User Request: the actual user input/goal
+        """
+        return f"""You are an expert RF systems assistant.
+First, review the provided CONTEXT for critical engineering rules.
+Then, use that context to follow the INSTRUCTIONS to generate a valid JSON configuration that fulfills the USER REQUEST.
+
+--- CONTEXT (Rules & Formulas) ---
+{context}
+--- END OF CONTEXT ---
+
+--- INSTRUCTIONS (Schema & Formatting) ---
+{system_prompt_block}
+--- END OF INSTRUCTIONS ---
+
+--- USER REQUEST ---
+{user_request}
+
+Provide only the final JSON object.
+
+--- JSON OUTPUT ---""".strip()
+# ============================================================================
+
+
 
 if __name__ == '__main__':
     control_ip, control_port, control_token = verify_env()
@@ -243,6 +307,12 @@ if __name__ == '__main__':
     model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained(model_str)
 
+    # ------------------------------------------------------------------------
+    # KNOWLEDGE AUGMENTOR: single initialization (ASSUMED AVAILABLE)
+    # ------------------------------------------------------------------------
+    kb = KnowledgeAugmentor()  # <-- CHANGE: instantiate augmentor once
+    # ------------------------------------------------------------------------
+
     # using llm for intent determination
     intent_output = get_intent()
 
@@ -250,11 +320,32 @@ if __name__ == '__main__':
         logging.info(f"Intent component: {config_type}")
         user_prompt = Config.options.get("user_prompt", "")
         system_prompt = Config.options.get(config_type, "")
-        original_prompt_content = system_prompt + user_prompt
+        original_prompt_content = system_prompt + user_prompt  # preserved for logs/validator context
+
+        # --------------------------------------------------------------------
+        # KNOWLEDGE AUGMENTOR: prompt structuring
+        # - Extract INSTRUCTIONS block from the system prompt.
+        # - Retrieve engineering CONTEXT for the specific component + request.
+        # - Build a single, well-structured augmented prompt.
+        # --------------------------------------------------------------------
+        # CHANGE: split out instruction-only portion if system prompt includes a user section.
+        system_instructions = system_prompt.split("### USER REQUEST:")[0] if "### USER REQUEST:" in system_prompt else system_prompt
+
+        # CHANGE: build a retrieval query that is explicit about the component and goal.
+        retrieval_query = f"Rules, constraints, and known-good examples for a '{config_type}' configuration to fulfill: {user_prompt}"
+        retrieved_context = kb.retrieve_context(retrieval_query)
+
+        # CHANGE: construct the final augmented prompt.
+        prompt_to_use = KnowledgeAugmentor.build_augmented_prompt(
+            context=retrieved_context,
+            system_prompt_block=system_instructions,
+            user_request=user_prompt
+        )
+        # --------------------------------------------------------------------
 
         # ---Initial Generation ---
         logging.info("="*20 + " EXECUTING PROMPT " + "="*20)
-        current_response_text = generate_response(model, tokenizer, original_prompt_content)
+        current_response_text = generate_response(model, tokenizer, prompt_to_use)
         logging.info("="*20 + " MODEL GENERATED OUTPUT " + "="*20)
         logging.info(f"'{current_response_text}'")
         logging.info("="*20 + " END OF MODEL OUTPUT " + "="*20)
@@ -343,4 +434,3 @@ if __name__ == '__main__':
     logging.info("Entering infinite loop to keep container alive for inspection.")
     while True:
         time.sleep(60)
-
