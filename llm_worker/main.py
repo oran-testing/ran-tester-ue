@@ -19,14 +19,10 @@ import requests
 
 from validator import ResponseValidator
 
-# ============================================================================
 # KNOWLEDGE AUGMENTOR ADDITIONS
-# - Assumes chroma/sentence-transformers are available in the environment.
 # - Adds a lightweight retrieval helper and prompt augmentation.
-# ============================================================================
-import chromadb  # <-- CHANGE: added
-from chromadb.utils import embedding_functions  # <-- CHANGE: added
-# ============================================================================
+import chromadb  
+from chromadb.utils import embedding_functions  
 
 
 class Config:
@@ -253,7 +249,7 @@ class KnowledgeAugmentor:
         self.collection = db_client.get_collection(name=collection_name, embedding_function=sentence_transformer_ef)
         logging.info("KnowledgeAugmentor initialized.")
 
-    # CHANGE: component-filtered retrieval to avoid mixing unrelated docs
+    # component-filtered retrieval to avoid mixing unrelated docs
     def retrieve_context_for_component(self, component: str, query: str, n_results: int = 3) -> str:
         logging.info(f"[KnowledgeAugmentor] Retrieving context for component='{component}' | query='{query}'")
         results = self.collection.query(
@@ -321,11 +317,8 @@ if __name__ == '__main__':
     model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained(model_str)
 
-    # ------------------------------------------------------------------------
-    # KNOWLEDGE AUGMENTOR: single initialization (ASSUMED AVAILABLE)
-    # ------------------------------------------------------------------------
-    kb = KnowledgeAugmentor()  # <-- CHANGE: instantiate augmentor once
-    # ------------------------------------------------------------------------
+
+    kb = KnowledgeAugmentor()  # instantiate augmentor once
 
     # using llm for intent determination
     intent_output = get_intent()
@@ -342,16 +335,16 @@ if __name__ == '__main__':
         # - Retrieve engineering CONTEXT filtered to the specific component.
         # - Build a single, well-structured augmented prompt.
         # --------------------------------------------------------------------
-        # CHANGE: split out instruction-only portion if system prompt includes a user section.
+        # split out instruction-only portion if system prompt includes a user section.
         system_instructions = system_prompt.split("### USER REQUEST:")[0] if "### USER REQUEST:" in system_prompt else system_prompt
 
-        # CHANGE: build a retrieval query that is explicit about the component and goal.
+        # build a retrieval query that is explicit about the component and goal.
         retrieval_query = f"Rules, constraints, and known-good examples for a '{config_type}' configuration to fulfill: {user_prompt}"
 
-        # CHANGE: component-filtered retrieval call
+        # omponent-filtered retrieval call
         retrieved_context = kb.retrieve_context_for_component(config_type, retrieval_query)
 
-        # CHANGE: construct the final augmented prompt.
+        # construct the final augmented prompt.
         prompt_to_use = KnowledgeAugmentor.build_augmented_prompt(
             context=retrieved_context,
             system_prompt_block=system_instructions,

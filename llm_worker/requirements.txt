@@ -8,3 +8,5 @@ accelerate>=1.8.1
 tomli>=2.0.1
 uvicorn[standard]>=0.29.0
 toml
+sentence-transformers
+chromadb
