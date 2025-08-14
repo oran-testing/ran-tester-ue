@@ -4,16 +4,34 @@ This document contains the rules, constraints, and default values for generating
 
 ### RF Parameters
 
-- **Gain Settings**: The RT-UE transmit gain (`rf_tx_gain`) should be set within an optimal range of 40-60 dB. The receive gain (`rf_rx_gain`) is typically set between 30-50 dB.
-- **Sample Rate (`rf_srate`)**: The sample rate must be a standard value compatible with 5G NR channel bandwidths. Valid options include 15.36e6 (for 10MHz), 23.04e6 (for 20MHz), and 30.72e6 (for 20MHz). A common default is 23.04e6.
-- **Hardware Device**: The `rf_device_name` is typically 'uhd' for USRP radios. The corresponding `rf_device_args` for a standard setup is 'clock=internal'.
+- **Gain Settings**: `rf_tx_gain` = 40–60 dB; `rf_rx_gain` = 30–50 dB.
+- **Sample Rate (`rf_srate`)**: Must be one of:
+  - 1.536e7 (10 MHz)
+  - 2.304e7 (20 MHz)
+  - 3.072e7 (20 MHz, 30 kHz SCS)  
+  Default for 20 MHz: 2.304e7.
+- **Hardware Device**: If `rf_device_name` = `"uhd"`, `rf_device_args` must:
+  - Include `type=<usrp_model>` (e.g., `type=b200`)
+  - Optionally specify `clock=internal|external`
+  - Optionally specify `master_clock_rate` if needed.
 
 ### 5G NR Channel Parameters
 
-- **Physical Resource Blocks (PRBs)**: The number of PRBs is directly tied to the channel bandwidth. For a 20MHz channel bandwidth (which corresponds to a sample rate of 23.04e6), the `rat_nr_nof_prb` and `rat_nr_max_nof_prb` must both be set to 106.
-- **E-UTRA (4G LTE)**: In a 5G-only test, E-UTRA is typically disabled by setting `rat_eutra_nof_carriers` to 0. A default `dl_earfcn` like 2850 (Band 7) can be used as a placeholder.
+- **PRB Count**: For 20 MHz (`rf_srate`=2.304e7), set `rat_nr_nof_prb` = `rat_nr_max_nof_prb` = 106.
+- **E-UTRA (LTE)**: In 5G-only mode, set `rat_eutra_nof_carriers` = 0.  
+  `rat_eutra_dl_earfcn` can be a placeholder (e.g., 2850).
 
 ### Fixed Default Configurations
 
-- **USIM Parameters**: For a test environment, the USIM configuration uses fixed, standard values to ensure compatibility. The mode must be 'soft' and the algorithm 'milenage'. The `usim_opc`, `usim_k`, `usim_imsi`, and `usim_imei` keys have specific, constant values that should always be used.
-- **Network and Logging**: The GUI (`gui_enable`) must be disabled (`false`). The gateway (`gw`) and InfluxDB metrics (`general`) sections use predefined constant values for IP addresses, tokens, and filenames to integrate with the test environment.
+- **USIM**: `usim_mode` = `"soft"`, `usim_algo` = `"milenage"`.  
+  Test constants may be used for `usim_opc`, `usim_k`, `usim_imsi`, `usim_imei`.
+- **Network & Logging**:
+  - `gui_enable` = `false`
+  - `general_metrics_influxdb_token` must be `"<set_in_env>"` (do not hardcode secrets)
+  - `gw` and `general` fields use predefined constants for IP/ports
+
+### Output Requirements
+
+- Use snake_case for all keys.
+- All booleans must be lowercase `true`/`false`.
+- Frequencies in scientific notation where applicable.

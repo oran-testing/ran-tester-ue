@@ -163,7 +163,7 @@ rtue: |
 
 user_prompt: |
   ### **User Request**
-  - "I want to test the sniffer and the rtue"
+  - "I want to test all rtue, sniffer, and jammer"
 
 intent_prompt: |
   You are an expert RF assistant.
