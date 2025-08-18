@@ -19,8 +19,6 @@ import requests
 
 from validator import ResponseValidator
 
-# KNOWLEDGE AUGMENTOR ADDITIONS
-# - Adds a lightweight retrieval helper and prompt augmentation.
 import chromadb  
 from chromadb.utils import embedding_functions  
 
@@ -231,9 +229,7 @@ def save_config_to_file(config_str: str, config_type: str, config_id: str, outpu
     logging.info(f"Config saved to: {filepath}")
 
 
-# ============================================================================
-# KNOWLEDGE AUGMENTOR: retrieval + prompt augmentation
-# ============================================================================
+# retrieval + prompt augmentation
 class KnowledgeAugmentor:
     """
     Minimal retrieval helper around ChromaDB to fetch domain snippets
@@ -297,8 +293,6 @@ Then, use that context to follow the INSTRUCTIONS to generate a valid JSON confi
 Provide only the final JSON object.
 
 --- JSON OUTPUT ---""".strip()
-# ============================================================================
-
 
 
 if __name__ == '__main__':
@@ -329,12 +323,11 @@ if __name__ == '__main__':
         system_prompt = Config.options.get(config_type, "")
         original_prompt_content = system_prompt + user_prompt  # preserved for logs/validator context
 
-        # --------------------------------------------------------------------
-        # KNOWLEDGE AUGMENTOR: prompt structuring
+        #   prompt structuring
         # - Extract INSTRUCTIONS block from the system prompt.
         # - Retrieve engineering CONTEXT filtered to the specific component.
         # - Build a single, well-structured augmented prompt.
-        # --------------------------------------------------------------------
+
         # split out instruction-only portion if system prompt includes a user section.
         system_instructions = system_prompt.split("### USER REQUEST:")[0] if "### USER REQUEST:" in system_prompt else system_prompt
 
