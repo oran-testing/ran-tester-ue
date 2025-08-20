@@ -7,7 +7,7 @@ RUN apk update && apk --no-cache add ca-certificates wget libstdc++ \
     git cmake make gcc g++ pkgconfig fftw-dev mbedtls-dev \
     yaml-cpp-dev gtest-dev zeromq-dev spdlog-dev fmt-dev \
     uhd-dev clang linux-headers autoconf automake libtool cppzmq \
-    musl-dev boost-dev lksctp-tools-dev libvolk-dev zeromq-dev gcompat
+    musl-dev boost-dev lksctp-tools-dev libvolk-dev zeromq-dev gcompat 
 
 # Install liquid-dsp
 RUN git clone https://github.com/jgaeddert/liquid-dsp.git && \
