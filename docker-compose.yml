@@ -75,9 +75,9 @@ services:
     image: ghcr.io/oran-testing/rtue
     build:
       context: ./rtue
-      dockerfile: Dockerfile.alpine
-    depends_on:
-      - components_base
+      dockerfile: Dockerfile
+    #depends_on:
+    # - components_base
     privileged: true
     env_file:
       - .env
