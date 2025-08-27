@@ -126,6 +126,23 @@ def generate_response(model, tokenizer, prompt_content: str) -> str:
     newly_generated_tokens = output_tokens[0, input_length:]
     return tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
 
+def generate_response_with_sampling(model, tokenizer, prompt_content: str) -> str:
+    messages = [{"role": "user", "content": prompt_content}]
+    formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
+    generation_config = GenerationConfig(
+        max_new_tokens=1024,
+        do_sample=True,
+        temperature=0.3,
+        top_p=0.9,
+        pad_token_id=tokenizer.eos_token_id
+    )
+    with torch.no_grad():
+        output_tokens = model.generate(**inputs, generation_config=generation_config)
+    input_length = inputs['input_ids'].shape[1]
+    newly_generated_tokens = output_tokens[0, input_length:]
+    return tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
+
 
 def get_intent() -> list[dict]:
     user_prompt = Config.options.get("user_prompt", "")
@@ -133,7 +150,7 @@ def get_intent() -> list[dict]:
 
     max_attempts = 5
     attempt_count = 1
-    current_prompt_content = intent_prompt.replace("{user_prompt}", user_prompt)
+    current_prompt_content = intent_prompt + user_prompt
 
     while attempt_count <= max_attempts:
         logging.info(f"Intent extraction attempt {attempt_count} of {max_attempts}")
@@ -200,14 +217,41 @@ def response_validation_loop(current_response_text: str, config_type:str, origin
             #     logging.info("Clearing CUDA cache to prevent out-of-memory errors.")
             #     torch.cuda.empty_cache()
 
+            # add explicit, component-specific guardrails to steer correction
+            constraint_hint = ""
+            if config_type == "jammer":
+                constraint_hint = (
+                    "Apply these constraints strictly for 'jammer':\n"
+                    "- center_frequency must be within NR FR1 (410e6–7.125e9) or FR2 (24.25e9–52.6e9).\n"
+                    "- If device_args contains b200/b210, center_frequency <= 6e9 and FR2 is not allowed.\n"
+                    "- sampling_freq >= 2x bandwidth, and for b200-family sampling_freq <= 61.44e6; bandwidth <= ~56e6.\n"
+                    "- amplitude in [0,1], tx_gain in [0,90], num_samples > 0.\n"
+                )
+            elif config_type == "sniffer":
+                constraint_hint = (
+                    "Apply these constraints strictly for 'sniffer':\n"
+                    "- frequency must be within NR FR1 (410e6–7.125e9) or FR2 (24.25e9–52.6e9).\n"
+                    "- ssb_numerology in [0,4]; pdcch_coreset_duration in {1,2,3}.\n"
+                    "- pdcch_num_prbs > 0; list lengths: dci_sizes=2, AL_corr_thresholds=5, num_candidates_per_AL=5.\n"
+                )
+            elif config_type == "rtue":
+                constraint_hint = (
+                    "Apply these constraints strictly for 'rtue':\n"
+                    "- rf_srate > 0; rf_tx_gain and rf_rx_gain in [0,90].\n"
+                    "- rat_nr_nof_prb > 0 and rat_nr_max_nof_prb >= rat_nr_nof_prb.\n"
+                    "- If rf_srate ≈ 23.04e6 or 30.72e6 then rat_nr_nof_prb must be 106.\n"
+                )
+
             correction_prompt_content = (
-                f"The previous JSON configuration you provided was invalid for the following reasons:\n"
-                f"{error_details}\n\n"
-                f"Please regenerate the entire, corrected JSON object based on the original request.\n"
+                f"You must output a SINGLE JSON object for the '{config_type}' component ONLY. "
+                f"DO NOT include code fences or commentary. Fix the fields that violate the errors below so the JSON passes validation.\n\n"
+                f"{constraint_hint}"
+                f"Errors to fix:\n{error_details}\n\n"
+                f"Regenerate the COMPLETE JSON now based on the original request below.\n"
                 f"--- ORIGINAL REQUEST ---\n{original_prompt_content}"
             )
             logging.info("Generating corrected response...")
-            current_response_text = generate_response(model, tokenizer, correction_prompt_content)
+            current_response_text = generate_response_with_sampling(model, tokenizer, correction_prompt_content)
             logging.info("="*20 + f" CORRECTED OUTPUT (ATTEMPT {attempt_count}) " + "="*20)
             logging.info(f"'{current_response_text}'")
             logging.info("="*20 + " END OF CORRECTED OUTPUT " + "="*20)
@@ -334,7 +378,6 @@ if __name__ == '__main__':
         # build a retrieval query that is explicit about the component and goal.
         retrieval_query = f"Rules, constraints, and known-good examples for a '{config_type}' configuration to fulfill: {user_prompt}"
 
-        # omponent-filtered retrieval call
         retrieved_context = kb.retrieve_context_for_component(config_type, retrieval_query)
 
         # construct the final augmented prompt.
@@ -433,6 +476,6 @@ if __name__ == '__main__':
 
 
 
-    logging.info("Entering infinite loop to keep container alive for inspection.")
-    while True:
-        time.sleep(60)
+    # logging.info("Entering infinite loop to keep container alive for inspection.")
+    # while True:
+    #     time.sleep(60)

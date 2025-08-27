@@ -229,8 +229,8 @@ class ResponseValidator:
         amp = data.get("amplitude", -1)
         if not (0.0 <= amp <= 1.0):
             self.errors.append("amplitude must be between 0 and 1")
-        if data.get("tx_gain", -1) < 0:
-            self.errors.append("tx_gain must be >= 0")
+        if data.get("tx_gain", -1) < 0 or data.get("tx_gain", 0) > 90:
+            self.errors.append("tx_gain must be between 0 and 90")
 
         # Nyquist for generation
         sf = data.get("sampling_freq"); bw = data.get("bandwidth")
@@ -243,6 +243,33 @@ class ResponseValidator:
         if isinstance(f0, (int, float)):
             if f0 <= 0:
                 self.errors.append("center_frequency must be > 0")
+            else:
+                in_fr1 = 410e6 <= f0 <= 7125e6
+                in_fr2 = 24.25e9 <= f0 <= 52.6e9
+                if not (in_fr1 or in_fr2):
+                    self.errors.append("center_frequency must be inside NR FR1 (410e6–7.125e9) or FR2 (24.25e9–52.6e9)")
+
+        # Hardware gating (simple detection via device_args)
+        dev = data.get("device_args", "") or ""
+        dev_lower = dev.lower()
+
+        # USRP B200-family constraints
+        if "b200" in dev_lower or "b210" in dev_lower:
+            if isinstance(f0, (int, float)):
+                if f0 > 6e9:
+                    self.errors.append("center_frequency exceeds B200-family tuning range (<= 6e9)")
+                in_fr2 = 24.25e9 <= f0 <= 52.6e9
+                if in_fr2:
+                    self.errors.append("B200-family cannot operate in NR FR2 (24.25e9–52.6e9)")
+            if isinstance(sf, (int, float)) and sf > 61.44e6:
+                self.errors.append("sampling_freq exceeds B200-family practical maximum (~61.44e6)")
+            if isinstance(bw, (int, float)) and bw > 56e6:
+                self.errors.append("bandwidth exceeds B200-family front-end practical limit (~56e6)")
+
+        # Basic sanity on num_samples
+        ns = data.get("num_samples", 0)
+        if isinstance(ns, int) and ns <= 0:
+            self.errors.append("num_samples must be > 0")
 
     def _validate_sniffer_values(self, data: dict):
         # Fundamental checks
