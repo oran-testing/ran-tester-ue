@@ -7,6 +7,8 @@ import configparser
 import docker
 import logging
 from datetime import datetime
+from docker.types import IPAMConfig, IPAMPool
+
 
 from influxdb_client import InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -56,10 +58,21 @@ class rtue:
             raise RuntimeError(f"Failed to remove old container: {e}")
 
         # Process RF
-        uhd_images_dir = ""
+        uhd_images_dir = None
+        zmq_network = None
         rf_config = process_config["rf"]
         if rf_config["type"] == "b200":
             uhd_images_dir = rf_config["images_dir"]
+        elif rf_config["type"] == "zmq":
+            try:
+                zmq_network = self.docker_client.networks.get("rtue_zmq")
+            except docker.errors.NotFound:
+                ipam_pool = IPAMPool(
+                    subnet="172.22.0.0/24",
+                    gateway="172.22.0.1"
+                )
+                ipam_config = IPAMConfig(pool_configs=[ipam_pool])
+                zmq_network = self.docker_client.networks.create(name="rtue_zmq", driver="bridge", ipam=ipam_config, check_duplicate=True)
         else:
             raise RuntimeError(f"Invalid RF type for rtUE: {rf_config['type']}")
 
@@ -72,6 +85,15 @@ class rtue:
                 "UHD_IMAGES_DIR": uhd_images_dir
             }
 
+            volumes = {
+                "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
+                "/tmp": {"bind": "/tmp", "mode": "rw"},
+                self.ue_config: {"bind": "/ue.conf", "mode": "ro"}
+            }
+            if uhd_images_dir != None:
+                volumes[uhd_images_dir] = {"bind": uhd_images_dir, "mode": "ro"},
+
+
 
             self.network_name = "docker_metrics"
             self.docker_network = self.docker_client.networks.get(self.network_name)
@@ -79,18 +101,15 @@ class rtue:
                 image=self.image_name,
                 name=self.container_name,
                 environment=environment,
-                volumes={
-                    "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
-                    uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
-                    "/tmp": {"bind": "/tmp", "mode": "rw"},
-                    self.ue_config: {"bind": "/ue.conf", "mode": "ro"}
-                },
+                volumes=volumes,
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],
                 network=self.network_name,
                 detach=True,
             )
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
+            if zmq_network != None:
+                zmq_network.connect(self.docker_container)
 
         except docker.errors.APIError as e:
             logging.error(f"Failed to start Docker container: {e}")
@@ -134,7 +153,7 @@ class rtue:
                             "fields": {"rtue_stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
-                            )
+                        )
                 logging.debug(f"[{self.container_name}]: {message_text}")
             except Exception as e:
                 logging.error(f"send_message failed with error: {e}")

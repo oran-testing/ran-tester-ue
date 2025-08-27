@@ -4,4 +4,3 @@ processes:
     config_file: "configs/zmq/ue_zmq_docker.conf"
     rf:
       type: "zmq"
-
