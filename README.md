@@ -62,3 +62,10 @@ sudo docker compose --profile system up
 ```
 
 The Grafana dashboard can be accessed at [http://localhost:3300](http://localhost:3300).
+
+
+## Nvidia Setup
+Run the following command to setup docker to use the nvidia gpu
+```bash
+sudo ./scripts/nvidia_toolkit_setup.sh
+```
