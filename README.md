@@ -20,7 +20,7 @@ git clone --recurse-submodules https://github.com/oran-testing/ran-tester-ue
 
 Then run the system setup scripts:
 
-```
+```bash
 cd ran-tester-ue
 sudo ./scripts/system_setup.sh
 ```
