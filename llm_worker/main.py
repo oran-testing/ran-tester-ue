@@ -19,14 +19,15 @@ import requests
 
 from validator import ResponseValidator
 
-import chromadb  
-from chromadb.utils import embedding_functions  
+import chromadb
+from chromadb.utils import embedding_functions
 
 
 class Config:
-    filename : str = ""
-    options : Optional[Dict[str,Any]] = None
-    log_level : int = logging.DEBUG
+    filename: str = ""
+    options: Optional[Dict[str, Any]] = None
+    log_level: int = logging.DEBUG
+
 
 def verify_env():
     if os.geteuid() != 0:
@@ -48,6 +49,7 @@ def verify_env():
         raise RuntimeError("control port is not an integer")
     return control_ip, control_port, control_token
 
+
 def configure() -> None:
     parser = argparse.ArgumentParser(
         description="RAN tester UE process controller")
@@ -55,15 +57,15 @@ def configure() -> None:
         "--config", type=pathlib.Path, required=True,
         help="Path of YAML config for the llm worker")
     parser.add_argument("--log-level",
-                    default="DEBUG",
-                    help="Set the logging level. Options: DEBUG, INFO, WARNING, ERROR, CRITICAL")
+                        default="DEBUG",
+                        help="Set the logging level. Options: DEBUG, INFO, WARNING, ERROR, CRITICAL")
     args = parser.parse_args()
     Config.log_level = getattr(logging, args.log_level.upper(), 1)
     if not isinstance(Config.log_level, int):
         raise ValueError(f"Invalid log level: {args.log_level}")
     logging.basicConfig(level=Config.log_level,
-                    format='%(levelname)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
+                        format='%(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     Config.filename = args.config
     with open(str(args.config), 'r') as file:
         Config.options = yaml.safe_load(file)
@@ -78,7 +80,8 @@ def list_processes(control_url, auth_header):
             return True, response.json()
         return False, {"error": response.text}
     except requests.exceptions.RequestException as e:
-        return False, {"error":str(e)}
+        return False, {"error": str(e)}
+
 
 def start_process(control_url, auth_header, json_payload):
     current_endpoint = "/start"
@@ -89,8 +92,9 @@ def start_process(control_url, auth_header, json_payload):
             return True, response.json()
         return False, {"error": response.text}
     except requests.exceptions.RequestException as e:
-        return False, {"error":str(e)}
- 
+        return False, {"error": str(e)}
+
+
 def stop_process(control_url, auth_header, process_id):
     current_endpoint = "/stop"
     headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
@@ -101,7 +105,8 @@ def stop_process(control_url, auth_header, process_id):
             return True, response.json()
         return False, {"error": response.text}
     except requests.exceptions.RequestException as e:
-        return False, {"error":str(e)}
+        return False, {"error": str(e)}
+
 
 def get_process_logs(control_url, auth_header, json_payload):
     current_endpoint = "/logs"
@@ -112,23 +117,52 @@ def get_process_logs(control_url, auth_header, json_payload):
             return True, response.json()
         return False, {"error": response.text}
     except requests.exceptions.RequestException as e:
-        return False, {"error":str(e)}
+        return False, {"error": str(e)}
 
-def generate_response(model, tokenizer, is_sampling, prompt_content: str) -> str:
 
+def _parse_env_list(name: str, default_list: List[float]) -> List[float]:
+    raw = os.getenv(name, "")
+    if not raw:
+        return default_list
+    try:
+        vals = [float(x.strip()) for x in raw.split(",") if x.strip()]
+        return vals if vals else default_list
+    except Exception:
+        return default_list
+
+
+def generate_response(model, tokenizer, is_sampling, prompt_content: str,
+                      sample_temp: Optional[float] = None,
+                      sample_top_p: Optional[float] = None,
+                      max_new_tokens: Optional[int] = None) -> str:
+    """
+    Backwards compatible. If is_sampling=True, you can pass per-candidate temp/top_p.
+    Otherwise greedy decoding is used. Defaults unchanged unless env/args provided.
+    """
     messages = [{"role": "user", "content": prompt_content}]
     formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
+
     if not is_sampling:
-        generation_config = GenerationConfig(max_new_tokens=1024, do_sample=False, pad_token_id=tokenizer.eos_token_id)
-    else:
         generation_config = GenerationConfig(
-        max_new_tokens=1024,
-        do_sample=True,
-        temperature=0.3,
-        top_p=0.9,
-        pad_token_id=tokenizer.eos_token_id
-    )
+            max_new_tokens=max_new_tokens or 1024,
+            do_sample=False,
+            pad_token_id=tokenizer.eos_token_id
+        )
+    else:
+        # Allow per-candidate overrides; fall back to env; then to safe defaults.
+        env_temp = float(os.getenv("SAMPLE_TEMP", "0.3"))
+        env_top_p = float(os.getenv("SAMPLE_TOP_P", "0.9"))
+        t = sample_temp if sample_temp is not None else env_temp
+        p = sample_top_p if sample_top_p is not None else env_top_p
+        generation_config = GenerationConfig(
+            max_new_tokens=max_new_tokens or 1024,
+            do_sample=True,
+            temperature=max(0.05, min(t, 1.5)),
+            top_p=max(0.5, min(p, 1.0)),
+            pad_token_id=tokenizer.eos_token_id
+        )
+
     with torch.no_grad():
         output_tokens = model.generate(**inputs, generation_config=generation_config)
     input_length = inputs['input_ids'].shape[1]
@@ -177,17 +211,104 @@ def get_intent() -> list[dict]:
 
     logging.error("Max attempts reached. Intent extraction failed.")
     return []
-   
 
 
-def response_validation_loop(current_response_text: str, config_type:str, original_prompt_content: str) -> str:
+# ---------- RL helpers (immediate rewards, no fallback) ----------
+
+def _compute_reward(metrics: dict, prev_json: Optional[dict], cand_json: Optional[dict],
+                    forbid_keys=("device_args", "type", "id")) -> float:
+    """
+    Immediate scalar reward with proximity shaping.
+    Components:
+      base: +10 if ok, else -0.75*error_count
+      proximity penalties (larger negative if further from validity):
+        - center_frequency distance to FR1/FR2; heavy extra if device=b200 and >6e9 or FR2
+        - sampling_freq vs (2x bandwidth) deficit
+        - sampling_freq cap for b200 (>61.44e6)
+      structure:
+        -0.5 per forbidden key changed
+        -0.1 per added key
+        -0.05 per changed key
+      small bonus if in obviously good region for b200 (FR1 and <=6e9 and sf<=61.44e6)
+    """
+    if not metrics:
+        return -10.0
+
+    # base term
+    base = 10.0 if metrics.get("ok") else -0.75 * float(metrics.get("error_count", 0))
+
+    pen_forbid = 0.0
+    pen_changed = 0.0
+    pen_added = 0.0
+    bonus_good = 0.0
+    prox_pen = 0.0
+
+    # structure penalties
+    if isinstance(prev_json, dict) and isinstance(cand_json, dict):
+        prev_keys = set(prev_json.keys())
+        cand_keys = set(cand_json.keys())
+        changed = [k for k in (prev_keys & cand_keys) if prev_json.get(k) != cand_json.get(k)]
+        pen_changed = 0.05 * len(changed)
+        for k in forbid_keys:
+            if k in changed:
+                pen_forbid += 0.5
+        added = list(cand_keys - prev_keys)
+        pen_added = 0.1 * len(added)
+
+    # proximity shaping (jammer-centric; harmless for others)
+    if isinstance(cand_json, dict):
+        dev = (str(cand_json.get("device_args", "")) or "").lower()
+        f0 = cand_json.get("center_frequency")
+        sf = cand_json.get("sampling_freq")
+        bw = cand_json.get("bandwidth")
+
+        # center_frequency distance to legal regions
+        if isinstance(f0, (int, float)):
+            in_fr1 = 410e6 <= f0 <= 7125e6
+            in_fr2 = 24.25e9 <= f0 <= 52.6e9
+            if not (in_fr1 or in_fr2):
+                d = min(
+                    abs(f0 - 410e6) / 410e6,
+                    abs(f0 - 7125e6) / 7125e6,
+                    abs(f0 - 24.25e9) / 24.25e9,
+                    abs(f0 - 52.6e9) / 52.6e9
+                )
+                prox_pen += 4.0 * min(d, 5.0)
+            if "b200" in dev or "b210" in dev:
+                if f0 and f0 > 6e9:
+                    d = (f0 - 6e9) / 6e9
+                    prox_pen += 6.0 * min(max(d, 0.0), 5.0)
+                if in_fr2:
+                    prox_pen += 6.0  # hard disallow for b200 in FR2
+                if in_fr1 and f0 <= 6e9:
+                    bonus_good += 0.5
+
+        # sampling vs bandwidth (Nyquist)
+        if isinstance(sf, (int, float)) and isinstance(bw, (int, float)):
+            if sf < 2.0 * bw:
+                deficit = (2.0 * bw - sf) / max(2.0 * bw, 1.0)
+                prox_pen += 4.0 * min(max(deficit, 0.0), 5.0)
+
+        # sampling cap for b200
+        if isinstance(sf, (int, float)) and ("b200" in dev or "b210" in dev):
+            if sf > 61.44e6:
+                excess = (sf - 61.44e6) / 61.44e6
+                prox_pen += 4.0 * min(max(excess, 0.0), 5.0)
+            else:
+                bonus_good += 0.25
+
+    reward = base - pen_forbid - pen_added - pen_changed - prox_pen + bonus_good
+    return reward
+
+
+def response_validation_loop(current_response_text: str, config_type: str, original_prompt_content: str) -> str:
     if config_type in ['sniffer', 'jammer', 'rtue']:
         logging.info(f"Config type is '{config_type}'. Starting validation and self-correction loop.")
         max_attempts = 25
         attempt_count = 1
 
         while attempt_count <= max_attempts:
-            logging.info("="*40 + f" VALIDATION ATTEMPT {attempt_count} of {max_attempts} " + "="*40)
+            logging.info("=" * 40 + f" VALIDATION ATTEMPT {attempt_count} of {max_attempts} " + "=" * 40)
             validator = ResponseValidator(current_response_text, config_type=config_type)
             validated_data = validator.validate()
 
@@ -198,34 +319,96 @@ def response_validation_loop(current_response_text: str, config_type:str, origin
             logging.warning("Validation failed. Preparing to self-correct.")
             attempt_count += 1
             if attempt_count > max_attempts:
-                logging.error("Maximum correction attempts reached."); break
+                logging.error("Maximum correction attempts reached.")
+                break
+
             error_details = "\n".join([f"- {e}" for e in validator.get_errors()])
             logging.warning(f"Validation Errors:\n{error_details}")
-            
-            # uncomment later if memory becomes an issue
 
-            # if torch.cuda.is_available():
-            #     logging.info("Clearing CUDA cache to prevent out-of-memory errors.")
-            #     torch.cuda.empty_cache()
+            # Edit-in-place prompt built from last parsed JSON (if any)
+            prev_json = validator.get_last_json() or {}
+            prev_json_str = json.dumps(prev_json, indent=2)
 
-            correction_prompt_content = (
-                f"You must output a SINGLE JSON object for the '{config_type}' component ONLY. "
-                f"Regenerate the COMPLETE JSON now based on the original request below.\n"
-                f"--- ORIGINAL REQUEST ---\n{original_prompt_content}"
-                f"Fix these errors and nothing else:\n{error_details}\n"
-            )
-            logging.info("Generating corrected response...")
-            current_response_text = generate_response(model, tokenizer, False, correction_prompt_content)
-            logging.info("="*20 + f" CORRECTED OUTPUT (ATTEMPT {attempt_count}) " + "="*20)
+            # Fetch machine-readable hints (from validator metrics)
+            metrics = validator.get_metrics() or {}
+            hints = metrics.get("hints", {})
+            violated_fields = metrics.get("violated_fields", [])
+            must_change_list = [f for f in violated_fields if isinstance(prev_json, dict) and f in prev_json] or violated_fields
+
+            hints_block = json.dumps(hints, indent=2) if hints else "{}"
+            must_change_block = json.dumps(must_change_list, indent=2)
+
+            edit_rules = (
+                "You must output a SINGLE JSON object for the '{cfg}' component ONLY.\n"
+                "STRICT RULES:\n"
+                "1) Start from the CURRENT JSON shown below.\n"
+                "2) Edit ONLY the fields necessary to fix the errors.\n"
+                "3) You MUST modify these fields if present: {must_change}.\n"
+                "4) Keep ALL other keys/structure/ID the same.\n"
+                "5) Do NOT change these keys: ['device_args','type','id'].\n"
+                "6) Field constraints (machine-readable hints):\n{hints}\n"
+                "7) Return ONLY raw JSON. No code fences. No comments.\n\n"
+                "CURRENT JSON:\n{prev}\n\n"
+                "ERRORS TO FIX:\n{errs}\n\n"
+                "--- ORIGINAL REQUEST ---\n{orig}\n"
+            ).format(cfg=config_type, prev=prev_json_str, errs=error_details, orig=original_prompt_content,
+                     hints=hints_block, must_change=must_change_block)
+
+            # K candidates (first greedy, others sampled with per-candidate temps/top_p)
+            default_K = 4
+            K = int(os.getenv("LLM_K", str(default_K)))
+            K = max(1, min(8, K))
+            temps = _parse_env_list("LLM_TEMPS", [0.0, 0.2, 0.4, 0.6, 0.8][:K])
+            topps = _parse_env_list("LLM_TOPPS", [0.9, 0.95, 0.9, 0.85, 0.8][:K])
+
+            candidates: List[str] = []
+            for i in range(K):
+                is_sampling = (i != 0)  # first is greedy
+                t = temps[i] if i < len(temps) else temps[-1]
+                p = topps[i] if i < len(topps) else topps[-1]
+                logging.info(f"Generating candidate {i + 1}/{K} (sampling={is_sampling}, temp={t:.2f}, top_p={p:.2f})...")
+                cand_text = generate_response(model, tokenizer, is_sampling, edit_rules,
+                                              sample_temp=t, sample_top_p=p)
+                candidates.append(cand_text)
+
+            # Score candidates with immediate reward (validator metrics only)
+            best_idx = 0
+            best_reward = -1e9
+            best_validated_payload = None
+            best_text = candidates[0]
+
+            for idx, cand_text in enumerate(candidates):
+                cand_validator = ResponseValidator(cand_text, config_type=config_type)
+                cand_valid = cand_validator.validate()
+                cand_metrics = cand_validator.get_metrics()
+                cand_json = cand_validator.get_last_json()
+
+                reward = _compute_reward(cand_metrics, prev_json, cand_json)
+                logging.info(f"[RL] Candidate {idx + 1}/{K} reward = {reward:.3f} | ok={cand_metrics.get('ok')} | errors={cand_metrics.get('error_count')}")
+                if reward > best_reward:
+                    best_reward = reward
+                    best_idx = idx
+                    best_text = cand_text
+                    best_validated_payload = cand_valid
+
+            logging.info(f"[RL] Selected candidate {best_idx + 1}/{K} with reward {best_reward:.3f}")
+            if best_validated_payload:
+                logging.info("Validation successful after RL candidate selection.")
+                return best_validated_payload
+
+            # Continue loop using best candidate as the current text
+            current_response_text = best_text
+            logging.info("=" * 20 + f" CORRECTED OUTPUT (ATTEMPT {attempt_count}) " + "=" * 20)
             logging.info(f"'{current_response_text}'")
-            logging.info("="*20 + " END OF CORRECTED OUTPUT " + "="*20)
+            logging.info("=" * 20 + " END OF CORRECTED OUTPUT " + "=" * 20)
 
     else:
         logging.warning(f"Skipping validation loop: No validation rules defined for config type '{config_type}'.")
-        logging.info("="*20 + " FINAL UNVALIDATED OUTPUT " + "="*20)
+        logging.info("=" * 20 + " FINAL UNVALIDATED OUTPUT " + "=" * 20)
         logging.info(current_response_text)
         logging.info("Script finished.")
     return None
+
 
 def save_config_to_file(config_str: str, config_type: str, config_id: str, output_dir: str = "/host/configs"):
     import os
@@ -259,7 +442,7 @@ class KnowledgeAugmentor:
         results = self.collection.query(
             query_texts=[query],
             n_results=n_results,
-            where={"component": component}  # metadata filter ensures only relevant files are used
+            where={"component": component}
         )
         docs = results.get('documents', [[]])[0] if results else []
         if not docs:
@@ -270,19 +453,12 @@ class KnowledgeAugmentor:
                 source = results['metadatas'][0][i].get('source', 'unknown')
             except Exception:
                 source = "unknown"
-            logging.info(f"  [Doc {i+1} from '{source}']: {doc[:120].strip().replace(chr(10),' ')}...")
+            logging.info(f"  [Doc {i + 1} from '{source}']: {doc[:120].strip().replace(chr(10), ' ')}...")
             ctx.append(f"- From {source}:\n{doc}")
         return "\n\n".join(ctx).strip()
 
     @staticmethod
     def build_augmented_prompt(context: str, system_prompt_block: str, user_request: str) -> str:
-        """
-        Structured prompt used consistently across components.
-        - Context: retrieved engineering rules/examples
-        - Instructions: the schema/formatting portion of the system prompt
-        - User Request: the actual user input/goal
-        (staticmethod: this function does not depend on instance or class state)
-        """
         return f"""You are an expert RF systems assistant.
 First, review the provided CONTEXT for critical engineering rules.
 Then, use that context to follow the INSTRUCTIONS to generate a valid JSON configuration that fulfills the USER REQUEST.
@@ -319,7 +495,6 @@ if __name__ == '__main__':
     model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained(model_str)
 
-
     kb = KnowledgeAugmentor()  # instantiate augmentor once
 
     # using llm for intent determination
@@ -331,15 +506,9 @@ if __name__ == '__main__':
         system_prompt = Config.options.get(config_type, "")
         original_prompt_content = system_prompt + user_prompt  # preserved for logs/validator context
 
-        #   prompt structuring
-        # - Extract INSTRUCTIONS block from the system prompt.
-        # - Retrieve engineering CONTEXT filtered to the specific component.
-        # - Build a single, well-structured augmented prompt.
-
-        # split out instruction-only portion if system prompt includes a user section.
+        # prompt structuring
         system_instructions = system_prompt.split("### USER REQUEST:")[0] if "### USER REQUEST:" in system_prompt else system_prompt
 
-        # build a retrieval query that is explicit about the component and goal.
         retrieval_query = f"Rules, constraints, and known-good examples for a '{config_type}' configuration to fulfill: {user_prompt}"
 
         retrieved_context = kb.retrieve_context_for_component(config_type, retrieval_query)
@@ -350,17 +519,15 @@ if __name__ == '__main__':
             system_prompt_block=system_instructions,
             user_request=user_prompt
         )
-        # --------------------------------------------------------------------
 
         # ---Initial Generation ---
-        logging.info("="*20 + " EXECUTING PROMPT " + "="*20)
+        logging.info("=" * 20 + " EXECUTING PROMPT " + "=" * 20)
         current_response_text = generate_response(model, tokenizer, False, prompt_to_use)
-        logging.info("="*20 + " MODEL GENERATED OUTPUT " + "="*20)
+        logging.info("=" * 20 + " MODEL GENERATED OUTPUT " + "=" * 20)
         logging.info(f"'{current_response_text}'")
-        logging.info("="*20 + " END OF MODEL OUTPUT " + "="*20)
+        logging.info("=" * 20 + " END OF MODEL OUTPUT " + "=" * 20)
 
-
-        # --- Validation and Self-Correction Loop ---
+        # --- Validation and Self-Correction Loop (with immediate RL selection) ---
         validated_data = response_validation_loop(current_response_text, config_type, original_prompt_content)
         if validated_data is None:
             logging.error(f"Validation failed for {config_type}.")
@@ -370,14 +537,14 @@ if __name__ == '__main__':
         final_config_string = validated_data.get('config_str')
 
         save_config_to_file(final_config_string, final_config_type, final_config_id)
+
         # --- Final Outcome Logic (with controller API call) ---
         if validated_data and validated_data.get('config_str'):
-            logging.info("="*20 + " FINAL VALIDATED CONFIGURATION " + "="*20)
-
+            logging.info("=" * 20 + " FINAL VALIDATED CONFIGURATION " + "=" * 20)
 
             controller_retry_max_attempts = 10
             controller_attempt_count = 1
-            
+
             while controller_attempt_count <= controller_retry_max_attempts:
                 # Extract latest validated data
                 final_config_type = validated_data.get('type')
@@ -393,8 +560,8 @@ if __name__ == '__main__':
                 json_payload = {"id": final_config_id, "type": final_config_type, "config_str": final_config_string}
                 logging.info(f"Attempting to start process with controller (Attempt {controller_attempt_count}/{controller_retry_max_attempts})...")
                 logging.info(f"Payload being sent: {json.dumps(json_payload, indent=2)}")
-                json_payload["rf"] = {"type":"b200","images_dir":"/usr/share/uhd/images"}
-                
+                json_payload["rf"] = {"type": "b200", "images_dir": "/usr/share/uhd/images"}
+
                 success, response_data = start_process(control_url, auth_header, json_payload)
 
                 if success:
@@ -407,7 +574,7 @@ if __name__ == '__main__':
                 logging.error("Failed to start process via controller.")
                 controller_error_details = response_data.get("error", "No error details from controller.")
                 logging.error(f"Controller error: {controller_error_details}")
-                
+
                 controller_attempt_count += 1
                 if controller_attempt_count > controller_retry_max_attempts:
                     logging.critical("Maximum controller retry attempts reached. Aborting script.")
@@ -415,7 +582,6 @@ if __name__ == '__main__':
 
                 logging.warning("Attempting to generate a new configuration based on controller feedback.")
 
-                # Create a new prompt to correct the controller-level semantic error
                 controller_correction_prompt = (
                     f"The configuration you provided was syntactically valid, but the system controller REJECTED it for the following reason:\n"
                     f"{controller_error_details}\n\n"
@@ -423,23 +589,20 @@ if __name__ == '__main__':
                     f"Please analyze this feedback and regenerate the entire, corrected JSON object based on the original request.\n"
                     f"--- ORIGINAL REQUEST ---\n{original_prompt_content}"
                 )
-                
-                # Generate a new configuration based on controller feedback
+
                 current_response_text = generate_response(model, tokenizer, False, controller_correction_prompt)
-                
-                logging.info("="*20 + " RE-VALIDATING CONTROLLER CORRECTION " + "="*20)
+
+                logging.info("=" * 20 + " RE-VALIDATING CONTROLLER CORRECTION " + "=" * 20)
                 validated_data = response_validation_loop(current_response_text, config_type, original_prompt_content)
-                
+
                 if not validated_data:
                     logging.error("The LLM produced a syntactically invalid configuration while trying to correct a controller error. Aborting.")
-                
+
         else:
-            logging.error("="*20 + " SCRIPT FAILED " + "="*20)
+            logging.error("=" * 20 + " SCRIPT FAILED " + "=" * 20)
             logging.error(f"Could not obtain a valid and non-empty '{config_type}' configuration after all attempts.")
             sys.exit(1)
 
-
-
-    # logging.info("Entering infinite loop to keep container alive for inspection.")
-    # while True:
-    #     time.sleep(60)
+    logging.info("Entering infinite loop to keep container alive for inspection.")
+    while True:
+        time.sleep(60)
