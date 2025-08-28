@@ -12,16 +12,29 @@ See the our comprehensive [documentation ](https://docs.rantesterue.org) for mor
 
 ## Quickstart Guide
 
-First, clone the core repository and it's submodules:
+***First, clone the core repository and it's submodules.***
+
+Option A: SSH URL (Recommended if you have SSH set up)
 
 ```bash
-git clone --recurse-submodules https://github.com/oran-testing/ran-tester-ue
+git clone --recurse-submodules git@github.com:oran-testing/ran-tester-ue.git
 ```
 
-Then pull the necessary containers from our registry:
+Option B: HTTPS
 
 ```bash
-cd ran-tester-ue/docker
+git clone --recurse-submodules https://github.com/oran-testing/ran-tester-ue.git
+```
+
+***Navigate to the directory and run the system setup script:***
+```bash
+cd ran-tester-ue
+sudo ./scripts/system_setup.sh
+```
+
+***Now, pull the necessary containers from our registry:***
+
+```bash
 sudo docker compose --profile components pull  # rtUE, Jammer, Uu agent, and Sniffer
 sudo docker compose --profile system pull      # Grafana, InfluxDB, and Controller
 ```
