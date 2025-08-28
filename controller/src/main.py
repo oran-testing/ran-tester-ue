@@ -405,6 +405,37 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         self._set_headers(404)
         self.wfile.write(json.dumps({"error":"Component with ID does not exist"}).encode("utf-8"))
 
+    def check_component_health(self):
+        global process_metadata
+        is_valid_token, perms = self._get_permissions()
+        if not is_valid_token:
+            self._send_unauthorized()
+            return
+
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        payload = {}
+        try:
+            payload = json.loads(post_data)
+        except json.JSONDecodeError:
+            self._send_unauthorized()
+            return
+
+        if "id" not in payload.keys():
+            self._set_headers(400)
+            self.wfile.write(json.dumps({"error":"Missing required field id"}).encode("utf-8"))
+            return
+
+        for i, process_config in enumerate(process_metadata):
+            if process_config["id"] == payload["id"]:
+                if process_config["type"] not in perms:
+                    continue
+                self._set_headers()
+                self.wfile.write(json.dumps({ "status" : process_config["handle"].get_status() }).encode("utf-8"))
+                return
+        self._set_headers(404)
+        self.wfile.write(json.dumps({"error":"Component with ID does not exist"}).encode("utf-8"))
+
 
     def do_GET(self):
         if self.path.startswith("/list"):
@@ -419,6 +450,8 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
             self.stop_component()
         elif self.path.startswith("/logs"):
             self.get_component_logs()
+        elif self.path.startswith("/health"):
+            self.check_component_health()
         else:
             self._send_nonexistent()
 

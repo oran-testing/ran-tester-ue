@@ -7,37 +7,67 @@ import configparser
 import docker
 import logging
 from datetime import datetime
+from enum import Enum
 
+from docker.client import DockerClient
 from influxdb_client import InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-# UE process manager class:
-# Handles all process and data management for one UE
-#
-# Collects data from UE then sends them to the webui
-#
+class RfType(Enum):
+    NONE = 0
+    ZMQ = 1
+    B200 = 1
 
-class rtue:
-    def __init__(self, influxdb_client, docker_client):
-        self.influxdb_client = influxdb_client
-        self.docker_client = docker_client
+class WorkerThreadConfig():
+    def __init__(self):
+        self.influxdb_client : InfluxDBClient = None
+        self.docker_client : DockerClient = None
+        self.config_file : str = ""
+        self.container_id : str = ""
+        self.cli_args : list[str] = []
+        self.image_name : str = ""
+        self.image_name : str = ""
+        self.rf_type : RfType = NONE;
+        self.rf_config = {}
+        self.container_env = {}
+        self.container_volumes = {}
+        self.container_networks = [
+            "rt_metrics"
+        ]
+        self.container_privileged = True
 
 
-    def start(self, process_config):
-        """
-        Gets data identifier and pcap info from ue config
-        Starts rtue container with volumes and network
-        Starts log report thread
-        """
-        self.ue_config = process_config["config_file"]
-        self.container_name = process_config["id"]
-        self.ue_args = process_config["args"] if "args" in process_config.keys() else [""]
+class WorkerThread:
+    def __init__(self, influxdb_client, docker_client, process_config):
+        self.config = WorkerThreadConfig()
+        self.config.influxdb_client = influxdb_client
+        self.config.docker_client = docker_client
+        if "config_file" in process_config.keys():
+            self.config.config_file = process_config["config_file"]
 
-        self.image_name = "ghcr.io/oran-testing/rtue"
+        if "id" in process_config.keys():
+            self.config.container_id = process_config["id"]
 
+        if "args" in process_config.keys():
+            self.config.cli_args = process_config["args"]
+
+        # Process RF
+        self.config.rf_config = process_config["rf"]
+        if rf_config["type"] == "b200":
+            self.config.rf_type = B200
+            if "images_dir" not in self.config.rf_config:
+                raise RuntimeError(f"Error parsing rf configuration of {self.config.container_id}: RF type b200 requires images_dir")
+        elif rf_config["type"] == "zmq":
+            self.config.rf_type = ZMQ
+            if "tcp_subnet" not in self.config.rf_config:
+                raise RuntimeError(f"Error parsing rf configuration of {self.config.container_id}: RF type ZMQ requires tcp_subnet")
+        else:
+            raise RuntimeError(f"Unsupported RF type: {rf_config['type']}")
+
+    def cleanup_old_containers(self):
         # Verify Image
         image_exists = False
-        for img in self.docker_client.images.list():
+        for img in self.config.docker_client.images.list():
             image_tags = [image_tag.split(':')[0] for image_tag in img.tags]
             if self.image_name in image_tags:
                 image_exists = True
@@ -55,13 +85,10 @@ class rtue:
         except Exception as e:
             raise RuntimeError(f"Failed to remove old container: {e}")
 
-        # Process RF
-        uhd_images_dir = ""
-        rf_config = process_config["rf"]
-        if rf_config["type"] == "b200":
-            uhd_images_dir = rf_config["images_dir"]
-        else:
-            raise RuntimeError(f"Invalid RF type for rtUE: {rf_config['type']}")
+    def start(self, process_config):
+        raise RuntimeError("start behavior must be defined by individual worker class")
+
+
 
 
         # Start Container
@@ -103,7 +130,7 @@ class rtue:
 
     def stop(self):
         """
-        Stops rtue cotainer if existing
+        Stops current container if running
         Stops log reporting thread
         """
         if self.docker_container:
@@ -116,9 +143,7 @@ class rtue:
         self.stop_thread.set()
 
     def get_status(self):
-        return self.docker_container.status == "running"
-
-
+        return self.docker_container.status
 
 
     def send_message(self, message_text):
