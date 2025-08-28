@@ -81,6 +81,9 @@ services:
     privileged: true
     env_file:
       - .env
+    networks:
+      rt_metrics:
+        ipv4_address: 172.22.0.2
     profiles:
       - components
 
@@ -134,7 +137,7 @@ volumes:
 networks:
   metrics:
     name: docker_metrics
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.19.1.0/24
+    external: true
+  rt_metrics:
+    name: rt_metrics
+    external: true

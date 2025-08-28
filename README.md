@@ -18,10 +18,16 @@ First, clone the core repository and it's submodules:
 git clone --recurse-submodules https://github.com/oran-testing/ran-tester-ue
 ```
 
-Then pull the necessary containers from our registry:
+Then run the system setup scripts:
+
+```
+cd ran-tester-ue
+sudo ./scripts/system_setup.sh
+```
+
+Now pull the necessary containers from our registry:
 
 ```bash
-cd ran-tester-ue/docker
 sudo docker compose --profile components pull  # rtUE, Jammer, Uu agent, and Sniffer
 sudo docker compose --profile system pull      # Grafana, InfluxDB, and Controller
 ```
