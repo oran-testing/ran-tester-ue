@@ -114,23 +114,15 @@ def get_process_logs(control_url, auth_header, json_payload):
     except requests.exceptions.RequestException as e:
         return False, {"error":str(e)}
 
-def generate_response(model, tokenizer, prompt_content: str) -> str:
+def generate_response(model, tokenizer, is_sampling, prompt_content: str) -> str:
 
     messages = [{"role": "user", "content": prompt_content}]
     formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
-    generation_config = GenerationConfig(max_new_tokens=1024, do_sample=False, pad_token_id=tokenizer.eos_token_id)
-    with torch.no_grad():
-        output_tokens = model.generate(**inputs, generation_config=generation_config)
-    input_length = inputs['input_ids'].shape[1]
-    newly_generated_tokens = output_tokens[0, input_length:]
-    return tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
-
-def generate_response_with_sampling(model, tokenizer, prompt_content: str) -> str:
-    messages = [{"role": "user", "content": prompt_content}]
-    formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
-    generation_config = GenerationConfig(
+    if not is_sampling:
+        generation_config = GenerationConfig(max_new_tokens=1024, do_sample=False, pad_token_id=tokenizer.eos_token_id)
+    else:
+        generation_config = GenerationConfig(
         max_new_tokens=1024,
         do_sample=True,
         temperature=0.3,
@@ -156,7 +148,7 @@ def get_intent() -> list[dict]:
         logging.info(f"Intent extraction attempt {attempt_count} of {max_attempts}")
         logging.info(f"Prompt sent to model:\n{current_prompt_content}")
 
-        raw_response = generate_response(model, tokenizer, current_prompt_content)
+        raw_response = generate_response(model, tokenizer, False, current_prompt_content)
         logging.info(f"Model output:\n{raw_response}")
 
         validator = ResponseValidator(raw_response, config_type="intent")
@@ -176,10 +168,9 @@ def get_intent() -> list[dict]:
 
         # Build correction prompt for next attempt
         correction_prompt_content = (
-            f"The previous intent JSON you provided was invalid for the following reasons:\n"
-            f"{error_details}\n\n"
             f"Please regenerate the entire, corrected intent JSON object based on the original user request.\n"
             f"--- ORIGINAL USER REQUEST ---\n{user_prompt}"
+            f"Fix these errors and nothing else:\n{error_details}\n"
         )
         logging.info(f"Correction prompt for regeneration:\n{correction_prompt_content}")
         current_prompt_content = correction_prompt_content
@@ -217,41 +208,14 @@ def response_validation_loop(current_response_text: str, config_type:str, origin
             #     logging.info("Clearing CUDA cache to prevent out-of-memory errors.")
             #     torch.cuda.empty_cache()
 
-            # add explicit, component-specific guardrails to steer correction
-            constraint_hint = ""
-            if config_type == "jammer":
-                constraint_hint = (
-                    "Apply these constraints strictly for 'jammer':\n"
-                    "- center_frequency must be within NR FR1 (410e6–7.125e9) or FR2 (24.25e9–52.6e9).\n"
-                    "- If device_args contains b200/b210, center_frequency <= 6e9 and FR2 is not allowed.\n"
-                    "- sampling_freq >= 2x bandwidth, and for b200-family sampling_freq <= 61.44e6; bandwidth <= ~56e6.\n"
-                    "- amplitude in [0,1], tx_gain in [0,90], num_samples > 0.\n"
-                )
-            elif config_type == "sniffer":
-                constraint_hint = (
-                    "Apply these constraints strictly for 'sniffer':\n"
-                    "- frequency must be within NR FR1 (410e6–7.125e9) or FR2 (24.25e9–52.6e9).\n"
-                    "- ssb_numerology in [0,4]; pdcch_coreset_duration in {1,2,3}.\n"
-                    "- pdcch_num_prbs > 0; list lengths: dci_sizes=2, AL_corr_thresholds=5, num_candidates_per_AL=5.\n"
-                )
-            elif config_type == "rtue":
-                constraint_hint = (
-                    "Apply these constraints strictly for 'rtue':\n"
-                    "- rf_srate > 0; rf_tx_gain and rf_rx_gain in [0,90].\n"
-                    "- rat_nr_nof_prb > 0 and rat_nr_max_nof_prb >= rat_nr_nof_prb.\n"
-                    "- If rf_srate ≈ 23.04e6 or 30.72e6 then rat_nr_nof_prb must be 106.\n"
-                )
-
             correction_prompt_content = (
                 f"You must output a SINGLE JSON object for the '{config_type}' component ONLY. "
-                f"DO NOT include code fences or commentary. Fix the fields that violate the errors below so the JSON passes validation.\n\n"
-                f"{constraint_hint}"
-                f"Errors to fix:\n{error_details}\n\n"
                 f"Regenerate the COMPLETE JSON now based on the original request below.\n"
                 f"--- ORIGINAL REQUEST ---\n{original_prompt_content}"
+                f"Fix these errors and nothing else:\n{error_details}\n"
             )
             logging.info("Generating corrected response...")
-            current_response_text = generate_response_with_sampling(model, tokenizer, correction_prompt_content)
+            current_response_text = generate_response(model, tokenizer, False, correction_prompt_content)
             logging.info("="*20 + f" CORRECTED OUTPUT (ATTEMPT {attempt_count}) " + "="*20)
             logging.info(f"'{current_response_text}'")
             logging.info("="*20 + " END OF CORRECTED OUTPUT " + "="*20)
@@ -390,7 +354,7 @@ if __name__ == '__main__':
 
         # ---Initial Generation ---
         logging.info("="*20 + " EXECUTING PROMPT " + "="*20)
-        current_response_text = generate_response(model, tokenizer, prompt_to_use)
+        current_response_text = generate_response(model, tokenizer, False, prompt_to_use)
         logging.info("="*20 + " MODEL GENERATED OUTPUT " + "="*20)
         logging.info(f"'{current_response_text}'")
         logging.info("="*20 + " END OF MODEL OUTPUT " + "="*20)
@@ -461,7 +425,7 @@ if __name__ == '__main__':
                 )
                 
                 # Generate a new configuration based on controller feedback
-                current_response_text = generate_response(model, tokenizer, controller_correction_prompt)
+                current_response_text = generate_response(model, tokenizer, False, controller_correction_prompt)
                 
                 logging.info("="*20 + " RE-VALIDATING CONTROLLER CORRECTION " + "="*20)
                 validated_data = response_validation_loop(current_response_text, config_type, original_prompt_content)
