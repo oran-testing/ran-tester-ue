@@ -170,26 +170,26 @@ def generate_response(model, tokenizer, is_sampling, prompt_content: str,
     return tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
 
 
-def get_intent() -> list[dict]:
+def get_plan() -> list[dict]:
     user_prompt = Config.options.get("user_prompt", "")
-    intent_prompt = Config.options.get("intent_prompt", "")
+    plan_prompt = Config.options.get("plan_prompt", "")
 
     max_attempts = 5
     attempt_count = 1
-    current_prompt_content = intent_prompt + user_prompt
+    current_prompt_content = plan_prompt + user_prompt
 
     while attempt_count <= max_attempts:
-        logging.info(f"Intent extraction attempt {attempt_count} of {max_attempts}")
+        logging.info(f"Plan extraction attempt {attempt_count} of {max_attempts}")
         logging.info(f"Prompt sent to model:\n{current_prompt_content}")
 
         raw_response = generate_response(model, tokenizer, False, current_prompt_content)
         logging.info(f"Model output:\n{raw_response}")
 
-        validator = ResponseValidator(raw_response, config_type="intent")
+        validator = ResponseValidator(raw_response, config_type="plan")
         validated_data = validator.validate()
 
         if validated_data:
-            logging.info(f"Intent extraction successful. Components: {validated_data}")
+            logging.info(f"Plan extraction successful. Components: {validated_data}")
             return validated_data
 
         error_details = "\n".join(validator.get_errors())
@@ -202,14 +202,14 @@ def get_intent() -> list[dict]:
 
         # Build correction prompt for next attempt
         correction_prompt_content = (
-            f"Please regenerate the entire, corrected intent JSON object based on the original user request.\n"
+            f"Please regenerate the entire, corrected plan JSON object based on the original user request.\n"
             f"--- ORIGINAL USER REQUEST ---\n{user_prompt}"
             f"Fix these errors and nothing else:\n{error_details}\n"
         )
         logging.info(f"Correction prompt for regeneration:\n{correction_prompt_content}")
         current_prompt_content = correction_prompt_content
 
-    logging.error("Max attempts reached. Intent extraction failed.")
+    logging.error("Max attempts reached. Plan extraction failed.")
     return []
 
 
@@ -355,7 +355,7 @@ def response_validation_loop(current_response_text: str, config_type: str, origi
                      hints=hints_block, must_change=must_change_block)
 
             # K candidates (first greedy, others sampled with per-candidate temps/top_p)
-            default_K = 4
+            default_K = 10
             K = int(os.getenv("LLM_K", str(default_K)))
             K = max(1, min(8, K))
             temps = _parse_env_list("LLM_TEMPS", [0.0, 0.2, 0.4, 0.6, 0.8][:K])
@@ -487,7 +487,7 @@ VALIDATED_BY_COMP: Dict[str, dict] = {}
 
 
 def run_generate_step(component: str, kb: KnowledgeAugmentor):
-    logging.info(f"Intent component: {component}")
+    logging.info(f"Plan component: {component}")
     user_prompt = Config.options.get("user_prompt", "")
     system_prompt = Config.options.get(component, "")
     original_prompt_content = system_prompt + user_prompt
@@ -622,10 +622,10 @@ if __name__ == '__main__':
 
     kb = KnowledgeAugmentor()  # instantiate augmentor once
 
-    # using llm for intent determination
-    intent_output = get_intent()
+    # using llm for plan determination
+    plan_output = get_plan()
 
-    for step in intent_output:
+    for step in plan_output:
         if step.startswith("generate_"):
             comp = step.split("_", 1)[1]
             run_generate_step(comp, kb)

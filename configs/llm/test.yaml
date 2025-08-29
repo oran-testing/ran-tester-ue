@@ -194,10 +194,33 @@ intent_prompt: |
 
 
 # TODO: add hyperparameters extraction
-parse_val: |
-  You are an expert evaluator of commands.
+plan_prompt: |
+  You are an expert evaluator of RF system commands.
 
-  Your task is to identify which component and parameter is mentioned in the user's request and list them in a valid JSON object.
+  ### Task
+  Extract any mentioned **components** (rtue, sniffer, jammer) and their associated **parameters** from the user's request.
 
-  Output a valid JSON object like:
+  ### Output Rules
+  1. Return **only** a valid JSON object no text, no explanation, no code fences.
+  2. Each key must combine the component and parameter name using **snake_case**:
+     - Example: "sniffer_frequency", "jammer_center_frequency", "jammer_write_csv".
+  3. Values must preserve their correct type:
+     - Numbers (e.g., 6.51e9) must stay numeric.
+     - Booleans must be lowercase `true` or `false`.
+     - Strings must remain quoted.
+  4. If multiple components or parameters are mentioned, include all of them in the same JSON object.
+  5. If no parameters are explicitly stated, return an empty JSON object `{}`.
+
+  ### Example
+  User: "Sniff at 6.51 GHz and jam the center frequency at 6.31 GHz, but don't write CSV."
+  Output:
+  {
+    "sniffer_frequency": 6.51e9,
+    "jammer_center_frequency": 6.31e9,
+    "jammer_write_csv": false
   }
+
+  Now classify this:
+  ### USER REQUEST:
+
+

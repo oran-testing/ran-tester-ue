@@ -18,6 +18,7 @@ class ResponseValidator:
         self.config_type = config_type
         self.errors = []
         self.parsed_data = None
+        self.meta = {} 
 
         # Expose last parsed JSON and basic metrics
         self.last_parsed_json: Optional[dict] = None
@@ -73,7 +74,11 @@ class ResponseValidator:
             "general_metrics_influxdb_bucket": str, "general_metrics_period_secs": float, "general_ue_data_identifier": str
         }
 
-        self.valid_components = {"generate_rtue", "generate_sniffer", "generate_jammer", "validate_rtue", "validate_sniffer", "validate_jammer", "send_rtue", "send_sniffer", "send_jammer"}
+        self.valid_components = {
+            "generate_rtue", "generate_sniffer", "generate_jammer",
+            "validate_rtue", "validate_sniffer", "validate_jammer",
+            "send_rtue", "send_sniffer", "send_jammer"
+        }
 
     # New: getters for RL loop
     def get_last_json(self):
@@ -88,8 +93,10 @@ class ResponseValidator:
             with open(debug_file, "a") as f:
                 json.dump({
                     "config_type": self.config_type,
+                    "meta": self.meta,
                     "raw_response": self.raw_response,
                     "errors": self.errors,
+                    "metrics": self.metrics,
                     "parsed_data": self.parsed_data
                 }, f)
                 f.write("\n")
@@ -108,13 +115,13 @@ class ResponseValidator:
             self._finalize_metrics()
             return None  # Exit early if JSON is invalid
 
-        if self.config_type == "intent":
-            if not isinstance(self.parsed_data, list):
-                self.errors.append("Intent must be a JSON array/list")
+        if self.config_type == "plan":
+            if not isinstance(self.parsed_data, dict):
+                self.errors.append("Plan must be a JSON object")
                 self._finalize_metrics()
                 return None
-            logging.info(f"Validating intent list: {self.parsed_data}")
-            self._validate_intent_values(self.parsed_data)
+            logging.info(f"Validating plan key-value object: {self.parsed_data}")
+            self._validate_plan_kv(self.parsed_data)
             if self.errors:
                 self._finalize_metrics()
                 return None
@@ -259,7 +266,7 @@ class ResponseValidator:
 
         # Fall back to the largest array or object
         bracket_pairs = [('[', ']'), ('{', '}')]
-        for open_bracket, close_bracket in bracket_pairs:
+        for open_bracket, close_bracket in these pairs:
             start = self.raw_response.find(open_bracket)
             end = self.raw_response.rfind(close_bracket)
             if start != -1 and end != -1:
@@ -450,7 +457,7 @@ class ResponseValidator:
         if isinstance(prb_max, int) and prb_max <= 0:
             self.errors.append("rat_nr_max_nof_prb must be > 0")
             hints.setdefault("rat_nr_max_nof_prb", {})["min"] = 1
-        if isinstance(prb, int) and isinstance(prb_max, int) and prb_max < prb:
+        if isinstance(prb, int) and isinstance(prb_max, int) and prb_max < prb: 
             self.errors.append("rat_nr_max_nof_prb must be >= rat_nr_nof_prb")
             hints.setdefault("rat_nr_max_nof_prb", {})["gte_field"] = "rat_nr_nof_prb"
 
@@ -462,29 +469,33 @@ class ResponseValidator:
 
         self.metrics["hints"] = hints
 
-    def _validate_intent_values(self, data: list) -> None:
-        self.valid_components = {
-            "generate_rtue", "validate_rtue", "send_rtue",
-            "generate_sniffer", "validate_sniffer", "send_sniffer",
-            "generate_jammer", "validate_jammer", "send_jammer"
-        }
+    # ---------- NEW: plan key-value validation ----------
+    def _validate_plan_kv(self, plan_obj: dict) -> None:
+        """
+        Validates the plan extracted by plan_prompt, which is a flat JSON object like:
+          {
+            "sniffer_frequency": 6.51e9,
+            "jammer_center_frequency": 6.31e9,
+            "jammer_write_csv": false
+          }
 
-        if not all(isinstance(item, str) for item in data):
-            self.errors.append("All items in intent list must be strings")
+        Rules:
+          - Keys must match ^(rtue|sniffer|jammer)_[a-z0-9_]+$
+          - Values may be any valid JSON type (number, bool, string, etc.)
+        """
+        if not isinstance(plan_obj, dict):
+            self.errors.append("Plan must be a JSON object")
             return
 
-        invalid = [s for s in data if s not in self.valid_components]
-        if invalid:
-            self.errors.append(f"Invalid step(s) in intent list: {invalid}")
-            return
-
-        for i, step in enumerate(data):
-            if step.startswith("generate_"):
-                comp = step.split("_", 1)[1]
-                expected = [f"validate_{comp}", f"send_{comp}"]
-                if i+2 >= len(data) or data[i+1] != expected[0] or data[i+2] != expected[1]:
-                    self.errors.append(
-                        f"Step '{step}' must be immediately followed by {expected}"
-                    )
-
+        key_re = re.compile(r"^(rtue|sniffer|jammer)_[a-z0-9_]+$")
+        for k, v in plan_obj.items():
+            if not isinstance(k, str):
+                self.errors.append(f"Invalid key type (not string): {k!r}")
+                continue
+            if not key_re.match(k):
+                self.errors.append(f"Invalid plan key format: '{k}'. Expected '<component>_<param>' with component in {{rtue|sniffer|jammer}} and snake_case parameter.")
+                continue
+            # No strict type checks for v; any JSON type allowed per prompt
+            # Optionally, you can add special-case guidance/hints here in the future.
+        # Done
 
