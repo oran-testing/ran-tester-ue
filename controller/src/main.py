@@ -167,7 +167,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
         except KeyError:
             raise RuntimeError(f"Invalid process type {process_config['type']}")
 
-        process_handle = process_class(Config.influxdb_client, Config.docker_client)
+        process_handle = process_class(Config.influxdb_client, Config.docker_client, process_config)
         process_token = None
         if hasattr(process_handle, "get_token"):
             process_token = process_handle.get_token()
@@ -350,8 +350,6 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"error":f"Invalid process type {payload['type']}"}).encode("utf-8"))
             return
 
-        process_handle = process_class(Config.influxdb_client, Config.docker_client)
-
         new_process_config = {
             "config_file": config_file,
             "id": payload["id"],
@@ -359,6 +357,9 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
             "rf": payload["rf"],
             "permissions": [],
         }
+
+        process_handle = process_class(Config.influxdb_client, Config.docker_client, new_process_config)
+
 
         process_metadata.append({
             'id': payload['id'],

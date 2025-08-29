@@ -12,13 +12,14 @@ from enum import Enum
 from docker.client import DockerClient
 from influxdb_client import InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
+from docker.types import IPAMConfig, IPAMPool
 
 class RfType(Enum):
     NONE = 0
     ZMQ = 1
-    B200 = 1
+    B200 = 2
 
-class WorkerThreadConfig():
+class WorkerThreadConfig:
     def __init__(self):
         self.influxdb_client : InfluxDBClient = None
         self.docker_client : DockerClient = None
@@ -26,19 +27,18 @@ class WorkerThreadConfig():
         self.container_id : str = ""
         self.cli_args : list[str] = []
         self.image_name : str = ""
-        self.image_name : str = ""
-        self.rf_type : RfType = NONE;
+        self.rf_type : RfType = RfType.NONE;
         self.rf_config = {}
         self.container_env = {}
         self.container_volumes = {}
-        self.container_networks = [
-            "rt_metrics"
-        ]
+        self.container_networks = []
         self.container_privileged = True
 
 
 class WorkerThread:
     def __init__(self, influxdb_client, docker_client, process_config):
+        self.docker_container = None
+        self.docker_logs = None
         self.config = WorkerThreadConfig()
         self.config.influxdb_client = influxdb_client
         self.config.docker_client = docker_client
@@ -47,20 +47,24 @@ class WorkerThread:
 
         if "id" in process_config.keys():
             self.config.container_id = process_config["id"]
+        else:
+            raise RuntimeError("Process id is required")
 
         if "args" in process_config.keys():
             self.config.cli_args = process_config["args"]
 
         # Process RF
         self.config.rf_config = process_config["rf"]
-        if rf_config["type"] == "b200":
-            self.config.rf_type = B200
+        if self.config.rf_config["type"] == "b200":
+            self.config.rf_type = RfType.B200
             if "images_dir" not in self.config.rf_config:
                 raise RuntimeError(f"Error parsing rf configuration of {self.config.container_id}: RF type b200 requires images_dir")
-        elif rf_config["type"] == "zmq":
-            self.config.rf_type = ZMQ
+        elif self.config.rf_config["type"] == "zmq":
+            self.config.rf_type = RfType.ZMQ
             if "tcp_subnet" not in self.config.rf_config:
                 raise RuntimeError(f"Error parsing rf configuration of {self.config.container_id}: RF type ZMQ requires tcp_subnet")
+            if "gateway" not in self.config.rf_config:
+                raise RuntimeError(f"Error parsing rf configuration of {self.config.container_id}: RF type ZMQ requires gateway")
         else:
             raise RuntimeError(f"Unsupported RF type: {rf_config['type']}")
 
@@ -69,7 +73,7 @@ class WorkerThread:
         image_exists = False
         for img in self.config.docker_client.images.list():
             image_tags = [image_tag.split(':')[0] for image_tag in img.tags]
-            if self.image_name in image_tags:
+            if self.config.image_name in image_tags:
                 image_exists = True
                 break
         if not image_exists:
@@ -77,46 +81,56 @@ class WorkerThread:
 
         # Remove old container
         try:
-            old_container = self.docker_client.containers.get(self.container_name)
+            old_container = self.config.docker_client.containers.get(self.config.container_id)
             old_container.remove(force=True)
-            logging.debug(f"Container '{self.container_name}' has been removed.")
+            logging.debug(f"Container '{self.config.container_id}' has been removed.")
         except docker.errors.NotFound:
-            logging.debug(f"Container '{self.container_name}' does not exist.")
+            logging.debug(f"Container '{self.config.container_id}' does not exist.")
         except Exception as e:
             raise RuntimeError(f"Failed to remove old container: {e}")
 
-    def start(self, process_config):
-        raise RuntimeError("start behavior must be defined by individual worker class")
+    def setup_volumes(self):
+        self.config.container_volumes[self.config.config_file] = {"bind": "/ue.conf", "mode": "ro"}
+        self.config.container_volumes["/tmp"] = {"bind":"/tmp", "mode": "rw"}
+        if self.config.rf_type == RfType.B200:
+            self.config.container_volumes["/dev/bus/usb/"] = {"bind": "/dev/bus/usb/", "mode": "rw"}
+            self.config.container_volumes[self.config.rf_config["images_dir"]] = {"bind": self.config.rf_config["images_dir"], "mode": "ro"},
 
+            if not os.path.exists(os.path.join(self.config.rf_config["images_dir"], "usrp_b200_fw.hex")) or not os.path.exists(os.path.join(self.config.rf_config["images_dir"], "usrp_b200_fw.hex")):
+                raise RuntimeError(f"Required images for {self.config.rf_config['type']} missing in {self.config.rf_config['images_dir']}: run uhd_images_downloader")
 
+    def setup_env(self):
+        self.config.container_env["ARGS"] = " ".join(self.config.cli_args)
+        if self.config.rf_type == RfType.B200:
+            self.config.container_env["UHD_IMAGES_DIR"] = self.config.rf_config["images_dir"]
 
+    def setup_networks(self):
+        self.config.container_networks.append(self.config.docker_client.networks.get("rt_metrics"))
 
-        # Start Container
+        if self.config.rf_type == RfType.ZMQ:
+            try:
+                self.config.container_networks.append(self.config.docker_client.networks.get("rt_zmq"))
+            except docker.errors.NotFound:
+                ipam_pool = IPAMPool(
+                    subnet=self.config.rf_config["tcp_subnet"],
+                    gateway=self.config.rf_config["gateway"]
+                )
+                ipam_config = IPAMConfig(pool_configs=[ipam_pool])
+                self.config.container_networks.append(self.config.docker_client.networks.create(name="rt_zmq", driver="bridge", ipam=ipam_config, check_duplicate=True))
+
+    def start_container(self):
         try:
-            environment = {
-                "CONFIG": self.ue_config,
-                "ARGS": " ".join(self.ue_args),
-                "UHD_IMAGES_DIR": uhd_images_dir
-            }
-
-
-            self.network_name = "rt_metrics"
-            self.docker_network = self.docker_client.networks.get(self.network_name)
-            self.docker_container = self.docker_client.containers.run(
-                image=self.image_name,
-                name=self.container_name,
-                environment=environment,
-                volumes={
-                    "/dev/bus/usb/": {"bind": "/dev/bus/usb/", "mode": "rw"},
-                    uhd_images_dir: {"bind": uhd_images_dir, "mode": "ro"},
-                    "/tmp": {"bind": "/tmp", "mode": "rw"},
-                    self.ue_config: {"bind": "/ue.conf", "mode": "ro"}
-                },
+            self.docker_container = self.config.docker_client.containers.run(
+                image=self.config.image_name,
+                name=self.config.container_id,
+                environment=self.config.container_env,
+                volumes=self.config.container_volumes,
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],
-                network=self.network_name,
                 detach=True,
             )
+            for network in self.config.container_networks:
+                network.connect(self.docker_container)
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
 
         except docker.errors.APIError as e:
@@ -126,6 +140,10 @@ class WorkerThread:
         self.stop_thread = threading.Event()
         self.log_thread = threading.Thread(target=self.log_report_thread, daemon=True)
         self.log_thread.start()
+
+
+    def start(self, process_config):
+        raise RuntimeError("start behavior must be defined by individual worker class")
 
 
     def stop(self):
@@ -147,7 +165,7 @@ class WorkerThread:
 
 
     def send_message(self, message_text):
-        with self.influxdb_client.write_api(write_options=SYNCHRONOUS) as write_api:
+        with self.config.influxdb_client.write_api(write_options=SYNCHRONOUS) as write_api:
             try:
                 utc_timestamp = datetime.utcnow()
                 formatted_timestamp = utc_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -155,14 +173,14 @@ class WorkerThread:
                             record={
                                 "measurement": "component_log",
                                 "tags": {
-                                    "id": f"{self.container_name}",
+                                    "id": f"{self.config.container_id}",
                                     "msg_uuid": uuid.uuid4(),
                                 },
                             "fields": {"stdout_log": message_text},
                             "time": formatted_timestamp,
                             },
                             )
-                logging.debug(f"[{self.container_name}]: {message_text}")
+                logging.debug(f"[{self.config.container_id}]: {message_text}")
             except Exception as e:
                 logging.error(f"send_message failed with error: {e}")
 
