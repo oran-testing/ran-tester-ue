@@ -73,7 +73,7 @@ class ResponseValidator:
             "general_metrics_influxdb_bucket": str, "general_metrics_period_secs": float, "general_ue_data_identifier": str
         }
 
-        self.valid_components = {"rtue", "sniffer", "jammer"}
+        self.valid_components = {"generate_rtue", "generate_sniffer", "generate_jammer", "validate_rtue", "validate_sniffer", "validate_jammer", "send_rtue", "send_sniffer", "send_jammer"}
 
     # New: getters for RL loop
     def get_last_json(self):
@@ -464,11 +464,28 @@ class ResponseValidator:
         self.metrics["hints"] = hints
 
     def _validate_intent_values(self, data: list) -> None:
+        self.valid_components = {
+            "generate_rtue", "validate_rtue", "send_rtue",
+            "generate_sniffer", "validate_sniffer", "send_sniffer",
+            "generate_jammer", "validate_jammer", "send_jammer"
+        }
+
         if not all(isinstance(item, str) for item in data):
             self.errors.append("All items in intent list must be strings")
             return
 
-        invalid_components = [c for c in data if c not in self.valid_components]
-        if invalid_components:
-            self.errors.append(f"Invalid component(s) in intent list: {invalid_components}")
+        invalid = [s for s in data if s not in self.valid_components]
+        if invalid:
+            self.errors.append(f"Invalid step(s) in intent list: {invalid}")
             return
+
+        for i, step in enumerate(data):
+            if step.startswith("generate_"):
+                comp = step.split("_", 1)[1]
+                expected = [f"validate_{comp}", f"send_{comp}"]
+                if i+2 >= len(data) or data[i+1] != expected[0] or data[i+2] != expected[1]:
+                    self.errors.append(
+                        f"Step '{step}' must be immediately followed by {expected}"
+                    )
+
+

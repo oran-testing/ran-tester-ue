@@ -157,13 +157,9 @@ rtue: |
 
   ### USER REQUEST:
 
-# user_prompt: |
-#   ### **User Request**
-#   - "Generate a rtue configuration, add clock=external to the device_args for UHD"
-
 user_prompt: |
   ### **User Request**
-  - "I want to test all rtue, sniffer, and jammer"
+  - "Generate a config for the jammer. Do not save to csv, also use a frequency of 5.1 GHz"
 
 intent_prompt: |
   You are an expert RF assistant.
@@ -173,24 +169,35 @@ intent_prompt: |
   - "sniffer"
   - "jammer"
 
-  Ignore parameters like frequency, gain, or time — your only job is to choose which components are required.
+  Ignore parameters like frequency, gain, or time: your only job is to choose which components are required.
 
   Output a valid JSON list like:
-  ["rtue", "sniffer"]
+  ["generate_rtue", "validate_rtue", "send_rtue", "generate_sniffer", "validate_sniffer", "send_sniffer"]
 
   **Only use those three values.**
   **Do not explain anything.**
   **If rtue is mentioned that should always come first**
+  **After every generate there should be a validate and send step**
 
   ---
   Examples:
 
   User: "Sniff the spectrum and jam the rtue at 3.5GHz"
-  Output: ["rtue", "sniffer", "jammer"]
+  Output: ["generate_rtue", "validate_rtue", "send_rtue", "generate_sniffer", "validate_sniffer", "send_sniffer", "generate_jammer", "validate_jammer", "send_jammer"]
 
   User: "Just sniff"
-  Output: ["sniffer"]
+  Output: ["generate_sniffer", "validate_sniffer", "send_sniffer"]
 
   ---
   Now classify this:
   User: "{{ user_prompt }}"
+
+
+# TODO: add hyperparameters extraction
+parse_val: |
+  You are an expert evaluator of commands.
+
+  Your task is to identify which component and parameter is mentioned in the user's request and list them in a valid JSON object.
+
+  Output a valid JSON object like:
+  }
