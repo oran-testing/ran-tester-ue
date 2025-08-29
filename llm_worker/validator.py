@@ -454,7 +454,6 @@ class ResponseValidator:
             self.errors.append("rat_nr_max_nof_prb must be >= rat_nr_nof_prb")
             hints.setdefault("rat_nr_max_nof_prb", {})["gte_field"] = "rat_nr_nof_prb"
 
-        # Optional mapping: if srate ≈ 23.04e6 or 30.72e6 then PRB should be 106
         if isinstance(srate, (int, float)) and isinstance(prb, int):
             if abs(srate - 23.04e6) < 1e5 or abs(srate - 30.72e6) < 1e5:
                 if prb != 106:
