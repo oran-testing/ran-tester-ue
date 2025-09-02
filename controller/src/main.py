@@ -180,7 +180,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
             'token': {process_token: permissions}
         })
 
-        process_handle.start(process_config)
+        process_handle.start()
 
     for obj in process_metadata:
         logging.debug(f"{obj['id']} {obj['token']}")
@@ -368,7 +368,7 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
             'handle': process_handle,
             'token': {None: []}
         })
-        process_handle.start(new_process_config)
+        process_handle.start()
 
         self._set_headers()
         self.wfile.write(json.dumps({"msg":f"process started: {payload['id']}"}).encode("utf-8"))

@@ -33,6 +33,7 @@ class WorkerThreadConfig:
         self.container_volumes = {}
         self.container_networks = []
         self.container_privileged = True
+        self.device_requests = []
 
 
 class WorkerThread:
@@ -65,6 +66,8 @@ class WorkerThread:
                 raise RuntimeError(f"Error parsing rf configuration of {self.config.container_id}: RF type ZMQ requires tcp_subnet")
             if "gateway" not in self.config.rf_config:
                 raise RuntimeError(f"Error parsing rf configuration of {self.config.container_id}: RF type ZMQ requires gateway")
+        elif self.config.rf_config["type"] == "none":
+            logging.debug(f"{self.config.container_id}: configured with no RF")
         else:
             raise RuntimeError(f"Unsupported RF type: {rf_config['type']}")
 
@@ -90,7 +93,6 @@ class WorkerThread:
             raise RuntimeError(f"Failed to remove old container: {e}")
 
     def setup_volumes(self):
-        self.config.container_volumes[self.config.config_file] = {"bind": "/ue.conf", "mode": "ro"}
         self.config.container_volumes["/tmp"] = {"bind":"/tmp", "mode": "rw"}
         if self.config.rf_type == RfType.B200:
             self.config.container_volumes["/dev/bus/usb/"] = {"bind": "/dev/bus/usb/", "mode": "rw"}
@@ -128,6 +130,7 @@ class WorkerThread:
                 privileged=True,
                 cap_add=["SYS_NICE", "SYS_PTRACE"],
                 detach=True,
+                device_requests=self.config.device_requests,
             )
             for network in self.config.container_networks:
                 network.connect(self.docker_container)
@@ -142,7 +145,7 @@ class WorkerThread:
         self.log_thread.start()
 
 
-    def start(self, process_config):
+    def start(self):
         raise RuntimeError("start behavior must be defined by individual worker class")
 
 
