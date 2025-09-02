@@ -96,9 +96,16 @@ class WorkerThread:
         self.config.container_volumes["/tmp"] = {"bind":"/tmp", "mode": "rw"}
         if self.config.rf_type == RfType.B200:
             self.config.container_volumes["/dev/bus/usb/"] = {"bind": "/dev/bus/usb/", "mode": "rw"}
-            self.config.container_volumes[self.config.rf_config["images_dir"]] = {"bind": self.config.rf_config["images_dir"], "mode": "ro"},
+            if "images_dir" not in self.config.rf_config.keys():
+                raise RuntimeError("images_dir is required for UHD RF")
+            if type(self.config.rf_config["images_dir"]) != str:
+                raise RuntimeError("images_dir must be a string")
+            self.config.container_volumes[self.config.rf_config["images_dir"]] = {"bind": self.config.rf_config["images_dir"], "mode": "ro"}
 
-            if not os.path.exists(os.path.join(self.config.rf_config["images_dir"], "usrp_b200_fw.hex")) or not os.path.exists(os.path.join(self.config.rf_config["images_dir"], "usrp_b200_fw.hex")):
+            firmware_file = os.path.join(self.config.rf_config["images_dir"], "usrp_b200_fw.hex")
+            image_file = os.path.join(self.config.rf_config["images_dir"], "usrp_b200_fpga.bin")
+            logging.debug(f"Checking for {firmware_file} and {image_file}")
+            if not os.path.exists(firmware_file) or not os.path.exists(image_file):
                 raise RuntimeError(f"Required images for {self.config.rf_config['type']} missing in {self.config.rf_config['images_dir']}: run uhd_images_downloader")
 
     def setup_env(self):
