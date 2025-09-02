@@ -7,3 +7,5 @@ processes:
       - jammer
       - rtue
       - llm_worker
+    rf:
+      type: none
