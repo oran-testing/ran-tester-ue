@@ -10,6 +10,8 @@ services:
       - /root/.docker:/root/.docker
       # Allow access to all configurations under the current directory
       - ${DOCKER_SYSTEM_DIRECTORY}:/host:rw
+      # Allow access to /usr/share to check for images
+      - /usr/share:/usr/share:ro
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - CONFIG=${DOCKER_CONTROLLER_INIT_CONFIG:-configs/basic_ue_zmq.yaml}
