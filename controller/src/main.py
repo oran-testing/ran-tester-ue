@@ -15,17 +15,6 @@ import pathlib
 import yaml
 import logging
 import signal
-from typing import List, Dict, Union, Optional, Any
-
-from influxdb_client import InfluxDBClient, WriteApi
-
-class Config:
-    filename : str = ""
-    options : Optional[Dict[str,Any]] = None
-    log_level : int = logging.DEBUG
-    docker_client = None
-    influxdb_client : InfluxDBClient = None
-
 
 from rtue_worker_thread import rtue
 from jammer_worker_thread import jammer
@@ -34,15 +23,16 @@ from decoder_worker_thread import decoder
 from llm_worker_thread import llm_worker
 from rach_worker_thread import rach_agent
 
+from influxdb_client import InfluxDBClient, WriteApi
+
 from control_handler import SystemControlHandler
+from globals import Config, Globals
 
 
 def handle_signal(signum, frame):
-    global process_list
-    for process in process_list:
-        process["handle"].stop()
+    for process_meta in Globals.process_metadata:
+        process_meta["handle"].stop()
         logging.debug(f"Killed process {process['id']}")
-    process_list= []
     sys.exit(0)
 
 signal.signal(signal.SIGINT, handle_signal)
@@ -81,7 +71,7 @@ def configure() -> None:
         Config.options = yaml.safe_load(file)
 
 
-def start_subprocess_threads() -> List[Dict[str, Any]]:
+def start_subprocess_threads():
     """
     Creates one central influxDB client
     Creates one central docker client
@@ -112,7 +102,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
 
     Config.docker_client = docker.from_env()
 
-    process_metadata: List[Dict[str, Any]] = []
+    process_metadata = []
     process_ids = []
     for process_config in Config.options.get("processes", []):
 
@@ -190,8 +180,7 @@ def start_subprocess_threads() -> List[Dict[str, Any]]:
 
 
 if __name__ == '__main__':
-    global controller_init_time
-    controller_init_time = f"{datetime.now().astimezone(timezone.utc)
+    Globals.controller_init_time = f"{datetime.now().astimezone(timezone.utc)
         .isoformat().replace("+00:00", "Z")}"
 
     if os.geteuid() != 0:
@@ -212,12 +201,9 @@ if __name__ == '__main__':
     except RuntimeError:
         raise RuntimeError("DOCKER_CONTROLLER_API_PORT is not a valid integer")
 
-    global process_list
-    process_list = []
 
     configure()
-    global process_metadata
-    process_metadata = start_subprocess_threads()
+    Globals.process_metadata = start_subprocess_threads()
 
     server = http.server.HTTPServer((control_ip, control_port), SystemControlHandler)
 

@@ -171,7 +171,11 @@ class WorkerThread:
         self.stop_thread.set()
 
     def get_status(self):
-        return self.docker_container.status
+        self.docker_container.reload()
+        info = self.docker_container.attrs
+        if info["State"]["Running"]:
+            return { "id": self.config.container_id, "healthy": True, info["Image"] : info["State"] }
+        return { "id": self.config.container_id, "healthy": False, "exit_code": info["State"]["ExitCode"]}
 
 
     def send_message(self, message_text):
