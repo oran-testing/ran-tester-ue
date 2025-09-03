@@ -13,7 +13,8 @@ if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
   exit 0
 fi
 
-sed -i "s|<rtusystem-dir>|${PROJECT_ROOT_DIR}|g" $PROJECT_ROOT_DIR/.env
+echo "Updating DOCKER_SYSTEM_DIRECTORY to ${PROJECT_ROOT_DIR}"
+sed -i "s|DOCKER_SYSTEM_DIRECTORY=.*|DOCKER_SYSTEM_DIRECTORY=${PROJECT_ROOT_DIR}|g" $PROJECT_ROOT_DIR/.env
 
 if ! command -v docker &>/dev/null; then
   echo "Docker is not installed. Installing now..."
