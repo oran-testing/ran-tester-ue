@@ -1,7 +1,19 @@
 processes:
   - type: "rtue"
-    id: "rtue_uhd_1"
-    config_file: "configs/uhd/ue_uhd.conf"
+    id: "rtue_zmq"
+    config_file: "configs/zmq/ue_zmq_docker.conf"
     rf:
-      type: "b200"
-      images_dir: "/usr/share/uhd/images/"
+      type: "zmq"
+      tcp_subnet: "172.22.0.0/24"
+      gateway: "172.22.0.1"
+
+  - type: "llm_worker"
+    id: "llm_worker_1"
+    config_file: "configs/llm/test.yaml"
+    permissions:
+      - sniffer
+      - jammer
+      - rtue
+      - llm_worker
+    rf:
+      type: none

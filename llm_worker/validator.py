@@ -26,6 +26,7 @@ class ResponseValidator:
             "num_samples": int, "output_iq_file": str, "output_csv_file": str,
             "write_iq": bool, "write_csv": bool, "tx_gain": (float, int), "device_args": str
         }
+
         # Sniffer schema defines all flattened keys. The prompt also forces all keys to be present.
         self.sniffer_schema = {
             "id": str, "file_path": str, "sample_rate": (float, int),
@@ -59,65 +60,43 @@ class ResponseValidator:
             "rrc_ue_category": int, "nas_apn": str, "nas_apn_protocol": str, "gui_enable": bool, "gw_ip_devname": str,
             "gw_ip_netmask": str, "general_metrics_influxdb_enable": bool, "general_metrics_influxdb_url": str,
             "general_metrics_influxdb_port": int, "general_metrics_influxdb_org": str, "general_metrics_influxdb_token": str,
-            "general_metrics_influxdb_bucket":str, "general_metrics_period_secs": float, "general_ue_data_identifier": str
-        } 
-
-        self.intent_schema = {
-            "step": int, "component" : str, "action": str
+            "general_metrics_influxdb_bucket": str, "general_metrics_period_secs": float, "general_ue_data_identifier": str
         }
 
+        self.valid_components = {"rtue", "sniffer", "jammer"}
 
-    def validate(self) -> dict | None:
+    def validate(self) -> dict | list | None:
         json_str = self._extract_json()
-        if not json_str: return None # Exit early if no JSON is found
+        if not json_str:
+            return None  # Exit early if no JSON is found
 
         self.parsed_data = self._parse_json(json_str)
-        if not self.parsed_data: return None # Exit early if JSON is invalid
+        if not self.parsed_data:
+            return None  # Exit early if JSON is invalid
 
         if self.config_type == "intent":
-            # The output should be a list of step dictionaries.
             if not isinstance(self.parsed_data, list):
-                self.errors.append("Expected a JSON array (list) of steps, but got a different type.")
+                self.errors.append("Intent must be a JSON array/list")
                 return None
-            
-            if not self.parsed_data:
-                self.errors.append("The JSON array of steps is empty.")
-                return None
-
-            validated_steps = []
-            # Loop through each step object in the list.
-            for i, step_obj in enumerate(self.parsed_data):
-                if not isinstance(step_obj, dict):
-                    self.errors.append(f"Item {i} in the array is not a valid object (dictionary).")
-                    continue
-
-                # Validate the object against the schema.
-                self._validate_schema(step_obj, self.intent_schema, list(self.intent_schema.keys()))
-                
-                if step_obj.get("step") != i + 1:
-                    self.errors.append(f"Step numbering is incorrect at item {i}. Expected step {i+1}.")
-
-                validated_steps.append(step_obj)
-
+            logging.info(f"Validating intent list: {self.parsed_data}")
+            self._validate_intent_values(self.parsed_data)
             if self.errors:
                 return None
-
-            # On success, return the validated list of steps.
-            # The structure is different from other configs, so it has its own return format.
-            return validated_steps
+            return self.parsed_data
 
         # Branch validation logic based on the config type determined in main.py
         if self.config_type == "jammer":
-            # For jammer, all keys in its schema are considered required.
             self._validate_schema(self.parsed_data, self.jammer_schema, list(self.jammer_schema.keys()))
             self._validate_jammer_values(self.parsed_data)
+
         elif self.config_type == "sniffer":
-            # Same for sniffer, all keys are required.
             self._validate_schema(self.parsed_data, self.sniffer_schema, list(self.sniffer_schema.keys()))
             self._validate_sniffer_values(self.parsed_data)
+
         elif self.config_type == "rtue":
-            # For RT-UE, we check for a specific subset of required keys.
             self._validate_schema(self.parsed_data, self.rtue_full_schema, self.rtue_required_keys)
+            self._validate_rtue_values(self.parsed_data)
+
         else:
             self.errors.append(f"Unknown or unspecified config_type: '{self.config_type}'.")
 
@@ -138,46 +117,39 @@ class ResponseValidator:
             "config_str": config_string
         }
 
-
-
     def _format_validated_data(self, validated_data: dict) -> str:
-        # Create a copy so we don't modify the original parsed data.
+        # Create a copy so the original parsed data remains intact.
         data_for_formatting = validated_data.copy()
-        
-        # The 'id' is for the manifest, not the file content, so remove it before formatting.
+
+        # The 'id' belongs to the manifest, not the body. Remove before formatting.
         data_for_formatting.pop('id', None)
 
         if self.config_type == "jammer":
-            # Convert the dictionary to a YAML formatted string.
             return yaml.dump(data_for_formatting, sort_keys=False, indent=2)
-        
+
         elif self.config_type == "sniffer":
             sniffer_section = {}
             pdcch_section = {}
-            # Re-create the nested TOML structure from the flat JSON keys.
+            # Recreate the nested TOML structure from flat JSON keys.
             for key, value in data_for_formatting.items():
                 if key.startswith("pdcch_"):
-                    # "pdcch_coreset_id" becomes "coreset_id" in the pdcch section.
                     new_key = key.replace("pdcch_", "", 1)
                     pdcch_section[new_key] = value
                 elif key in ["file_path", "sample_rate", "frequency", "nid_1", "ssb_numerology"]:
                     sniffer_section[key] = value
-            
             final_toml_structure = {"sniffer": sniffer_section, "pdcch": [pdcch_section]}
-            return toml.dumps(final_toml_structure) # Convert dict to TOML string.
-            
+            return toml.dumps(final_toml_structure)
+
         elif self.config_type == "rtue":
-            # Delegate to the specific rtue formatter.
             return self._format_rtue_conf(data_for_formatting)
+
         return ""
-        
 
     def _format_rtue_conf(self, flat_data: dict) -> str:
-
         section_map = {
             'rf': 'rf_', 'rat.eutra': 'rat_eutra_', 'rat.nr': 'rat_nr_',
             'pcap': 'pcap_', 'log': 'log_', 'usim': 'usim_', 'rrc': 'rrc_',
-            'nas': 'nas_', 'gui': 'gui_', 'gw':'gw_', 'general': 'general_'
+            'nas': 'nas_', 'gui': 'gui_', 'gw': 'gw_', 'general': 'general_'
         }
 
         config = configparser.ConfigParser()
@@ -192,7 +164,6 @@ class ResponseValidator:
             if section_content:
                 config[section_name] = section_content
 
-        # Write to string buffer in INI format
         with StringIO() as output:
             config.write(output)
             return output.getvalue()
@@ -205,7 +176,7 @@ class ResponseValidator:
         fenced_blocks = re.findall(r"```(?:json)?\n([\s\S]*?)```", self.raw_response)
         for block in fenced_blocks:
             try:
-                parsed = json.loads(block.strip())
+                _ = json.loads(block.strip())
                 return block.strip()
             except json.JSONDecodeError:
                 continue
@@ -218,14 +189,13 @@ class ResponseValidator:
             if start != -1 and end != -1:
                 candidate = self.raw_response[start:end+1].strip()
                 try:
-                    parsed = json.loads(candidate)
+                    _ = json.loads(candidate)
                     return candidate
                 except json.JSONDecodeError:
                     continue
 
         self.errors.append("No valid JSON structure (array or object) could be parsed.")
         return None
-
 
     def _parse_json(self, json_str: str):
         try:
@@ -235,34 +205,155 @@ class ResponseValidator:
             return None
 
     def _validate_schema(self, data: dict, schema: dict, required_keys: list = None):
-        # check if all required keys are present in the data.
+        # Presence of required keys
         if required_keys:
             for key in required_keys:
                 if key not in data:
                     self.errors.append(f"Missing required key: '{key}'")
-        
-        # check for type correctness and find any unexpected keys.
+
+        # Type checks and unknown keys
         for key, value in data.items():
             if key not in schema:
                 self.errors.append(f"Unknown key provided in response: '{key}'")
-                continue # Skip type check for unknown keys
-            
+                continue
             expected_type = schema[key]
-            # Check if the value's type matches the expected type in the schema.
             if not isinstance(value, expected_type):
                 self.errors.append(f"Invalid type for key '{key}': expected {expected_type}, but got {type(value)}")
 
+    # Component value validators
+
     def _validate_jammer_values(self, data: dict):
-        # Specific business logic checks for jammer values.
-        if data.get("bandwidth", 0) <= 0: self.errors.append("bandwidth must be > 0")
-        if not (0 <= data.get("amplitude", -1) <= 1): self.errors.append("amplitude must be between 0 and 1")
-        if data.get("tx_gain", -1) < 0: self.errors.append("tx_gain must be >= 0")
+        # Basic ranges
+        if data.get("bandwidth", 0) <= 0:
+            self.errors.append("bandwidth must be > 0")
+        amp = data.get("amplitude", -1)
+        if not (0.0 <= amp <= 1.0):
+            self.errors.append("amplitude must be between 0 and 1")
+        if data.get("tx_gain", -1) < 0 or data.get("tx_gain", 0) > 90:
+            self.errors.append("tx_gain must be between 0 and 90")
+
+        # Nyquist for generation
+        sf = data.get("sampling_freq"); bw = data.get("bandwidth")
+        if isinstance(sf, (int, float)) and isinstance(bw, (int, float)):
+            if sf < 2.0 * bw:
+                self.errors.append("sampling_freq must be at least 2x bandwidth")
+
+        # Frequency must be positive and within a broad RF envelope
+        f0 = data.get("center_frequency")
+        if isinstance(f0, (int, float)):
+            if f0 <= 0:
+                self.errors.append("center_frequency must be > 0")
+            else:
+                in_fr1 = 410e6 <= f0 <= 7125e6
+                in_fr2 = 24.25e9 <= f0 <= 52.6e9
+                if not (in_fr1 or in_fr2):
+                    self.errors.append("center_frequency must be inside NR FR1 (410e6–7.125e9) or FR2 (24.25e9–52.6e9)")
+
+        # Hardware gating (simple detection via device_args)
+        dev = data.get("device_args", "") or ""
+        dev_lower = dev.lower()
+
+        # USRP B200-family constraints
+        if "b200" in dev_lower or "b210" in dev_lower:
+            if isinstance(f0, (int, float)):
+                if f0 > 6e9:
+                    self.errors.append("center_frequency exceeds B200-family tuning range (<= 6e9)")
+                in_fr2 = 24.25e9 <= f0 <= 52.6e9
+                if in_fr2:
+                    self.errors.append("B200-family cannot operate in NR FR2 (24.25e9–52.6e9)")
+            if isinstance(sf, (int, float)) and sf > 61.44e6:
+                self.errors.append("sampling_freq exceeds B200-family practical maximum (~61.44e6)")
+            if isinstance(bw, (int, float)) and bw > 56e6:
+                self.errors.append("bandwidth exceeds B200-family front-end practical limit (~56e6)")
+
+        # Basic sanity on num_samples
+        ns = data.get("num_samples", 0)
+        if isinstance(ns, int) and ns <= 0:
+            self.errors.append("num_samples must be > 0")
 
     def _validate_sniffer_values(self, data: dict):
-        # Specific business logic checks for sniffer values.
-        if data.get("sample_rate", 0) <= 0: self.errors.append("sample_rate must be > 0")
-        if data.get("pdcch_num_prbs", 0) <= 0: self.errors.append("pdcch_num_prbs must be > 0")
-        if not (0 <= data.get("ssb_numerology") <= 4): self.errors.append("ssb_numerology must be >= 0 and <= 4")
+        # Fundamental checks
+        if data.get("sample_rate", 0) <= 0:
+            self.errors.append("sample_rate must be > 0")
+        if data.get("pdcch_num_prbs", 0) <= 0:
+            self.errors.append("pdcch_num_prbs must be > 0")
+        if not (0 <= data.get("ssb_numerology") <= 4):
+            self.errors.append("ssb_numerology must be >= 0 and <= 4")
 
+        # NR band membership: FR1 or FR2
+        f = data.get("frequency")
+        if isinstance(f, (int, float)):
+            in_fr1 = 410e6 <= f <= 7125e6
+            in_fr2 = 24.25e9 <= f <= 52.6e9
+            if not (in_fr1 or in_fr2):
+                self.errors.append("frequency must be inside NR FR1 (410e6–7.125e9) or FR2 (24.25e9–52.6e9)")
 
+        # CORESET duration must be 1, 2, or 3
+        dur = data.get("pdcch_coreset_duration")
+        if isinstance(dur, int) and dur not in (1, 2, 3):
+            self.errors.append("pdcch_coreset_duration must be one of {1, 2, 3}")
 
+        # Range parameters must satisfy start ≤ end
+        sid0 = data.get("pdcch_scrambling_id_start")
+        sid1 = data.get("pdcch_scrambling_id_end")
+        if isinstance(sid0, int) and isinstance(sid1, int) and sid0 > sid1:
+            self.errors.append("pdcch_scrambling_id_start must be <= pdcch_scrambling_id_end")
+
+        rnti0 = data.get("pdcch_rnti_start")
+        rnti1 = data.get("pdcch_rnti_end")
+        if isinstance(rnti0, int) and isinstance(rnti1, int) and rnti0 > rnti1:
+            self.errors.append("pdcch_rnti_start must be <= pdcch_rnti_end")
+
+        # Fixed-length lists where applicable
+        dci = data.get("pdcch_dci_sizes_list")
+        if isinstance(dci, list) and len(dci) != 2:
+            self.errors.append("pdcch_dci_sizes_list must have exactly 2 elements")
+
+        al_thr = data.get("pdcch_AL_corr_thresholds")
+        if isinstance(al_thr, list) and len(al_thr) != 5:
+            self.errors.append("pdcch_AL_corr_thresholds must have exactly 5 elements")
+
+        al_n = data.get("pdcch_num_candidates_per_AL")
+        if isinstance(al_n, list) and len(al_n) != 5:
+            self.errors.append("pdcch_num_candidates_per_AL must have exactly 5 elements")
+
+    def _validate_rtue_values(self, data: dict):
+        # Basic RF ranges
+        srate = data.get("rf_srate")
+        if isinstance(srate, (int, float)) and srate <= 0:
+            self.errors.append("rf_srate must be > 0")
+
+        txg = data.get("rf_tx_gain")
+        if isinstance(txg, (int, float)) and not (0 <= txg <= 90):
+            self.errors.append("rf_tx_gain must be between 0 and 90")
+
+        rxg = data.get("rf_rx_gain")
+        if isinstance(rxg, (int, float)) and not (0 <= rxg <= 90):
+            self.errors.append("rf_rx_gain must be between 0 and 90")
+
+        # PRB coherence
+        prb = data.get("rat_nr_nof_prb")
+        prb_max = data.get("rat_nr_max_nof_prb")
+        if isinstance(prb, int) and prb <= 0:
+            self.errors.append("rat_nr_nof_prb must be > 0")
+        if isinstance(prb_max, int) and prb_max <= 0:
+            self.errors.append("rat_nr_max_nof_prb must be > 0")
+        if isinstance(prb, int) and isinstance(prb_max, int) and prb_max < prb:
+            self.errors.append("rat_nr_max_nof_prb must be >= rat_nr_nof_prb")
+
+        # Optional mapping: if srate ≈ 23.04e6 or 30.72e6 then PRB should be 106
+        if isinstance(srate, (int, float)) and isinstance(prb, int):
+            if abs(srate - 23.04e6) < 1e5 or abs(srate - 30.72e6) < 1e5:
+                if prb != 106:
+                    self.errors.append("rat_nr_nof_prb must be 106 for rf_srate near 23.04e6 or 30.72e6")
+
+    def _validate_intent_values(self, data: list) -> None:
+        """Validates a list of component names against valid_components set."""
+        if not all(isinstance(item, str) for item in data):
+            self.errors.append("All items in intent list must be strings")
+            return
+
+        invalid_components = [c for c in data if c not in self.valid_components]
+        if invalid_components:
+            self.errors.append(f"Invalid component(s) in intent list: {invalid_components}")
+            return

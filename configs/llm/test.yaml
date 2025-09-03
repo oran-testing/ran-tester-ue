@@ -163,74 +163,34 @@ rtue: |
 
 user_prompt: |
   ### **User Request**
-  - "Generate a jammer configuration and set the frequency to 5Ghz with tx gain 80"
+  - "I want to test all rtue, sniffer, and jammer"
 
 intent_prompt: |
-  You are an expert RF engineering assistant. Your job is to convert the user's request into a precise, ordered list of configuration steps.
+  You are an expert RF assistant.
 
-  **Output must be a valid JSON array. No explanations.**
+  Your task is to identify which of the following components are mentioned in the user's request:
+  - "rtue"
+  - "sniffer"
+  - "jammer"
 
-  ---
-  **Allowed Components and Actions (use exactly):**
-  - "rtue": "generate a rtue configuration"
-  - "sniffer": "generate a sniffer configuration"
-  - "jammer": "generate a jammer configuration"
+  Ignore parameters like frequency, gain, or time — your only job is to choose which components are required.
 
-  Only use these exact actions. Do not invent or modify them.
+  Output a valid JSON list like:
+  ["rtue", "sniffer"]
 
-  ---
-  **Rules:**
-  - Only one step per component.
-  - If rtue is used, it must be step 1.
-  - Do not extract parameters like frequency or gain into separate steps — those are part of the configuration.
-  - Output only the structure below:
-
-  [
-    {
-      "step": 1,
-      "component": "component_name",
-      "action": "action_to_perform"
-    },
-    {
-      "step": 2,
-      "component": "component_name",
-      "action": "action_to_perform"
-    }
-  ]
+  **Only use those three values.**
+  **Do not explain anything.**
+  **If rtue is mentioned that should always come first**
 
   ---
-  **Examples**
+  Examples:
 
-  **User Request:** I want to jam a target.  
-  **Output:**
-  [
-    {
-      "step": 1,
-      "component": "jammer",
-      "action": "generate a jammer configuration"
-    }
-  ]
+  User: "Sniff the spectrum and jam the rtue at 3.5GHz"
+  Output: ["rtue", "sniffer", "jammer"]
 
-  **User Request:** Jam and sniff the rtue.  
-  **Output:**
-  [
-    {
-      "step": 1,
-      "component": "rtue",
-      "action": "generate a rtue configuration"
-    },
-    {
-      "step": 2,
-      "component": "sniffer",
-      "action": "generate a sniffer configuration"
-    },
-    {
-      "step": 3,
-      "component": "jammer",
-      "action": "generate a jammer configuration"
-    }
-  ]
-  **Allowed Components and Actions (use exactly):**
-  - "rtue": "generate a rtue configuration"
-  - "sniffer": "generate a sniffer configuration"
-  - "jammer": "generate a jammer configuration"
+  User: "Just sniff"
+  Output: ["sniffer"]
+
+  ---
+  Now classify this:
+  User: "{{ user_prompt }}"
