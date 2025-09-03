@@ -5,6 +5,7 @@ from worker_thread import WorkerThread
 # Collects data from UE then sends them to the webui
 #
 
+
 class rtue(WorkerThread):
     def start(self):
         self.config.image_name = "ghcr.io/oran-testing/rtue"
