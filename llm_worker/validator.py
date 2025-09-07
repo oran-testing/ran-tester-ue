@@ -266,7 +266,7 @@ class ResponseValidator:
 
         # Fall back to the largest array or object
         bracket_pairs = [('[', ']'), ('{', '}')]
-        for open_bracket, close_bracket in these pairs:
+        for open_bracket, close_bracket in bracket_pairs:
             start = self.raw_response.find(open_bracket)
             end = self.raw_response.rfind(close_bracket)
             if start != -1 and end != -1:
@@ -469,7 +469,6 @@ class ResponseValidator:
 
         self.metrics["hints"] = hints
 
-    # ---------- NEW: plan key-value validation ----------
     def _validate_plan_kv(self, plan_obj: dict) -> None:
         """
         Validates the plan extracted by plan_prompt, which is a flat JSON object like:
@@ -495,7 +494,3 @@ class ResponseValidator:
             if not key_re.match(k):
                 self.errors.append(f"Invalid plan key format: '{k}'. Expected '<component>_<param>' with component in {{rtue|sniffer|jammer}} and snake_case parameter.")
                 continue
-            # No strict type checks for v; any JSON type allowed per prompt
-            # Optionally, you can add special-case guidance/hints here in the future.
-        # Done
-
