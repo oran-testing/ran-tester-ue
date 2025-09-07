@@ -1,7 +1,3 @@
-# validator.py
-# Updated to return a structured dictionary: {type, id, config}
-# and to expose last_parsed_json + metrics (with machine-readable hints).
-
 import re
 import json
 import logging
@@ -18,21 +14,19 @@ class ResponseValidator:
         self.config_type = config_type
         self.errors = []
         self.parsed_data = None
-        self.meta = {} 
+        self.meta = {}
 
-        # Expose last parsed JSON and basic metrics
         self.last_parsed_json: Optional[dict] = None
         self.metrics = {
             "ok": False,
             "error_count": 0,
             "errors": [],
             "violated_fields": [],
-            "hints": {},   # machine-readable constraint hints populated on violations
+            "hints": {},
         }
 
         logging.info(f"Validator initialized for type: '{self.config_type}'")
 
-        # --- Schema Definitions ---
         self.jammer_schema = {
             "id": str, "center_frequency": (float, int), "bandwidth": (float, int),
             "amplitude": (float, int), "amplitude_width": (float, int),
@@ -80,13 +74,12 @@ class ResponseValidator:
             "send_rtue", "send_sniffer", "send_jammer"
         }
 
-    # New: getters for RL loop
     def get_last_json(self):
         return self.last_parsed_json
 
     def get_metrics(self):
         return self.metrics
-    
+
     def save_debug_output(self):
         try:
             debug_file = "/var/log/validator_debug.jsonl"
@@ -103,17 +96,16 @@ class ResponseValidator:
         except Exception as e:
             logging.error(f"Failed to write validator debug log: {e}")
 
-
     def validate(self) -> dict | list | None:
         json_str = self._extract_json()
         if not json_str:
             self._finalize_metrics()
-            return None  # Exit early if no JSON is found
+            return None
 
         self.parsed_data = self._parse_json(json_str)
         if not self.parsed_data:
             self._finalize_metrics()
-            return None  # Exit early if JSON is invalid
+            return None
 
         if self.config_type == "plan":
             if not isinstance(self.parsed_data, dict):
@@ -129,7 +121,6 @@ class ResponseValidator:
             self._finalize_metrics()
             return self.parsed_data
 
-        # Branch validation logic
         if self.config_type == "jammer":
             self._validate_schema(self.parsed_data, self.jammer_schema, list(self.jammer_schema.keys()))
             self._validate_jammer_values(self.parsed_data)
@@ -145,22 +136,19 @@ class ResponseValidator:
         else:
             self.errors.append(f"Unknown or unspecified config_type: '{self.config_type}'.")
 
-        # If any validation step added errors, fail now.
         if self.errors:
             self._finalize_metrics()
             return None
 
-        # On success, format the data into the final config string.
         config_string = self._format_validated_data(self.parsed_data)
         if not config_string and not self.errors:
             self.errors.append("Formatting to YAML/TOML failed.")
             self._finalize_metrics()
             return None
 
-        # success
         self.metrics["ok"] = True
         self._finalize_metrics()
-    
+
         self.save_debug_output()
         return {
             "type": self.config_type,
@@ -168,12 +156,10 @@ class ResponseValidator:
             "config_str": config_string
         }
 
-
     def _finalize_metrics(self):
         self.metrics["error_count"] = len(self.errors)
         self.metrics["errors"] = list(self.errors)
 
-        # Heuristic extraction of violated fields: look for known field names in error strings
         violated = set()
         known_fields_by_type = {
             "jammer": [
@@ -196,7 +182,6 @@ class ResponseValidator:
             for fld in candidates:
                 if fld in e:
                     violated.add(fld)
-        # also capture quoted names if present
         for e in self.errors:
             m = re.search(r"'([^']+)'", e)
             if m:
@@ -255,7 +240,6 @@ class ResponseValidator:
         return self.errors
 
     def _extract_json(self):
-        # Try fenced code blocks first
         fenced_blocks = re.findall(r"```(?:json)?\n([\s\S]*?)```", self.raw_response)
         for block in fenced_blocks:
             try:
@@ -264,7 +248,7 @@ class ResponseValidator:
             except json.JSONDecodeError:
                 continue
 
-        # Fall back to the largest array or object
+    # Fall back to the largest array or object
         bracket_pairs = [('[', ']'), ('{', '}')]
         for open_bracket, close_bracket in bracket_pairs:
             start = self.raw_response.find(open_bracket)
@@ -290,13 +274,11 @@ class ResponseValidator:
             return None
 
     def _validate_schema(self, data: dict, schema: dict, required_keys: list = None):
-        # Presence of required keys
         if required_keys:
             for key in required_keys:
                 if key not in data:
                     self.errors.append(f"Missing required key: '{key}'")
 
-        # Type checks and unknown keys
         for key, value in data.items():
             if key not in schema:
                 self.errors.append(f"Unknown key provided in response: '{key}'")
@@ -305,12 +287,9 @@ class ResponseValidator:
             if not isinstance(value, expected_type):
                 self.errors.append(f"Invalid type for key '{key}': expected {expected_type}, but got {type(value)}")
 
-    # Component value validators + machine-readable hints
-
     def _validate_jammer_values(self, data: dict):
         hints = self.metrics.get("hints", {})
 
-        # Basic ranges
         if data.get("bandwidth", 0) <= 0:
             self.errors.append("bandwidth must be > 0")
             hints.setdefault("bandwidth", {}).setdefault("min", 1.0)
@@ -324,14 +303,12 @@ class ResponseValidator:
             self.errors.append("tx_gain must be between 0 and 90")
             hints.setdefault("tx_gain", {}).update({"min": 0, "max": 90})
 
-        # Nyquist for generation
         sf = data.get("sampling_freq"); bw = data.get("bandwidth")
         if isinstance(sf, (int, float)) and isinstance(bw, (int, float)):
             if sf < 2.0 * bw:
                 self.errors.append("sampling_freq must be at least 2x bandwidth")
                 hints.setdefault("sampling_freq", {})["min_relative"] = {"field": "bandwidth", "factor": 2.0}
 
-        # Frequency envelope (FR1/FR2)
         f0 = data.get("center_frequency")
         if isinstance(f0, (int, float)):
             if f0 <= 0:
@@ -344,7 +321,6 @@ class ResponseValidator:
                     self.errors.append("center_frequency must be inside NR FR1 (410e6–7.125e9) or FR2 (24.25e9–52.6e9)")
                     hints.setdefault("center_frequency", {})["allowed_ranges"] = [[410e6, 7125e6], [24.25e9, 52.6e9]]
 
-        # Hardware gating (device_args)
         dev = (data.get("device_args", "") or "").lower()
         if "b200" in dev or "b210" in dev:
             if isinstance(f0, (int, float)):
@@ -361,7 +337,6 @@ class ResponseValidator:
                 self.errors.append("bandwidth exceeds B200-family front-end practical limit (~56e6)")
                 hints.setdefault("bandwidth", {})["b200_cap_max"] = 56e6
 
-        # Basic sanity on num_samples
         ns = data.get("num_samples", 0)
         if isinstance(ns, int) and ns <= 0:
             self.errors.append("num_samples must be > 0")
@@ -372,10 +347,16 @@ class ResponseValidator:
     def _validate_sniffer_values(self, data: dict):
         hints = self.metrics.get("hints", {})
 
-        # Fundamental checks
-        if data.get("sample_rate", 0) <= 0:
+        sr = data.get("sample_rate", 0)
+        if sr <= 0:
             self.errors.append("sample_rate must be > 0")
             hints.setdefault("sample_rate", {})["min"] = 1.0
+        # Device-oriented cap (B200/B210 practical)
+        if isinstance(sr, (int, float)) and sr > 61.44e6:
+            self.errors.append("sample_rate exceeds B200-family practical maximum (~61.44e6)")
+            hints.setdefault("sample_rate", {})["b200_cap_max"] = 61.44e6
+            hints["sample_rate"]["preferred_values"] = [15.36e6, 23.04e6, 30.72e6, 61.44e6]
+
         if data.get("pdcch_num_prbs", 0) <= 0:
             self.errors.append("pdcch_num_prbs must be > 0")
             hints.setdefault("pdcch_num_prbs", {})["min"] = 1
@@ -383,7 +364,6 @@ class ResponseValidator:
             self.errors.append("ssb_numerology must be >= 0 and <= 4")
             hints.setdefault("ssb_numerology", {}).update({"min": 0, "max": 4})
 
-        # NR band membership: FR1 or FR2
         f = data.get("frequency")
         if isinstance(f, (int, float)):
             in_fr1 = 410e6 <= f <= 7125e6
@@ -391,14 +371,16 @@ class ResponseValidator:
             if not (in_fr1 or in_fr2):
                 self.errors.append("frequency must be inside NR FR1 (410e6–7.125e9) or FR2 (24.25e9–52.6e9)")
                 hints.setdefault("frequency", {})["allowed_ranges"] = [[410e6, 7125e6], [24.25e9, 52.6e9]]
+            # Device-oriented cap (B200/B210 practical)
+            if f > 6e9:
+                self.errors.append("frequency exceeds B200-family practical tuning (~<=6e9)")
+                hints.setdefault("frequency", {})["b200_cap_max"] = 6e9
 
-        # CORESET duration must be 1, 2, or 3
         dur = data.get("pdcch_coreset_duration")
         if isinstance(dur, int) and dur not in (1, 2, 3):
             self.errors.append("pdcch_coreset_duration must be one of {1, 2, 3}")
             hints.setdefault("pdcch_coreset_duration", {})["allowed_values"] = [1, 2, 3]
 
-        # Range parameters must satisfy start ≤ end
         sid0 = data.get("pdcch_scrambling_id_start")
         sid1 = data.get("pdcch_scrambling_id_end")
         if isinstance(sid0, int) and isinstance(sid1, int) and sid0 > sid1:
@@ -411,7 +393,6 @@ class ResponseValidator:
             self.errors.append("pdcch_rnti_start must be <= pdcch_rnti_end")
             hints.setdefault("pdcch_rnti_start", {})["lte_field"] = "pdcch_rnti_end"
 
-        # Fixed-length lists where applicable
         dci = data.get("pdcch_dci_sizes_list")
         if isinstance(dci, list) and len(dci) != 2:
             self.errors.append("pdcch_dci_sizes_list must have exactly 2 elements")
@@ -432,7 +413,6 @@ class ResponseValidator:
     def _validate_rtue_values(self, data: dict):
         hints = self.metrics.get("hints", {})
 
-        # Basic RF ranges
         srate = data.get("rf_srate")
         if isinstance(srate, (int, float)) and srate <= 0:
             self.errors.append("rf_srate must be > 0")
@@ -448,7 +428,6 @@ class ResponseValidator:
             self.errors.append("rf_rx_gain must be between 0 and 90")
             hints.setdefault("rf_rx_gain", {}).update({"min": 0, "max": 90})
 
-        # PRB coherence
         prb = data.get("rat_nr_nof_prb")
         prb_max = data.get("rat_nr_max_nof_prb")
         if isinstance(prb, int) and prb <= 0:
@@ -457,7 +436,7 @@ class ResponseValidator:
         if isinstance(prb_max, int) and prb_max <= 0:
             self.errors.append("rat_nr_max_nof_prb must be > 0")
             hints.setdefault("rat_nr_max_nof_prb", {})["min"] = 1
-        if isinstance(prb, int) and isinstance(prb_max, int) and prb_max < prb: 
+        if isinstance(prb, int) and isinstance(prb_max, int) and prb_max < prb:
             self.errors.append("rat_nr_max_nof_prb must be >= rat_nr_nof_prb")
             hints.setdefault("rat_nr_max_nof_prb", {})["gte_field"] = "rat_nr_nof_prb"
 
@@ -470,18 +449,6 @@ class ResponseValidator:
         self.metrics["hints"] = hints
 
     def _validate_plan_kv(self, plan_obj: dict) -> None:
-        """
-        Validates the plan extracted by plan_prompt, which is a flat JSON object like:
-          {
-            "sniffer_frequency": 6.51e9,
-            "jammer_center_frequency": 6.31e9,
-            "jammer_write_csv": false
-          }
-
-        Rules:
-          - Keys must match ^(rtue|sniffer|jammer)_[a-z0-9_]+$
-          - Values may be any valid JSON type (number, bool, string, etc.)
-        """
         if not isinstance(plan_obj, dict):
             self.errors.append("Plan must be a JSON object")
             return
