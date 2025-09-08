@@ -1,10 +1,7 @@
-# main.py
-
 """
 TODO:
-- make ResponseValidator abstract
-- fix logging
-- add description to each planner element
+- make planner class
+- make validator class
 - make validator for planner
 - allow another LLM to be used for the planner
 - add analyzer
@@ -19,22 +16,22 @@ from transformers import (
 import yaml
 import json
 import logging
-import time
 import os
 import sys
-from typing import List, Dict, Union, Optional, Any
 import argparse
 import pathlib
 
-from validator import ResponseValidator
+from rtue_validator import RTUEValidator
+from sniffer_validator import SnifferValidator
+from jammer_validator import JammerValidator
 
 
 class Config:
     filename : str = ""
-    options : Optional[Dict[str,Any]] = None
+    options : dict = None
     log_level : int = logging.DEBUG
 
-def verify_env():
+def configure():
     if os.geteuid() != 0:
         raise RuntimeError("The LLM worker must be run as root.")
     if not torch.cuda.is_available():
@@ -52,13 +49,11 @@ def verify_env():
         control_port = int(control_port)
     except RuntimeError:
         raise RuntimeError("control port is not an integer")
-    return control_ip, control_port, control_token
 
-def configure() -> None:
     parser = argparse.ArgumentParser(
         description="RAN tester UE process controller")
     parser.add_argument(
-        "--config", type=pathlib.Path, required=True,
+        "--config", type=str, required=True,
         help="Path of YAML config for the llm worker")
     parser.add_argument("--log-level",
                     default="DEBUG",
@@ -71,9 +66,13 @@ def configure() -> None:
                     format='%(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
     Config.filename = args.config
+    if not os.path.exists(args.config):
+        raise RuntimeError(f"Config path {args.config} does not exist")
+
     with open(str(args.config), 'r') as file:
         Config.options = yaml.safe_load(file)
 
+    return control_ip, control_port, control_token
 
 
 def generate_response(model, tokenizer, prompt_content: str) -> str:
@@ -226,19 +225,14 @@ def response_validation_loop(current_response_text: str, config_type:str, origin
 
 
 if __name__ == '__main__':
-    api_args = verify_env()
+    api_args = configure()
 
-    configure()
-
-    # --- Model Setup ---
     model_str = Config.options.get("model", None)
-    if not model_str:
-        logging.error("Model not specified")
-        sys.exit(1)
+    if not model_str: raise RuntimeError("Model not specified")
+
     logging.debug(f"using model: {model_str}")
     model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
     tokenizer = AutoTokenizer.from_pretrained(model_str)
-
 
     api_iface = ApiInterface(*api_args)
     kb = KnowledgeAugmentor()
@@ -249,14 +243,8 @@ if __name__ == '__main__':
         logging.info(f"Intent component: {config_type}")
         user_prompt = Config.options.get("user_prompt", "")
         system_prompt = Config.options.get(config_type, "")
-        original_prompt_content = system_prompt + user_prompt  # preserved for logs/validator context
+        original_prompt_content = system_prompt + user_prompt
 
-        #   prompt structuring
-        # - Extract INSTRUCTIONS block from the system prompt.
-        # - Retrieve engineering CONTEXT filtered to the specific component.
-        # - Build a single, well-structured augmented prompt.
-
-        # split out instruction-only portion if system prompt includes a user section.
         system_instructions = system_prompt.split("### USER REQUEST:")[0] if "### USER REQUEST:" in system_prompt else system_prompt
 
         # build a retrieval query that is explicit about the component and goal.
@@ -358,6 +346,3 @@ if __name__ == '__main__':
 
 
 
-    # logging.info("Entering infinite loop to keep container alive for inspection.")
-    # while True:
-    #     time.sleep(60)
