@@ -1,10 +1,21 @@
 # main.py
 
+"""
+TODO:
+- make ResponseValidator abstract
+- fix logging
+- add description to each planner element
+- make validator for planner
+- allow another LLM to be used for the planner
+- add analyzer
+"""
+
 import torch
 from transformers import (
     AutoTokenizer, GenerationConfig,
     AutoModelForCausalLM
 )
+
 import urllib3
 import yaml
 import json
@@ -19,8 +30,8 @@ import requests
 
 from validator import ResponseValidator
 
-import chromadb  
-from chromadb.utils import embedding_functions  
+import chromadb
+from chromadb.utils import embedding_functions
 
 
 class Config:
@@ -115,7 +126,6 @@ def get_process_logs(control_url, auth_header, json_payload):
         return False, {"error":str(e)}
 
 def generate_response(model, tokenizer, prompt_content: str) -> str:
-
     messages = [{"role": "user", "content": prompt_content}]
     formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = tokenizer(formatted_prompt, return_tensors="pt").to(model.device)
@@ -186,7 +196,6 @@ def get_intent() -> list[dict]:
 
     logging.error("Max attempts reached. Intent extraction failed.")
     return []
-   
 
 
 def response_validation_loop(current_response_text: str, config_type:str, original_prompt_content: str) -> str:
