@@ -16,7 +16,6 @@ from transformers import (
     AutoModelForCausalLM
 )
 
-import urllib3
 import yaml
 import json
 import logging
@@ -26,12 +25,8 @@ import sys
 from typing import List, Dict, Union, Optional, Any
 import argparse
 import pathlib
-import requests
 
 from validator import ResponseValidator
-
-import chromadb
-from chromadb.utils import embedding_functions
 
 
 class Config:
@@ -80,50 +75,6 @@ def configure() -> None:
         Config.options = yaml.safe_load(file)
 
 
-def list_processes(control_url, auth_header):
-    current_endpoint = "/list"
-    headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0"}
-    try:
-        response = requests.get(url=f"{control_url}{current_endpoint}", headers=headers, verify=False)
-        if response.status_code == 200:
-            return True, response.json()
-        return False, {"error": response.text}
-    except requests.exceptions.RequestException as e:
-        return False, {"error":str(e)}
-
-def start_process(control_url, auth_header, json_payload):
-    current_endpoint = "/start"
-    headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
-    try:
-        response = requests.post(url=f"{control_url}{current_endpoint}", headers=headers, json=json_payload, verify=False)
-        if response.status_code == 200:
-            return True, response.json()
-        return False, {"error": response.text}
-    except requests.exceptions.RequestException as e:
-        return False, {"error":str(e)}
- 
-def stop_process(control_url, auth_header, process_id):
-    current_endpoint = "/stop"
-    headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
-    json_payload = {"id": process_id}
-    try:
-        response = requests.post(url=f"{control_url}{current_endpoint}", headers=headers, json=json_payload, verify=False)
-        if response.status_code == 200:
-            return True, response.json()
-        return False, {"error": response.text}
-    except requests.exceptions.RequestException as e:
-        return False, {"error":str(e)}
-
-def get_process_logs(control_url, auth_header, json_payload):
-    current_endpoint = "/logs"
-    headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
-    try:
-        response = requests.post(url=f"{control_url}{current_endpoint}", headers=headers, json=json_payload, verify=False)
-        if response.status_code == 200:
-            return True, response.json()
-        return False, {"error": response.text}
-    except requests.exceptions.RequestException as e:
-        return False, {"error":str(e)}
 
 def generate_response(model, tokenizer, prompt_content: str) -> str:
     messages = [{"role": "user", "content": prompt_content}]
@@ -272,88 +223,12 @@ def response_validation_loop(current_response_text: str, config_type:str, origin
         logging.info("Script finished.")
     return None
 
-def save_config_to_file(config_str: str, config_type: str, config_id: str, output_dir: str = "/host/configs"):
-    import os
-    os.makedirs(output_dir, exist_ok=True)
-    filename = f"{config_type}_{config_id}.toml"
-    filepath = os.path.join(output_dir, filename)
-    with open(filepath, "w") as f:
-        f.write(config_str)
-    logging.info(f"Config saved to: {filepath}")
-
-
-# retrieval + prompt augmentation
-class KnowledgeAugmentor:
-    """
-    Minimal retrieval helper around ChromaDB to fetch domain snippets
-    and build a context string for prompt augmentation.
-
-    NOTE: To keep context relevant, chunks should be upserted with metadata:
-      metadatas=[{"source": "kb/sniffer.md", "component": "sniffer"}, ...]
-    """
-    def __init__(self, db_dir="vector_db", collection_name="rf_knowledge", model_name="all-MiniLM-L6-v2"):
-        logging.info("Initializing KnowledgeAugmentor...")
-        sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=model_name)
-        db_client = chromadb.PersistentClient(path=db_dir)
-        self.collection = db_client.get_collection(name=collection_name, embedding_function=sentence_transformer_ef)
-        logging.info("KnowledgeAugmentor initialized.")
-
-    # component-filtered retrieval to avoid mixing unrelated docs
-    def retrieve_context_for_component(self, component: str, query: str, n_results: int = 3) -> str:
-        logging.info(f"[KnowledgeAugmentor] Retrieving context for component='{component}' | query='{query}'")
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=n_results,
-            where={"component": component}  # metadata filter ensures only relevant files are used
-        )
-        docs = results.get('documents', [[]])[0] if results else []
-        if not docs:
-            return ""
-        ctx = []
-        for i, doc in enumerate(docs):
-            try:
-                source = results['metadatas'][0][i].get('source', 'unknown')
-            except Exception:
-                source = "unknown"
-            logging.info(f"  [Doc {i+1} from '{source}']: {doc[:120].strip().replace(chr(10),' ')}...")
-            ctx.append(f"- From {source}:\n{doc}")
-        return "\n\n".join(ctx).strip()
-
-    @staticmethod
-    def build_augmented_prompt(context: str, system_prompt_block: str, user_request: str) -> str:
-        """
-        Structured prompt used consistently across components.
-        - Context: retrieved engineering rules/examples
-        - Instructions: the schema/formatting portion of the system prompt
-        - User Request: the actual user input/goal
-        (staticmethod: this function does not depend on instance or class state)
-        """
-        return f"""You are an expert RF systems assistant.
-First, review the provided CONTEXT for critical engineering rules.
-Then, use that context to follow the INSTRUCTIONS to generate a valid JSON configuration that fulfills the USER REQUEST.
-
---- CONTEXT (Rules & Formulas) ---
-{context}
---- END OF CONTEXT ---
-
---- INSTRUCTIONS (Schema & Formatting) ---
-{system_prompt_block}
---- END OF INSTRUCTIONS ---
-
---- USER REQUEST ---
-{user_request}
-
-Provide only the final JSON object.
-
---- JSON OUTPUT ---""".strip()
 
 
 if __name__ == '__main__':
-    control_ip, control_port, control_token = verify_env()
+    api_args = verify_env()
+
     configure()
-    control_url = f"https://{control_ip}:{control_port}"
-    auth_header = f"Bearer {control_token}"
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     # --- Model Setup ---
     model_str = Config.options.get("model", None)
@@ -365,9 +240,9 @@ if __name__ == '__main__':
     tokenizer = AutoTokenizer.from_pretrained(model_str)
 
 
-    kb = KnowledgeAugmentor()  # instantiate augmentor once
+    api_iface = ApiInterface(*api_args)
+    kb = KnowledgeAugmentor()
 
-    # using llm for intent determination
     intent_output = get_intent()
 
     for config_type in intent_output:
@@ -414,7 +289,6 @@ if __name__ == '__main__':
         final_config_id = validated_data.get('id')
         final_config_string = validated_data.get('config_str')
 
-        save_config_to_file(final_config_string, final_config_type, final_config_id)
         # --- Final Outcome Logic (with controller API call) ---
         if validated_data and validated_data.get('config_str'):
             logging.info("="*20 + " FINAL VALIDATED CONFIGURATION " + "="*20)
@@ -437,10 +311,9 @@ if __name__ == '__main__':
 
                 json_payload = {"id": final_config_id, "type": final_config_type, "config_str": final_config_string}
                 logging.info(f"Attempting to start process with controller (Attempt {controller_attempt_count}/{controller_retry_max_attempts})...")
-                logging.info(f"Payload being sent: {json.dumps(json_payload, indent=2)}")
                 json_payload["rf"] = {"type":"b200","images_dir":"/usr/share/uhd/images"}
                 
-                success, response_data = start_process(control_url, auth_header, json_payload)
+                success, response_data = api_iface.make_request("/start", payload=json_payload)
 
                 if success:
                     logging.info("Successfully sent start command to controller.")

@@ -1,11 +1,5 @@
-# validation_tester.py
-
 import sys
 from validator import LLMResponseValidator
-
-# ==============================================================================
-
-# ==============================================================================
 
 TEST_CASES = [
     {
@@ -259,20 +253,20 @@ def run_tests():
     """Iterates through test cases and reports results."""
     passed_count = 0
     failed_count = 0
-    
+
     # In some test cases, I've used semicolons to keep lines short. Let's replace them with newlines.
     for test in TEST_CASES:
         test['input'] = test['input'].replace(';', '\n')
 
     for i, test in enumerate(TEST_CASES):
         print(f"--- Running Test #{i+1}: {test['name']} ---")
-        
+
         validator = LLMResponseValidator(test['input'])
         result = validator.process()
-        
+
         has_errors = bool(result.get('errors'))
         test_passed = (not has_errors) == test['expected_success']
-        
+
         # Additional check for failure cases: ensure the error message is as expected
         if not test_passed and not test['expected_success']:
             error_string = " ".join(result.get('errors', [])).lower()
