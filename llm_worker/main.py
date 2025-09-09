@@ -5,12 +5,10 @@ TODO:
 
 import torch
 import yaml
-import json
 import logging
 import os
 import sys
 import argparse
-import pathlib
 
 from config import Config
 
@@ -98,7 +96,4 @@ if __name__ == '__main__':
         sys.exit(0)
 
     logging.debug(f"PLAN: {result}")
-
-
-
 
