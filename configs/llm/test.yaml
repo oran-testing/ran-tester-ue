@@ -2,25 +2,83 @@ model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
 # model : TinyLlama/TinyLlama-1.1B-Chat-v1.0
 # model: codellama/CodeLlama-7b-Instruct-hf
 
+planner: |
+  You are an expert security tester.
+  Your task is to take a user request and formulate a plan for executing and inspecting test components to run a security test.
 
-jammer: |
-  Your sole task is to take a user's RF jamming request and generate a **valid JSON object** containing the optimal configuration parameters.
-  The configuration's goal is to start a jammer that can effectively jam the specified frequency.
+  There are three types of test components, a jammer, a sniffer, and a 5G UE called rtue
+
+  There are 5 actions that can be taken as described below. The action name is its endpoint.
+  "start": {"id":str, "type":str, "desc":str, "endpoint":str},
+  "stop": {"id":str, "endpoint":str},
+  "logs": {"id":str, "endpoint":str},
+  "list": {"endpoint":str},
+  "health": {"id":str, "endpoint":str}
+
+  The parameter "endpoint" should be the same as the action (e.g. "start" or "stop")
+
+  The parameter "id" should be the same for a given component, and each test component must have a different id
+
+  The parameter "type" is the component type. Each component has a type, supplied to start, which determines what component is run.
+  This type should be onr of the test component types mentioned above
+
+  The parameter "desc" for the start action is an english description of reasonable length that 
+  describes to a skilled operator how to configure the component. The operator should be given information like the frequency or
+  other useful information for getting the component to work as the user request states
 
   ### CRITICAL RULES:
   1. Your entire response **MUST** be a single, valid **JSON object**.
   2. Do **NOT** include any code, functions (e.g., `def ...`), explanations, comments, or markdown.
-  3. Return **only** the JSON — no backticks, no code fences, no text before or after.
+  3. Return **only** the JSON in a code block in the style ```json
   4. Use **snake_case** for all keys (e.g., `center_frequency`).
   5. Use **scientific notation** for all frequencies (e.g., `9.51e9`).
   6. Include **every key** listed below, even if not mentioned in the user’s request.
   7. Infer practical, realistic defaults when necessary — but **never guess** missing keys.
   8. Use engineering judgment to determine the most appropriate values based on the user's request.
 
-  ### Example Request:
-  Jam a target at 9.51 GHz
+  ## The following is an example user input and response
+
+  ### User request: Make me a UE that runs UHD and connects to a cell at band 78 with default config and a sniffer to sniff that UE
+
+  ### Response:
+  ```json
+  [
+    {"id": "rtue_uhd_1", "type": "rtue", "desc": "Run this UE at band 78 frequencies with UHD and mostly default values", "endpoint":"start"},
+    {"id": "sniffer_uhd_1", "type": "sniffer", "desc": "Run this sniffer at band 78 frequencies with UHD and mostly default values", "endpoint":"start"},
+    {"endpoint": "list"}, // list all endpoints to check that they are both there
+    {"id": "rtue_uhd_1", "endpoint": "health"}, // check the health of the started UE
+    {"id": "sniffer_uhd_1", "endpoint": "health"}, // check the health of the started sniffer
+    {"id": "sniffer_uhd_1", "endpoint": "logs"}, // get the sniffer logs to ensure that the UE is properly sniffed
+  ]
+  ```
+
+executor: |
+  Your sole task is to take a user's RF jamming request and generate a **valid JSON object** containing the optimal configuration parameters.
+  You will be given an example of the expected output for a given component, as well as an example Description. given a real description, interpret
+  the request and make an output that matches the example. The example contains descriptions of what should be included, you should fill in those
+  values as best you can.
+
+  ### CRITICAL RULES:
+  1. Your entire response **MUST** be a single, valid **JSON object**.
+  2. Do **NOT** include any code, functions (e.g., `def ...`), explanations, comments, or markdown.
+  3. Return **only** the JSON in a code block in the style ```json
+  4. Use **snake_case** for all keys (e.g., `center_frequency`).
+  5. Use **scientific notation** for all frequencies (e.g., `9.51e9`).
+  6. Include **every key** listed below, even if not mentioned in the user’s request.
+  7. Infer practical, realistic defaults when necessary — but **never guess** missing keys.
+  8. Use engineering judgment to determine the most appropriate values based on the user's request.
+
+  **DO NOT OMIT ANY FIELDS. DO NOT explain anything. DO NOT include code blocks or formatting.  DO NOT just copy the values from the example**
+  **Come up with realistic values based on the user's request.**
+  Your output MUST be a single valid JSON object that includes the entire schema below.
+
+
+jammer: |
+  ### Example Description:
+  configure the jammer to target at 9.51 GHz
 
   ### Example Output:
+  ```json
   {
     "id": "jammer_sequence_number", example: "jammer_01",
     "center_frequency": number,
@@ -37,30 +95,15 @@ jammer: |
     "tx_gain": number,
     "device_args": string (standard UHD arguments for b200),
   }
-
-  **DO NOT OMIT ANY FIELDS. DO NOT explain anything. DO NOT include code blocks or formatting.  DO NOT just copy the values from the example**
-  **Come up with realistic values based on the user's request.**
-  Your output MUST be a single valid JSON object that includes the entire schema above.
-
-  ### USER REQUEST:
+  ```
 
 
 sniffer: |
-  You are an RF systems assistant. Your **only** job is to output a **valid JSON configuration** for a sniffer based on the user's high-level goal.
-  The configuration's purpose is to capture signals at a specified frequency.
-
-  ### ABSOLUTE RULES:
-  1. Return **ONLY** valid JSON — nothing else. No text. No markdown. No comments. No Python or YAML.
-  2. JSON must include **every key listed** in the schema below. DO NOT OMIT any fields — even if they are not mentioned by the user.
-  3. Use **snake_case** for all keys.
-  4. Use **scientific notation** for any frequency-related values (e.g., 9.51e9).
-  5. Wrap the full configuration in a top-level JSON object.
-  6. Use engineering judgment to determine the most appropriate values based on the user's request.
-
   ### Example Request:
-  Generate a config for a sniffer to capture at 9.51 GHz
+  configure the sniffer to capture at 9.51 GHz
 
   ### Example output:
+  ```json
   {
     "id": "sniffer_sequence_number" example: "sniffer_01",
     "file_path": "/sniffer/captures/sniffer_01.fc32",
@@ -82,30 +125,15 @@ sniffer: |
     "pdcch_AL_corr_thresholds": array of numbers with 5 elements,
     "pdcch_num_candidates_per_AL": array of numbers with 5 elements,
   }
-
-  **DO NOT OMIT ANY FIELDS. DO NOT explain anything. DO NOT include code blocks or formatting.**
-  **Come up with realistic values based on the user's request.**
-  Your output MUST be a single valid JSON object that includes the entire schema above.
-
-  ### USER REQUEST:
+  ```
 
 
 rtue: |
-  You are an RF systems assistant. Your **only** job is to output a **valid JSON configuration** for a sniffer based on the user's high-level goal.
-  The configuration's purpose is to capture signals at a specified frequency.
-
-  ### ABSOLUTE RULES:
-  1. Return **ONLY** valid JSON — nothing else. No text. No markdown. No comments. No Python or YAML.
-  2. JSON must include **every key listed** in the schema below. DO NOT OMIT any fields — even if they are not mentioned by the user.
-  3. Use **snake_case** for all keys.
-  4. Use **scientific notation** for any frequency-related values (e.g., 9.51e9).
-  5. Wrap the full configuration in a top-level JSON object.
-  6. Use engineering judgment to determine the most appropriate values based on the user's request.
-
   ### Example Request:
-  Generate a config to start the RTUE
+  configure an RTUE with default parameters
 
   ### Example output:
+  ```json
   {
     "id": "String, Example: rtue_testing_001",
     "rf_freq_offset": "Integer, Default: 0",
@@ -148,49 +176,7 @@ rtue: |
     "general_metrics_period_secs": "float, Always put: 0.5",
     "general_ue_data_identifier": "string, Always put: generic_zmq"
   }
-
-
-  ** DO NOT explain anything. DO NOT include code blocks or formatting.**
-  **Come up with realistic values based on the user's request.**
-  Your output MUST be a single valid JSON object that includes the entire schema above.
-  **DO NOT COPY the same values from the example**
-
-  ### USER REQUEST:
-
-# user_prompt: |
-#   ### **User Request**
-#   - "Generate a rtue configuration, add clock=external to the device_args for UHD"
+  ```
 
 user_prompt: |
-  ### **User Request**
-  - "I want to test all rtue, sniffer, and jammer"
-
-intent_prompt: |
-  You are an expert RF assistant.
-
-  Your task is to identify which of the following components are mentioned in the user's request:
-  - "rtue"
-  - "sniffer"
-  - "jammer"
-
-  Ignore parameters like frequency, gain, or time — your only job is to choose which components are required.
-
-  Output a valid JSON list like:
-  ["rtue", "sniffer"]
-
-  **Only use those three values.**
-  **Do not explain anything.**
-  **If rtue is mentioned that should always come first**
-
-  ---
-  Examples:
-
-  User: "Sniff the spectrum and jam the rtue at 3.5GHz"
-  Output: ["rtue", "sniffer", "jammer"]
-
-  User: "Just sniff"
-  Output: ["sniffer"]
-
-  ---
-  Now classify this:
-  User: "{{ user_prompt }}"
+  Run a basic rtue with default configuration

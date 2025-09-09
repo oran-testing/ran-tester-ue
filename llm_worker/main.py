@@ -1,9 +1,5 @@
 """
 TODO:
-- make planner class
-- make validator class
-- make validator for planner
-- allow another LLM to be used for the planner
 - add analyzer
 """
 
@@ -21,6 +17,10 @@ from config import Config
 from rtue_validator import RTUEValidator
 from sniffer_validator import SnifferValidator
 from jammer_validator import JammerValidator
+from plan_validator import PlanValidator
+
+from executor import Executor
+from planner import Planner
 
 
 
@@ -78,12 +78,26 @@ if __name__ == '__main__':
         raise RuntimeError("Model not specified")
 
     logging.debug(f"Starting LLM Worker with model: {Config.model_str}")
-
     executor = Executor()
     planner = Planner()
+    plan_validator = PlanValidator()
 
     api = ApiInterface(*api_args)
     kb = KnowledgeAugmentor()
+
+    current_plan = planner.generate_plan()
+    is_valid_plan, result = plan_validator.validate(current_plan)
+    plan_attempt = 1
+    while not is_valid_plan and plan_attempt <= 10:
+        logging.error(f"Invalid plan (attempt {plan_attempt}) with errors: {result}")
+        current_plan = planner.generate_plan()
+        is_valid_plan, result = plan_validator.validate(current_plan)
+
+    if plan_attempt > 10:
+        logging.critical("Failed to create valid plan")
+        sys.exit(0)
+
+    logging.debug(f"PLAN: {result}")
 
 
 
