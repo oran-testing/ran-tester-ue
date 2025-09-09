@@ -2,7 +2,7 @@ import yaml
 
 from validator import Validator
 
-class JammerValidator(Validator);
+class JammerValidator(Validator):
     def __init__(self):
         super().__init__()
 

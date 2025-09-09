@@ -1,3 +1,4 @@
+import logging
 import re
 import json
 
@@ -16,29 +17,14 @@ class Validator:
     def _extract_json(self, raw_str):
         fenced_blocks = re.findall(r"```(?:json)?\n([\s\S]*?)```", raw_str)
         for block in fenced_blocks:
-            json_res = self._parse_json(block.strip())
-            if json_res:
-                return json_res
-
-        bracket_pairs = [('[', ']'), ('{', '}')]
-        for open_bracket, close_bracket in bracket_pairs:
-            start = self.raw_response.find(open_bracket)
-            end = self.raw_response.rfind(close_bracket)
-            if start != -1 and end != -1:
-                candidate = self.raw_response[start:end+1].strip()
-                json_res = self._parse_json(candidate)
-                if json_res:
-                    return json_res
+            block = block.strip()
+            try:
+                return json.loads(block)
+            except json.JSONDecodeError as e:
+                self.errors.append(f"Invalid JSON object: {str(e)}")
 
         self.errors.append("No valid JSON structure (array or object) could be parsed.")
         return None
-
-    def _parse_json(self, json_str: str):
-        try:
-            return json.loads(json_str)
-        except json.JSONDecodeError as e:
-            self.errors.append(f"Invalid JSON object: {str(e)}")
-            return None
 
     def _validate_schema(self, parsed_json):
         if required_keys:

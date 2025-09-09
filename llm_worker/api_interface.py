@@ -9,7 +9,7 @@ class ApiInterface():
     def __init__(self, control_ip, control_port, control_token):
         # TODO: get rid of this
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        self.self.control_url = f"https://{control_ip}:{control_port}"
+        self.control_url = f"https://{control_ip}:{control_port}"
         self.auth_header = f"Bearer {control_token}"
         self.headers = {}
 

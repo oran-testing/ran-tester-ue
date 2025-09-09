@@ -36,19 +36,22 @@ planner: |
   7. Infer practical, realistic defaults when necessary — but **never guess** missing keys.
   8. Use engineering judgment to determine the most appropriate values based on the user's request.
 
+  ONLY GIVE VALID JSON in a ```json block. NO CODE OR COMMENTS.
+  GIVE ONLY ONE JSON ARRAY CONTAINING ALL ACTIONS
+
   ## The following is an example user input and response
 
   ### User request: Make me a UE that runs UHD and connects to a cell at band 78 with default config and a sniffer to sniff that UE
 
-  ### Response:
+  ### Response from you:
   ```json
   [
     {"id": "rtue_uhd_1", "type": "rtue", "desc": "Run this UE at band 78 frequencies with UHD and mostly default values", "endpoint":"start"},
     {"id": "sniffer_uhd_1", "type": "sniffer", "desc": "Run this sniffer at band 78 frequencies with UHD and mostly default values", "endpoint":"start"},
-    {"endpoint": "list"}, // list all endpoints to check that they are both there
-    {"id": "rtue_uhd_1", "endpoint": "health"}, // check the health of the started UE
-    {"id": "sniffer_uhd_1", "endpoint": "health"}, // check the health of the started sniffer
-    {"id": "sniffer_uhd_1", "endpoint": "logs"}, // get the sniffer logs to ensure that the UE is properly sniffed
+    {"endpoint": "list"},
+    {"id": "rtue_uhd_1", "endpoint": "health"},
+    {"id": "sniffer_uhd_1", "endpoint": "health"},
+    {"id": "sniffer_uhd_1", "endpoint": "logs"}
   ]
   ```
 

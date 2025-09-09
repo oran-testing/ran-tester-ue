@@ -2,7 +2,7 @@ from validator import Validator
 
 class PlanValidator(Validator):
     def __init__(self):
-        super()._init__()
+        super().__init__()
 
         self.endpoint_schemas = {
             "start": {"id":str, "type":str, "desc":str, "endpoint":str},
@@ -21,7 +21,7 @@ class PlanValidator(Validator):
 
         current_schema = self.endpoint_schemas[current_endpoint]
 
-        for key, expected_type in current_endpoint.items():
+        for key, expected_type in current_schema.items():
             if not isinstance(parsed_json.get(key, None), expected_type):
                 self.errors.append(f"JSON field {key} is not of expected type: {expected_type}")
                 is_valid = False
@@ -40,7 +40,7 @@ class PlanValidator(Validator):
             self.errors.append(f"Supplied JSON object is not an array: {json_obj}")
             return False, self.errors
 
-        for plan_element in parsed_json:
+        for plan_element in json_obj:
             if not self._validate_schema(plan_element):
                 return False, self.errors
 

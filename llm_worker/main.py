@@ -19,6 +19,8 @@ from plan_validator import PlanValidator
 
 from executor import Executor
 from planner import Planner
+from api_interface import ApiInterface
+from knowledge_augmentor import KnowledgeAugmentor
 
 
 
@@ -75,7 +77,7 @@ if __name__ == '__main__':
     if not Config.model_str:
         raise RuntimeError("Model not specified")
 
-    logging.debug(f"Starting LLM Worker with model: {Config.model_str}")
+    logging.info(f"Starting LLM Worker with model: {Config.model_str}")
     executor = Executor()
     planner = Planner()
     plan_validator = PlanValidator()
@@ -83,17 +85,25 @@ if __name__ == '__main__':
     api = ApiInterface(*api_args)
     kb = KnowledgeAugmentor()
 
-    current_plan = planner.generate_plan()
+    is_successful, current_plan = planner.generate_plan()
     is_valid_plan, result = plan_validator.validate(current_plan)
     plan_attempt = 1
-    while not is_valid_plan and plan_attempt <= 10:
+
+    while (not is_valid_plan or not is_successful) and plan_attempt <= 10:
         logging.error(f"Invalid plan (attempt {plan_attempt}) with errors: {result}")
-        current_plan = planner.generate_plan()
+
+        is_successful, current_plan = planner.generate_plan()
+        if not is_successful:
+            logging.error(f"Encountered errors in plan generation: {current_plan}")
+            continue
+
         is_valid_plan, result = plan_validator.validate(current_plan)
+        plan_attempt += 1
 
     if plan_attempt > 10:
         logging.critical("Failed to create valid plan")
         sys.exit(0)
 
-    logging.debug(f"PLAN: {result}")
+    logging.info(f"PLAN COMPLETE: {current_plan}")
+
 

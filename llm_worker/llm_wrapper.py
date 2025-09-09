@@ -1,17 +1,19 @@
+import logging
+import torch
 from transformers import (
-    Autoself.tokenizer, GenerationConfig,
-    Autoself.modelForCausalLM
+    AutoTokenizer, GenerationConfig,
+    AutoModelForCausalLM
 )
 
 from config import Config
 
 class LLMWrapper:
     def __init__(self):
-        self.model = Autoself.modelForCausalLM.from_pretrained(Config.model_str, torch_dtype=torch.bfloat16, device_map="auto")
+        self.model = AutoModelForCausalLM.from_pretrained(Config.model_str, torch_dtype=torch.bfloat16, device_map="auto")
         self.tokenizer = AutoTokenizer.from_pretrained(Config.model_str)
         self.errors = []
 
-    def _generate_response(prompt: str) -> str:
+    def _generate_response(self, prompt: str) -> str:
         messages = [{"role": "user", "content": prompt}]
         formatted_prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = self.tokenizer(formatted_prompt, return_tensors="pt").to(self.model.device)
@@ -22,7 +24,7 @@ class LLMWrapper:
         newly_generated_tokens = output_tokens[0, input_length:]
         return self.tokenizer.decode(newly_generated_tokens, skip_special_tokens=True).strip()
 
-    def _generate_response_with_sampling(prompt: str) -> str:
+    def _generate_response_with_sampling(self, prompt: str) -> str:
         messages = [{"role": "user", "content": prompt}]
         formatted_prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
         inputs = self.tokenizer(formatted_prompt, return_tensors="pt").to(self.model.device)

@@ -1,3 +1,5 @@
+import logging
+
 class Config:
     filename : str = ""
     options : dict = None
