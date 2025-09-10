@@ -2,7 +2,7 @@
 processes:
   - type: "jammer"
     id: "jammer_1"
-    config_file: .generated/jammer_1.yaml
+    config_file: jammer/configs/basic_jammer.yaml
     rf:
       type: "b200"
       images_dir: /usr/share/uhd/images/

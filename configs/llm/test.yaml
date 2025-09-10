@@ -157,80 +157,69 @@ rtue: |
 
   ### USER REQUEST:
 
-# user_prompt: |
-#   ### **User Request**
-#   - "Generate a rtue configuration, add clock=external to the device_args for UHD"
-
 user_prompt: |
   ### **User Request**
-  - "Generate a jammer configuration and set the frequency to 5Ghz with tx gain 80"
+  - "Generate a config for the jammer. Do not save to csv, also use a frequency of 5.1 GHz"
 
 intent_prompt: |
-  You are an expert RF engineering assistant. Your job is to convert the user's request into a precise, ordered list of configuration steps.
+  You are an expert RF assistant.
 
-  **Output must be a valid JSON array. No explanations.**
+  Your task is to identify which of the following components are mentioned in the user's request:
+  - "rtue"
+  - "sniffer"
+  - "jammer"
 
-  ---
-  **Allowed Components and Actions (use exactly):**
-  - "rtue": "generate a rtue configuration"
-  - "sniffer": "generate a sniffer configuration"
-  - "jammer": "generate a jammer configuration"
+  Ignore parameters like frequency, gain, or time: your only job is to choose which components are required.
 
-  Only use these exact actions. Do not invent or modify them.
+  Output a valid JSON list like:
+  ["generate_rtue", "validate_rtue", "send_rtue", "generate_sniffer", "validate_sniffer", "send_sniffer"]
 
-  ---
-  **Rules:**
-  - Only one step per component.
-  - If rtue is used, it must be step 1.
-  - Do not extract parameters like frequency or gain into separate steps — those are part of the configuration.
-  - Output only the structure below:
-
-  [
-    {
-      "step": 1,
-      "component": "component_name",
-      "action": "action_to_perform"
-    },
-    {
-      "step": 2,
-      "component": "component_name",
-      "action": "action_to_perform"
-    }
-  ]
+  **Only use those three values.**
+  **Do not explain anything.**
+  **If rtue is mentioned that should always come first**
+  **After every generate there should be a validate and send step**
 
   ---
-  **Examples**
+  Examples:
 
-  **User Request:** I want to jam a target.  
-  **Output:**
-  [
-    {
-      "step": 1,
-      "component": "jammer",
-      "action": "generate a jammer configuration"
-    }
-  ]
+  User: "Sniff the spectrum and jam the rtue at 3.5GHz"
+  Output: ["generate_rtue", "validate_rtue", "send_rtue", "generate_sniffer", "validate_sniffer", "send_sniffer", "generate_jammer", "validate_jammer", "send_jammer"]
 
-  **User Request:** Jam and sniff the rtue.  
-  **Output:**
-  [
-    {
-      "step": 1,
-      "component": "rtue",
-      "action": "generate a rtue configuration"
-    },
-    {
-      "step": 2,
-      "component": "sniffer",
-      "action": "generate a sniffer configuration"
-    },
-    {
-      "step": 3,
-      "component": "jammer",
-      "action": "generate a jammer configuration"
-    }
-  ]
-  **Allowed Components and Actions (use exactly):**
-  - "rtue": "generate a rtue configuration"
-  - "sniffer": "generate a sniffer configuration"
-  - "jammer": "generate a jammer configuration"
+  User: "Just sniff"
+  Output: ["generate_sniffer", "validate_sniffer", "send_sniffer"]
+
+  ---
+  Now classify this:
+  User: "{{ user_prompt }}"
+
+
+# TODO: add hyperparameters extraction
+plan_prompt: |
+  You are an expert evaluator of RF system commands.
+
+  ### Task
+  Extract any mentioned **components** (rtue, sniffer, jammer) and their associated **parameters** from the user's request.
+
+  ### Output Rules
+  1. Return **only** a valid JSON object no text, no explanation, no code fences.
+  2. Each key must combine the component and parameter name using **snake_case**:
+     - Example: "sniffer_frequency", "jammer_center_frequency", "jammer_write_csv".
+  3. Values must preserve their correct type:
+     - Numbers (e.g., 6.51e9) must stay numeric.
+     - Booleans must be lowercase `true` or `false`.
+     - Strings must remain quoted.
+  4. If multiple components or parameters are mentioned, include all of them in the same JSON object.
+  5. If no parameters are explicitly stated, return an empty JSON object `{}`.
+
+  ### Example
+  User: "Sniff at 6.51 GHz and jam the center frequency at 6.31 GHz, but don't write CSV."
+  Output:
+  {
+    "sniffer_frequency": 6.51e9,
+    "jammer_center_frequency": 6.31e9,
+    "jammer_write_csv": false
+  }
+
+  Now classify this:
+  ### USER REQUEST:
+
