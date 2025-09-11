@@ -1,0 +1,7 @@
+injection_points = ["DU", "RU"]
+pcap_dir = "Traffic/custom"
+pcap_list = []
+du = "enp5s0f1"
+ru = "enp8s0f0np0"
+attacker_dir = "/attack_env"
+results_dir = "./attack_results"

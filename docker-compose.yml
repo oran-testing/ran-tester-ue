@@ -147,19 +147,15 @@ services:
     profiles:
       - components
 
-  ofh_worker:
+  ofh_attacker:
     image: ghcr.io/oran-testing/ofh
     build:
-      context: ./ofh_worker/
-      dockerfile: Dockerfile
+      context: ./ofh/
+      dockerfile: Dockerfile.alpine
     env_file:
       - .env
     volumes:
       - /tmp:/tmp
-    environment:
-      - SRSRAN_DIR=/srsRAN_Project
-      - ATTACKER_DIR=/attack_env
-      - RESULTS_DIR=/attack_env/attack_results
     network_mode: host
     profiles:
       - components

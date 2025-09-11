@@ -34,6 +34,7 @@ class WorkerThreadConfig:
         self.container_networks = []
         self.container_privileged = True
         self.device_requests = []
+        self.host_network = False
 
 
 class WorkerThread:
@@ -69,7 +70,9 @@ class WorkerThread:
         elif self.config.rf_config["type"] == "none":
             logging.debug(f"{self.config.container_id}: configured with no RF")
         else:
-            raise RuntimeError(f"Unsupported RF type: {rf_config['type']}")
+            raise RuntimeError(f"Unsupported RF type: {self.config.rf_config['type']}")
+        
+        self.config.host_network = bool(process_config.get("host_network", False))
 
     def cleanup_old_containers(self):
         # Verify Image
@@ -80,7 +83,7 @@ class WorkerThread:
                 image_exists = True
                 break
         if not image_exists:
-            raise RuntimeError(f"Required Docker image {self.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
+            raise RuntimeError(f"Required Docker image {self.config.image_name} not found: Please run 'sudo docker compose --profile components build' or 'sudo docker compose --profile components pull'")
 
         # Remove old container
         try:
@@ -129,18 +132,32 @@ class WorkerThread:
 
     def start_container(self):
         try:
-            self.docker_container = self.config.docker_client.containers.run(
-                image=self.config.image_name,
-                name=self.config.container_id,
-                environment=self.config.container_env,
-                volumes=self.config.container_volumes,
-                privileged=True,
-                cap_add=["SYS_NICE", "SYS_PTRACE"],
-                detach=True,
-                device_requests=self.config.device_requests,
-            )
-            for network in self.config.container_networks:
-                network.connect(self.docker_container)
+            if self.config.host_network:
+                self.docker_container = self.config.docker_client.containers.run(
+                    image=self.config.image_name,
+                    name=self.config.container_id,
+                    environment=self.config.container_env,
+                    volumes=self.config.container_volumes,
+                    privileged=True,
+                    cap_add=["SYS_NICE", "SYS_PTRACE"],
+                    detach=True,
+                    device_requests=self.config.device_requests,
+                    network_mode="host",
+                )
+            else:
+                self.docker_container = self.config.docker_client.containers.run(
+                    image=self.config.image_name,
+                    name=self.config.container_id,
+                    environment=self.config.container_env,
+                    volumes=self.config.container_volumes,
+                    privileged=True,
+                    cap_add=["SYS_NICE", "SYS_PTRACE"],
+                    detach=True,
+                    device_requests=self.config.device_requests,
+                )
+
+                for network in self.config.container_networks:
+                    network.connect(self.docker_container)
             self.docker_logs = self.docker_container.logs(stream=True, follow=True)
 
         except docker.errors.APIError as e:
