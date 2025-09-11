@@ -11,9 +11,7 @@ except Exception:
     import tomli as tomllib
 
 def hdr(title):
-    print("\n" + "="*80)
     print(title)
-    print("="*80)
 
 def show_env(keys):
     for k in keys:
@@ -56,7 +54,7 @@ def require(cfg, key):
     return cfg[key]
 
 def load_config():
-    cfg_path = os.environ.get("CONFIG_TOML", "/attack_env/config.toml")
+    cfg_path = os.environ.get("CONFIG_TOML", "/attack_env/ofh.toml")
     print(f"Loading config: {cfg_path}")
     with open(cfg_path, "rb") as f:
         cfg = tomllib.load(f)
