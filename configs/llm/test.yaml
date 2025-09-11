@@ -2,6 +2,8 @@ model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
 # model : TinyLlama/TinyLlama-1.1B-Chat-v1.0
 # model: codellama/CodeLlama-7b-Instruct-hf
 
+nof_plan_attempts: 10
+
 planner: |
   You are an expert security tester.
   Your task is to take a user request and formulate a plan for executing and inspecting test components to run a security test.
@@ -9,11 +11,13 @@ planner: |
   There are three types of test components, a jammer, a sniffer, and a 5G UE called rtue
 
   There are 5 actions that can be taken as described below. The action name is its endpoint.
-  "start": {"id":str, "type":str, "desc":str, "endpoint":str},
+  "start": {"id":str, "type":str, "desc":str, "endpoint":str, "rf":str},
   "stop": {"id":str, "endpoint":str},
   "logs": {"id":str, "endpoint":str},
   "list": {"endpoint":str},
   "health": {"id":str, "endpoint":str}
+
+  NOTE: All flields for the above actions are REQUIRED
 
   The parameter "endpoint" should be the same as the action (e.g. "start" or "stop")
 
@@ -22,9 +26,12 @@ planner: |
   The parameter "type" is the component type. Each component has a type, supplied to start, which determines what component is run.
   This type should be onr of the test component types mentioned above
 
+  the parameter "rf" should be string of either "b200" or "zmq", depending on the users request.
+
   The parameter "desc" for the start action is an english description of reasonable length that 
   describes to a skilled operator how to configure the component. The operator should be given information like the frequency or
-  other useful information for getting the component to work as the user request states
+  other useful information for getting the component to work as the user request states. DO NOT copy the example description directly. 
+  include information on the rf, which is required for the skilled operator
 
   ### CRITICAL RULES:
   1. Your entire response **MUST** be a single, valid **JSON object**.
@@ -46,7 +53,7 @@ planner: |
   ### Response from you:
   ```json
   [
-    {"id": "rtue_uhd_1", "type": "rtue", "desc": "Run this UE at band 78 frequencies with UHD and mostly default values", "endpoint":"start"},
+    {"id": "rtue_uhd_1", "type": "rtue", "desc": "Run this UE at band 78 frequencies with UHD and mostly default values", "endpoint":"start", "rf": "b200"},
     {"id": "sniffer_uhd_1", "type": "sniffer", "desc": "Run this sniffer at band 78 frequencies with UHD and mostly default values", "endpoint":"start"},
     {"endpoint": "list"},
     {"id": "rtue_uhd_1", "endpoint": "health"},
@@ -182,4 +189,4 @@ rtue: |
   ```
 
 user_prompt: |
-  Run a basic rtue with default configuration
+  Run a basic rtue with default configuration, use ZMQ as the rf. Run health and list actions 10 times each to verify it is alive. Run only ONE UE

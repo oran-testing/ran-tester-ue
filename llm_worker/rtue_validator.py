@@ -5,7 +5,7 @@ from validator import Validator
 
 class RTUEValidator(Validator):
     def __init__(self):
-        super()._init__()
+        super().__init__()
 
         self.required_keys = [
             'id', 'rf_srate', 'rf_tx_gain', 'rf_rx_gain', 'rat_nr_bands',

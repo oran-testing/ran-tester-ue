@@ -3,6 +3,7 @@ TODO:
 - add analyzer
 """
 
+import json
 import torch
 import yaml
 import logging
@@ -68,6 +69,62 @@ def configure():
 
     return control_ip, control_port, control_token
 
+def run_plan_loop(planner, plan_validator):
+    is_successful, is_valid_plan = False, False
+    plan_attempt = 1
+
+    errors = []
+    while (not is_valid_plan or not is_successful) and plan_attempt <= Config.options.get("nof_plan_attempts", 10):
+        raw_plan = ""
+        if errors:
+            is_successful, raw_plan = planner.generate_plan(errors=errors)
+        else:
+            is_successful, raw_plan = planner.generate_plan()
+        if not is_successful:
+            logging.error(f"Encountered errors in plan generation: {raw_plan}")
+            continue
+
+        is_valid_plan, val_res = plan_validator.validate(raw_plan)
+        plan_attempt += 1
+        if not is_valid_plan:
+            errors = val_res
+            logging.error(f"Encountered errors in plan validation: {val_res}")
+            continue
+
+        logging.info(f"Plan generated:\n {json.dumps(val_res, indent=2)}")
+        return val_res
+
+    logging.critical("Failed to create valid plan")
+    sys.exit(0)
+
+
+
+def run_exec_loop(executor, current_validator, plan_item):
+    is_successful, is_valid_plan = False, False
+    exec_attempt = 1
+
+    while (not is_valid_plan or not is_successful) and exec_attempt <= Config.options.get("nof_exec_attempts", 10):
+        is_successful, exec_res = executor.execute(plan_item)
+
+        if not is_successful:
+            logging.error(f"Encountered errors in execution: {exec_res}")
+            continue
+
+        is_valid_plan, val_res = current_validator.validate(exec_res)
+        if not is_valid_plan:
+            logging.error(f"Encountered errors in execution validation: {val_res}")
+            continue
+        exec_attempt += 1
+
+    if exec_attempt > Config.options.get("nof_plan_attempts", 10):
+        logging.critical("Failed to create valid plan")
+        sys.exit(0)
+
+    logging.info(f"API payload generated:\n {json.dumps(val_res, indent=2)}")
+
+    return val_res
+
+
 
 
 if __name__ == '__main__':
@@ -85,25 +142,45 @@ if __name__ == '__main__':
     api = ApiInterface(*api_args)
     kb = KnowledgeAugmentor()
 
-    is_successful, current_plan = planner.generate_plan()
-    is_valid_plan, result = plan_validator.validate(current_plan)
-    plan_attempt = 1
+    finalized_plan = run_plan_loop(planner, plan_validator)
 
-    while (not is_valid_plan or not is_successful) and plan_attempt <= 10:
-        logging.error(f"Invalid plan (attempt {plan_attempt}) with errors: {result}")
+    for plan_item in finalized_plan:
+        api_payload = {}
+        if plan_item.get("endpoint") == "start":
+            component_type = plan_item.get("type")
+            current_validator = None
+            if component_type == "rtue":
+                current_validator = RTUEValidator()
+            elif component_type == "jammer":
+                current_validator = JammerValidator()
+            elif component_type == "sniffer":
+                current_validator = SnifferValidator()
+            api_payload = run_exec_loop(executor, current_validator, plan_item)
+            if plan_item.get("rf") == "b200":
+                api_payload["rf"] = {"type": "b200", "images_dir": "/usr/share/uhd/images/"}
+            elif plan_item.get("rf") == "zmq":
+                api_payload["rf"] = {"type": "zmq", "tcp_subnet": "172.22.0.0/24", "gateway": "172.22.0.1"}
+        else:
+            for key, val in plan_item.items():
+                if key in ["endpoint"]:
+                    continue
+                api_payload[key] = val
+        logging.info(f"API PAYLOAD: {api_payload}")
+        logging.info(f"ENDPOINT: {plan_item.get('endpoint')}")
+        api_successful = True
+        api_res = {}
+        if api_payload:
+            api_successful, api_res = api.make_request(plan_item.get("endpoint"), payload=api_payload)
+        else:
+            api_successful, api_res = api.make_request(plan_item.get("endpoint"))
 
-        is_successful, current_plan = planner.generate_plan()
-        if not is_successful:
-            logging.error(f"Encountered errors in plan generation: {current_plan}")
+        if not api_successful:
+            logging.error(f"API REQUEST FAILED: {json.dumps(api_res, indent=2)}")
             continue
 
-        is_valid_plan, result = plan_validator.validate(current_plan)
-        plan_attempt += 1
+        logging.info(f"API REQUEST SUCCESS: {json.dumps(api_res, indent=2)}")
+        time.sleep(2)
 
-    if plan_attempt > 10:
-        logging.critical("Failed to create valid plan")
-        sys.exit(0)
 
-    logging.info(f"PLAN COMPLETE: {current_plan}")
 
 

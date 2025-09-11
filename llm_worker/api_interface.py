@@ -1,5 +1,6 @@
 import urllib3
 import requests
+import logging
 
 class ApiInterface():
     """
@@ -20,10 +21,10 @@ class ApiInterface():
             return self._get_endpoint(target_endpoint)
 
     def _post_endpoint(self, target_endpoint, json_payload):
-        logging.debug(f"Sending POST to {target_endpoint} with JSON:\n {json_payload}")
-        headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
+        logging.info(f"Sending POST to {target_endpoint} with JSON:\n {json_payload}")
+        self.headers = {"Authorization": self.auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0", "Content-Type": "application/json"}
         try:
-            response = requests.post(url=f"{self.control_url}{target_endpoint}", headers=headers, json=json_payload, verify=False)
+            response = requests.post(url=f"{self.control_url}/{target_endpoint}", headers=self.headers, json=json_payload, verify=False)
             if response.status_code == 200:
                 return True, response.json()
             return False, {"error": response.text}
@@ -31,10 +32,10 @@ class ApiInterface():
             return False, {"error":str(e)}
 
     def _get_endpoint(self, target_endpoint):
-        logging.debug(f"Sending GET to {target_endpoint}")
-        self.headers = {"Authorization": auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0"}
+        logging.info(f"Sending GET to {target_endpoint}")
+        self.headers = {"Authorization": self.auth_header, "Accept": "application/json", "User-Agent": "llm_worker/1.0"}
         try:
-            response = requests.get(url=f"{self.control_url}{current_endpoint}", headers=headers, verify=False)
+            response = requests.get(url=f"{self.control_url}/{target_endpoint}", headers=self.headers, verify=False)
             if response.status_code == 200:
                 return True, response.json()
             return False, {"error": response.text}
