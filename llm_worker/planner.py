@@ -2,7 +2,11 @@ from llm_wrapper import LLMWrapper
 from config import Config
 import logging
 
-class Planner(LLMWrapper):
+class Planner:
+    def __init__(self, llm_ref: LLMWrapper):
+        self.llm_ref = llm_ref
+        self.errors = []
+
     def generate_plan(self, errors=[]):
         planner_prompt = Config.options.get("planner", None)
         if not planner_prompt:
@@ -21,7 +25,7 @@ class Planner(LLMWrapper):
 
         logging.info(f"PROMPT TO PLANNER:\n\n {combined_prompt}\n\n")
 
-        model_response = self._generate_response(combined_prompt)
+        model_response = self.llm_ref._generate_response(combined_prompt)
         if self.errors:
             return False, self.errors
 

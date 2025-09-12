@@ -132,7 +132,17 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "Missing required fields: id, type, config_str, rf"}).encode("utf-8"))
                 return
 
-        if not all(k in payload["rf"] for k in ("images_dir", "type")):
+        rf_type = payload.get("rf").get("type", None)
+        if not rf_type:
+                self._set_headers(400)
+                self.wfile.write(json.dumps({"error": "Missing required fields for rf: type"}).encode("utf-8"))
+                return
+
+        rf_keys = ("images_dir", "type")
+        if rf_type == "zmq":
+            rf_keys = ("tcp_subnet", "gateway")
+
+        if not all(k in payload["rf"] for k in rf_keys):
                 self._set_headers(400)
                 self.wfile.write(json.dumps({"error": "Missing required fields for rf: type, images_dir"}).encode("utf-8"))
                 return

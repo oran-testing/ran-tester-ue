@@ -8,7 +8,7 @@ class PlanValidator(Validator):
         self.endpoint_schemas = {
             "start": {"id":str, "type":str, "desc":str, "endpoint":str, "rf":str},
             "stop": {"id":str, "endpoint":str},
-            "logs": {"id":str, "endpoint":str},
+            "logs": {"id":str, "type":str, "endpoint":str},
             "list": {"endpoint":str},
             "health": {"id":str, "endpoint":str}
         }

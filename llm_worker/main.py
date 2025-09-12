@@ -1,8 +1,4 @@
-"""
-TODO:
-- add analyzer
-"""
-
+import time
 import json
 import torch
 import yaml
@@ -18,6 +14,7 @@ from sniffer_validator import SnifferValidator
 from jammer_validator import JammerValidator
 from plan_validator import PlanValidator
 
+from llm_wrapper import LLMWrapper
 from executor import Executor
 from planner import Planner
 from api_interface import ApiInterface
@@ -71,11 +68,12 @@ def configure():
 
 def run_plan_loop(planner, plan_validator):
     is_successful, is_valid_plan = False, False
-    plan_attempt = 1
+    plan_attempt = 0
 
     errors = []
     while (not is_valid_plan or not is_successful) and plan_attempt <= Config.options.get("nof_plan_attempts", 10):
         raw_plan = ""
+        plan_attempt += 1
         if errors:
             is_successful, raw_plan = planner.generate_plan(errors=errors)
         else:
@@ -85,7 +83,6 @@ def run_plan_loop(planner, plan_validator):
             continue
 
         is_valid_plan, val_res = plan_validator.validate(raw_plan)
-        plan_attempt += 1
         if not is_valid_plan:
             errors = val_res
             logging.error(f"Encountered errors in plan validation: {val_res}")
@@ -101,20 +98,26 @@ def run_plan_loop(planner, plan_validator):
 
 def run_exec_loop(executor, current_validator, plan_item):
     is_successful, is_valid_plan = False, False
-    exec_attempt = 1
+    exec_attempt = 0
+    errors = []
 
     while (not is_valid_plan or not is_successful) and exec_attempt <= Config.options.get("nof_exec_attempts", 10):
-        is_successful, exec_res = executor.execute(plan_item)
+        raw_exec = ""
+        exec_attempt += 1
+        if errors:
+            is_successful, raw_exec = executor.execute(plan_item, errors=errors)
+        else:
+            is_successful, raw_exec = executor.execute(plan_item)
 
         if not is_successful:
-            logging.error(f"Encountered errors in execution: {exec_res}")
+            logging.error(f"Encountered errors in execution: {raw_exec}")
             continue
 
-        is_valid_plan, val_res = current_validator.validate(exec_res)
+        is_valid_plan, val_res = current_validator.validate(raw_exec)
         if not is_valid_plan:
+            errors = val_res
             logging.error(f"Encountered errors in execution validation: {val_res}")
             continue
-        exec_attempt += 1
 
     if exec_attempt > Config.options.get("nof_plan_attempts", 10):
         logging.critical("Failed to create valid plan")
@@ -135,8 +138,9 @@ if __name__ == '__main__':
         raise RuntimeError("Model not specified")
 
     logging.info(f"Starting LLM Worker with model: {Config.model_str}")
-    executor = Executor()
-    planner = Planner()
+    llm = LLMWrapper()
+    executor = Executor(llm)
+    planner = Planner(llm)
     plan_validator = PlanValidator()
 
     api = ApiInterface(*api_args)
@@ -180,7 +184,3 @@ if __name__ == '__main__':
 
         logging.info(f"API REQUEST SUCCESS: {json.dumps(api_res, indent=2)}")
         time.sleep(2)
-
-
-
-

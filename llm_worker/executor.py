@@ -2,8 +2,12 @@ from llm_wrapper import LLMWrapper
 
 from config import Config
 
-class Executor(LLMWrapper):
-    def execute(self, plan_json):
+class Executor:
+    def __init__(self, llm_ref : LLMWrapper):
+        self.llm_ref = llm_ref
+        self.errors = []
+
+    def execute(self, plan_json, errors=[]):
         for val in ["type", "endpoint", "desc", "id"]:
             if val not in plan_json.keys():
                 self.errors.append(f"Planner JSON does not have field {val}")
@@ -28,7 +32,10 @@ class Executor(LLMWrapper):
 
         combined_prompt = f"{executor_prompt}\n\n{type_prompt}\n\n{plan_prompt}"
 
-        model_response = self._generate_response(combined_prompt)
+        if errors:
+            combined_prompt = f"{combined_prompt}\nERRORS ENCOUNTERED: {errors}"
+
+        model_response = self.llm_ref._generate_response(combined_prompt)
 
         if self.errors:
             return False, self.errors
