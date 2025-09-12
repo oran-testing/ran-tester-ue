@@ -72,7 +72,7 @@ def build_attack_list(pcap_dir, pcap_list_cfg):
     print(f"[DEBUG] ATTACK_LIST derived from pcap_dir={pcap_dir} count={len(paths)}", flush=True)
     return [p.name for p in paths]
 
-def collect_result(log_dir="/var/tmp/ru_logs", files=("ru_emulator.log", "gnb.log")):
+def collect_result(log_dir="/tmp/", files=("ru_emu.log", "gnb.log")):
     """Dump entire log files to stdout so controller ships them to Influx."""
     print("Results from recent attack:", flush=True)
     for fname in files:
@@ -86,7 +86,7 @@ def collect_result(log_dir="/var/tmp/ru_logs", files=("ru_emulator.log", "gnb.lo
         else:
             print(f"[WARN] {fname} not found in {log_dir}", flush=True)
 
-def clear_dir(dir_path="/var/tmp/ru_logs", patterns=("*.log",), keep_last_n=0):
+def clear_dir(dir_path="/tmp/ru_emu", patterns=("*.log",), keep_last_n=0):
 
     try:
         all_files = []
@@ -178,8 +178,8 @@ def run_pipeline():
         print("Attacker failed", flush=True)
         return
 
-    ru_dir = os.getenv("RU_LOG_DIR", "/var/tmp/ru_logs")
-    collect_result(log_dir=ru_dir, files=("ru_emulator.log", "gnb.log"))
+    ru_dir = os.getenv("RU_LOG_DIR", "/tmp/")
+    collect_result(log_dir=ru_dir, files=("ru_emu.log", "gnb.log"))
 
     # clear_dir(dir_path=ru_dir, patterns=("*.log",), keep_last_n=0)
 

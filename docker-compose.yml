@@ -148,7 +148,7 @@ services:
       - components
 
   ofh_attacker:
-    # image: ghcr.io/oran-testing/ofh
+    image: ghcr.io/oran-testing/ofh
     build:
       context: ./ofh/
       dockerfile: Dockerfile.alpine
