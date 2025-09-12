@@ -145,15 +145,5 @@ def run_pipeline():
         print("Attacker failed")
         return
 
-def wait_for_trigger(port=9090):
-    print(f"Waiting for trigger on TCP port {port}...")
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        server_socket.bind(("0.0.0.0", port))
-        server_socket.listen(1)
-        conn, addr = server_socket.accept()
-        with conn:
-            print(f"Trigger received from {addr}. Starting pipeline...")
-            run_pipeline()
-
 if __name__ == "__main__":
     run_pipeline()
