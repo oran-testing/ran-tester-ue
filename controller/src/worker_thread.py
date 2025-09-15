@@ -21,6 +21,7 @@ class RfType(Enum):
 
 class WorkerThreadConfig:
     def __init__(self):
+        self.process_config : dict = None
         self.influxdb_client : InfluxDBClient = None
         self.docker_client : DockerClient = None
         self.config_file : str = ""
@@ -41,6 +42,7 @@ class WorkerThread:
         self.docker_container = None
         self.docker_logs = None
         self.config = WorkerThreadConfig()
+        self.config.process_config = process_config
         self.config.influxdb_client = influxdb_client
         self.config.docker_client = docker_client
         if "config_file" in process_config.keys():

@@ -9,3 +9,4 @@ processes:
       - llm_worker
     rf:
       type: none
+    results_dir: llm_testing

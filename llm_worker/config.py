@@ -5,5 +5,6 @@ class Config:
     options : dict = None
     log_level : int = logging.DEBUG
     model_str : str = ""
+    results_dir : str = ""
 
 

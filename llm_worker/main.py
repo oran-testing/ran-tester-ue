@@ -41,6 +41,13 @@ def configure():
     except RuntimeError:
         raise RuntimeError("control port is not an integer")
 
+    results_dir = os.getenv("RESULTS_DIR")
+    if not results_dir:
+        raise RuntimeError("RESULTS_DIR is not set in environment")
+
+    Config.results_dir = os.path.join(f"/host/logs/", results_dir)
+    os.makedirs(Config.results_dir, exist_ok=True)
+
     parser = argparse.ArgumentParser(
         description="RAN tester UE process controller")
     parser.add_argument(
@@ -88,18 +95,21 @@ def run_plan_loop(planner, plan_validator):
             logging.error(f"Encountered errors in plan validation: {val_res}")
             continue
 
-        logging.info(f"Plan generated:\n {json.dumps(val_res, indent=2)}")
+        with open(os.path.join(Config.results_dir, "plan.json"), "w") as f:
+            json.dump(val_res, f, indent=4)
         return val_res
 
     logging.critical("Failed to create valid plan")
     sys.exit(0)
 
 
-
 def run_exec_loop(executor, current_validator, plan_item):
     is_successful, is_valid_plan = False, False
     exec_attempt = 0
     errors = []
+    execution_log = open(os.path.join(Config.results_dir, f"execution_log.txt"), "a")
+
+    execution_log.write(f"Running execution loop for:\n{json.dumps(plan_item, indent=2)}")
 
     while (not is_valid_plan or not is_successful) and exec_attempt <= Config.options.get("nof_exec_attempts", 10):
         raw_exec = ""
@@ -110,21 +120,22 @@ def run_exec_loop(executor, current_validator, plan_item):
             is_successful, raw_exec = executor.execute(plan_item)
 
         if not is_successful:
-            logging.error(f"Encountered errors in execution: {raw_exec}")
+            execution_log.write(f"\tEncountered errors in execution: {raw_exec}\n")
             continue
 
         is_valid_plan, val_res = current_validator.validate(raw_exec)
         if not is_valid_plan:
             errors = val_res
-            logging.error(f"Encountered errors in execution validation: {val_res}")
+            execution_log.write(f"\tEncountered errors in execution validation: {val_res}\n")
             continue
 
-    if exec_attempt > Config.options.get("nof_plan_attempts", 10):
-        logging.critical("Failed to create valid plan")
+    if exec_attempt > Config.options.get("nof_exec_attempts", 10):
+        execution_log.write(f"Failed to create valid plan\n")
+        execution_log.close()
         sys.exit(0)
 
-    logging.info(f"API payload generated:\n {json.dumps(val_res, indent=2)}")
-
+    execution_log.write(f"Created valid exec JSON:\n{json.dumps(val_res, indent=2)}\n\n\n")
+    execution_log.close()
     return val_res
 
 
@@ -148,6 +159,8 @@ if __name__ == '__main__':
 
     finalized_plan = run_plan_loop(planner, plan_validator)
 
+    payload_log = open(os.path.join(Config.results_dir, "messages.txt"), "a")
+
     for plan_item in finalized_plan:
         api_payload = {}
         if plan_item.get("endpoint") == "start":
@@ -169,8 +182,8 @@ if __name__ == '__main__':
                 if key in ["endpoint"]:
                     continue
                 api_payload[key] = val
-        logging.info(f"API PAYLOAD: {api_payload}")
-        logging.info(f"ENDPOINT: {plan_item.get('endpoint')}")
+
+        payload_log.write(f"Sending to endpoint {plan_item.get('endpoint')}:\n{api_payload}\n\n")
         api_successful = True
         api_res = {}
         if api_payload:
@@ -182,5 +195,7 @@ if __name__ == '__main__':
             logging.error(f"API REQUEST FAILED: {json.dumps(api_res, indent=2)}")
             continue
 
-        logging.info(f"API REQUEST SUCCESS: {json.dumps(api_res, indent=2)}")
+        payload_log.write(f"Got result from {plan_item.get('endpoint')}:\n{api_res}\n\n")
         time.sleep(2)
+
+    payload_log.close()
