@@ -1,3 +1,7 @@
+# srsRAN ru_emulator should save to /tmp/ru.log
+# gnb_emu (from srsRAN) should save to /tmp/gnb_emu.log
+
+
 import os
 import subprocess
 from pathlib import Path
@@ -72,21 +76,25 @@ def build_attack_list(pcap_dir, pcap_list_cfg):
     print(f"[DEBUG] ATTACK_LIST derived from pcap_dir={pcap_dir} count={len(paths)}", flush=True)
     return [p.name for p in paths]
 
-def collect_result(log_dir="/tmp/", files=("ru_emu.log", "gnb.log")):
-    """Dump entire log files to stdout so controller ships them to Influx."""
+def collect_result(log_dir="/tmp/", ru_file="ru.log", gnb_file="gnb_emu.log", print_ru_log=True, print_gnb_log=False):
     print("Results from recent attack:", flush=True)
-    for fname in files:
-        path = os.path.join(log_dir, fname)
+
+    if print_ru_log:
+        path = os.path.join(log_dir, ru_file)
         if os.path.exists(path):
-            print(f"--- {fname} ---", flush=True)
-            # Stream out the whole file
+            print(f"ru log ({ru_file}):", flush=True)
             with open(path, "r", errors="replace") as f:
                 for line in f:
                     print(f"[RU] {line.rstrip()}", flush=True)
-        else:
-            print(f"[WARN] {fname} not found in {log_dir}", flush=True)
+    if print_gnb_log:
+        path = os.path.join(log_dir, gnb_file)
+        if os.path.exists(path):
+            print(f"gnb log ({gnb_file}):", flush=True)
+            with open(path, "r", errors="replace") as f:
+                for line in f:
+                    print(f"[GNB] {line.rstrip()}", flush=True)
 
-def clear_dir(dir_path="/tmp/ru_emu", patterns=("*.log",), keep_last_n=0):
+def clear_dir(dir_path="/tmp/ru", patterns=("*.log",), keep_last_n=0):
 
     try:
         all_files = []
@@ -179,7 +187,7 @@ def run_pipeline():
         return
 
     ru_dir = os.getenv("RU_LOG_DIR", "/tmp/")
-    collect_result(log_dir=ru_dir, files=("ru_emu.log", "gnb.log"))
+    collect_result(log_dir=ru_dir, ru_file="ru.log", gnb_file="gnb_emu.log", print_ru_log=True, print_gnb_log=False)
 
     # clear_dir(dir_path=ru_dir, patterns=("*.log",), keep_last_n=0)
 
