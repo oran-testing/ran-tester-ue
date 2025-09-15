@@ -91,7 +91,7 @@ class rtue:
                 self.ue_config: {"bind": "/ue.conf", "mode": "ro"}
             }
             if uhd_images_dir != None:
-                volumes[uhd_images_dir] = {"bind": uhd_images_dir, "mode": "ro"},
+                volumes[uhd_images_dir] = {"bind": uhd_images_dir, "mode": "ro"}
 
 
 
