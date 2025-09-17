@@ -133,7 +133,8 @@ volumes:
 
 networks:
   metrics:
-    name: docker_metrics
+    name: rt_metrics
+    external: false
     ipam:
       driver: default
       config:

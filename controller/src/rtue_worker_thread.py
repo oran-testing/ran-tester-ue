@@ -95,7 +95,7 @@ class rtue:
 
 
 
-            self.network_name = "docker_metrics"
+            self.network_name = "rt_metrics"
             self.docker_network = self.docker_client.networks.get(self.network_name)
             self.docker_container = self.docker_client.containers.run(
                 image=self.image_name,
