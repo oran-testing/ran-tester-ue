@@ -28,6 +28,9 @@ COPY requirements.txt .
 RUN python3 -m venv venv && \
     ./venv/bin/pip install --no-cache-dir -r requirements.txt
 
+COPY server.pem /server.pem
+COPY server.key /server.key
+
 # Copy application source code and configs
 COPY ./src .
 
