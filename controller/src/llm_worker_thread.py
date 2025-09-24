@@ -9,6 +9,10 @@ class llm_worker(WorkerThread):
         self.access_token = secrets.token_urlsafe(32)
 
     def start(self):
+        results_dir = self.config.process_config.get("results_dir", None)
+        if not results_dir:
+            raise RuntimeError("Failed to start llm_worker: required field results_dir is missing")
+
         self.config.image_name = "ghcr.io/oran-testing/llm_worker"
         self.cleanup_old_containers()
 
@@ -17,6 +21,7 @@ class llm_worker(WorkerThread):
             "CONTROL_IP": os.getenv("DOCKER_CONTROLLER_API_IP"),
             "CONTROL_PORT": os.getenv("DOCKER_CONTROLLER_API_PORT"),
             "CONTROL_TOKEN": self.access_token,
+            "RESULTS_DIR": results_dir,
             "NVIDIA_VISIBLE_DEVICES": "all",
             "NVIDIA_DRIVER_CAPABILITIES": "all"
         }
@@ -26,6 +31,7 @@ class llm_worker(WorkerThread):
 
         self.config.container_volumes[self.config.config_file] = {"bind": "/llm.yaml", "mode": "ro"}
         self.config.container_volumes[f"{os.getenv('DOCKER_SYSTEM_DIRECTORY')}/.llm_worker_cache"] = {"bind": "/app/huggingface_cache", "mode": "rw"}
+        self.config.container_volumes["/tmp/.rt_results"] = {"bind": "/host/logs/", "mode": "rw"}
         self.setup_volumes()
 
         self.config.device_requests.append(

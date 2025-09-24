@@ -1,0 +1,9 @@
+processes:
+  - type: "rtue"
+    id: "rtue_zmq_1"
+    config_file: ".generated/rtue_zmq_1.conf"
+    rf:
+      type: "zmq"
+      tcp_subnet: "172.22.0.0/24"
+      gateway: "172.22.0.1"
+
