@@ -1,0 +1,7 @@
+processes:
+  - type: "uu_agent"
+    id: "uu_agent_gnb_test"
+    config_file: "configs/uuagent/gnb_test.conf"
+    rf:
+      type: "b200"
+      images_dir: "/usr/share/uhd/images/"
