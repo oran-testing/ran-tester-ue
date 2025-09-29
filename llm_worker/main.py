@@ -13,6 +13,7 @@ from rtue_validator import RTUEValidator
 from sniffer_validator import SnifferValidator
 from jammer_validator import JammerValidator
 from plan_validator import PlanValidator
+from uu_agent_validator import UuagentValidator
 
 from llm_wrapper import LLMWrapper
 from executor import Executor
@@ -172,6 +173,8 @@ if __name__ == '__main__':
                 current_validator = JammerValidator()
             elif component_type == "sniffer":
                 current_validator = SnifferValidator()
+            elif component_type == "uu_agent":
+                current_validator = UuagentValidator()
             api_payload = run_exec_loop(executor, current_validator, plan_item)
             if plan_item.get("rf") == "b200":
                 api_payload["rf"] = {"type": "b200", "images_dir": "/usr/share/uhd/images/"}
