@@ -21,6 +21,9 @@ class UuagentValidator(Validator):
         config_obj.pop("id", None)
 
         config_lines = []
+        for key, value in config_obj.items():
+            config_lines.append(f"{key} = {value}")
+        return "\n".join(config_lines)
 
 
     def validate(self, raw_str):
