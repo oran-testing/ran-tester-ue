@@ -1,0 +1,12 @@
+PyYAML>=6.0
+pathlib>=1.0.1
+argparse>=1.4.0
+mypy>=1.17.0
+torch>=2.7.1
+transformers>=4.53.2
+accelerate>=1.8.1
+tomli>=2.0.1
+uvicorn[standard]>=0.29.0
+toml
+sentence-transformers
+chromadb

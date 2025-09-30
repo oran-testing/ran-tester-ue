@@ -10,6 +10,7 @@ from sniffer_worker_thread import sniffer
 from decoder_worker_thread import decoder
 from llm_worker_thread import llm_worker
 from rach_worker_thread import rach_agent
+from uu_agent_worker_thread import uu_agent
 
 class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
     def _get_permissions(self):

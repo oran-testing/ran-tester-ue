@@ -9,25 +9,32 @@ services:
       # Allow access to system level docker configuration
       - /root/.docker:/root/.docker
       # Allow access to all configurations under the current directory
-      - ${DOCKER_SYSTEM_DIRECTORY}:/host:ro
+      - ${DOCKER_SYSTEM_DIRECTORY}:/host:rw
+      # Allow access to /usr/share to check for images
+      - /usr/share:/usr/share:ro
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
       - CONFIG=${DOCKER_CONTROLLER_INIT_CONFIG:-configs/basic_ue_zmq.yaml}
+
     privileged: true
     build:
       context: controller
     env_file:
       - .env
-    depends_on:
-      - influxdb
-      - grafana
     networks:
       metrics:
         ipv4_address: 172.19.1.7
+      control:
+        ipv4_address: ${DOCKER_CONTROLLER_API_IP:-172.20.1.7}
     configs:
       - controller.yml
+    ports:
+      - "9000:9000"
     profiles:
      - system
+    depends_on:
+      - influxdb
+
 
   influxdb:
     container_name: influxdb
@@ -46,22 +53,22 @@ services:
      - system
 
   grafana:
-    image: rtu/grafana
-    build:
-      context: grafana
-    volumes:
-      - grafana-storage:/var/lib/grafana:rw
-    env_file:
-      - .env
-    depends_on:
-      - influxdb
-    ports:
-      - 3300:${GRAFANA_PORT}
-    networks:
-      metrics:
-        ipv4_address: 172.19.1.6
-    profiles:
-     - system
+     image: rtu/grafana
+     build:
+       context: grafana
+     volumes:
+       - grafana-storage:/var/lib/grafana:rw
+     env_file:
+       - .env
+     depends_on:
+       - influxdb
+     ports:
+       - 3300:${GRAFANA_PORT}
+     networks:
+       metrics:
+         ipv4_address: 172.19.1.6
+     profiles:
+      - system
 
   components_base:
     image: ghcr.io/oran-testing/components_base
@@ -109,18 +116,36 @@ services:
     profiles:
       - components
 
-  # NOTE: temporarily disable sniffer
-  #sniffer:
-  #  image: ghcr.io/oran-testing/5g-sniffer
-  #  build:
-  #    context: ./5g-sniffer
-  #    dockerfile: Dockerfile.alpine
-  #  depends_on:
-  #    - components_base
-  #  env_file:
-  #    .env
-  #  profiles:
-  #    - components
+  sniffer:
+    image: ghcr.io/oran-testing/5g-sniffer
+    build:
+      context: ./5g-sniffer/
+      dockerfile: Dockerfile.alpine
+    depends_on:
+      - components_base
+    env_file:
+      - .env
+    profiles:
+      - components
+
+  llm_worker:
+    image: ghcr.io/oran-testing/llm_worker
+    env_file:
+      - .env
+    build:
+      context: ./llm_worker/
+      dockerfile: Dockerfile.alpine
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    profiles:
+      - components
 
 configs:
   controller.yml:
@@ -132,10 +157,17 @@ volumes:
   grafana-storage:
 
 networks:
+  default:
+    driver: bridge
   metrics:
     name: rt_metrics
-    external: false
     ipam:
       driver: default
       config:
         - subnet: 172.19.1.0/24
+  control:
+    name: rt_control
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.1.0/24

@@ -1,0 +1,217 @@
+model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
+base_prompt: |
+  **YOUR INSTRUCTIONS**
+  Your sole function is to take a high-level user request and generate nothing but a series of outputs that are parsed by an external system
+  Here are examples of how you could perform certain actions on the system:
+
+  NOTE: your output must be in the **exact** structure listed below for each action. Do not write code or do anything extra
+
+  **how to start a process**
+
+  TYPE: jammer (can be also be sniffer, rtue etc.)
+  ID: jammer_test_1 (can be anything, but it should relate to the test being run)
+  CONFIG: ```yaml
+    amplitude: 0.9
+    amplitude_width: 0.1
+    center_frequency: 9.15e8
+    bandwidth: 10e6
+    initial_phase: 0
+    sampling_freq: 20e6
+    num_samples: 20000
+    output_iq_file: "output.fc32"
+    output_csv_file: "output.csv"
+    write_iq: false
+    write_csv: true
+    device_args: "type=b200"
+    tx_gain: 55
+    amplitude: 0.9
+  ``` (this config should conform to the following examples of configuring the components)
+
+
+jammer_prompt: |
+    ### **Jammer-Specific Configuration**
+    **Required Configuration Parameters:**
+    - `center_frequency`: (Float) Target frequency in Hz (scientific notation)
+    - `bandwidth`: (Float) Jamming bandwidth in Hz
+    - `sampling_freq`: (Float) Must be ≥ bandwidth
+    - `tx_gain`: (Integer) Transmission power in dB (e.g., 60)
+    - `num_samples`: (Integer) Signal buffer size
+    - `device_args`: (String) SDR hardware spec (e.g., "type=b200")
+
+    **Optional Parameters (Defaults):**
+    - `amplitude`: 0.9 (0.0-1.0)
+    - `amplitude_width`: 0.1
+    - `initial_phase`: 0
+    - `output_iq_file`: "output.fc32"
+    - `write_iq`: false
+
+    DO NOT WRITE CODE. ONLY GIVE THE FOLLOWING OUTPUT
+    **YOUR EXPECTED OUTPUT:**
+
+    TYPE: sniffer
+    ID: basic_sniffer_001
+    CONFIG: ```yaml
+    amplitude: 0.9
+    amplitude_width: 0.1
+    center_frequency: 9.15e8
+    bandwidth: 10e6
+    initial_phase: 0
+    sampling_freq: 20e6
+    num_samples: 20000
+    output_iq_file: "output.fc32"
+    output_csv_file: "output.csv"
+    write_iq: false
+    write_csv: true
+    device_args: "type=b200"
+    tx_gain: 55
+    amplitude: 0.9
+    ```
+
+
+sniffer_prompt: |
+    ### **Sniffer-Specific Configuration**
+    - **Format:** TOML
+    - **Process Manifest Requirements:**
+        - `type`: Must be "sniffer"
+        - `id`: Follows pattern `sniffer_[tech]_[sequence]` (e.g., `sniffer_5g_001`)
+
+    **Required Configuration Sections:**
+    1. `[sniffer]`:
+        - `file_path`: (String) IQ output path
+        - `sample_rate`: (Float) Hz
+        - `frequency`: (Float) Center frequency in Hz
+        - `nid_1`: (Integer) Network ID
+        - `ssb_numerology`: (Integer) 0-4
+
+    2. `[[pdcch]]` (Minimum 1 required):
+        - `coreset_id`: (Integer)
+        - `num_prbs`: (Integer)
+        - `dci_sizes_list`: (List[int]) e.g., [41,42]
+
+    ## Sample output format for sniffer:
+    TYPE: sniffer
+    ID: basic_sniffer_001
+    CONFIG: ```toml
+    [sniffer]
+    file_path = "/sniffer/captures/sniffer_01.fc32"
+    sample_rate = 20e6
+    frequency = 2.45e9 # Example: 2.45 GHz ISM band
+    nid_1 = 101
+    ssb_numerology = 0
+
+    [[pdcch]]
+    coreset_id = 1
+    subcarrier_offset = 48
+    num_prbs = 50
+    numerology = 0
+    dci_sizes_list = [41, 42] # Example list of DCI sizes to search for
+    scrambling_id_start = 1
+    scrambling_id_end = 10
+    rnti_start = 65500
+    rnti_end = 65510
+    interleaving_pattern = "non-interleaved"
+    coreset_duration = 1
+    AL_corr_thresholds = [1.0, 0.6, 0.6, 1.0, 1.0]
+    num_candidates_per_AL = [2, 4, 4, 2, 0]
+
+    coreset_duration = 1
+    AL_corr_thresholds = [1.0, 0.6, 0.6, 1.0, 1.0]
+    num_candidates_per_AL = [2, 4, 4, 2, 0]
+    ```
+
+
+rtue_prompt: |
+    ### **RT-UE (Real-Time User Equipment) Specific Configuration**
+    - **Format:** TOML
+    - **Process Manifest Requirements:**
+        - `type`: Must be "rtue"
+        - `id`: Follows pattern `rtue_[purpose]_[sequence]` (e.g., `rtue_testing_001`)
+
+    **Key Configuration Parameters (Sections):**
+    - `[rf]`:
+        - `srate`: (Float) Sample rate in Hz (e.g., 23.04e6)
+        - `tx_gain`: (Integer) Transmission gain in dB
+        - `rx_gain`: (Integer) Reception gain in dB
+    - `[rat.nr]`:
+        - `bands`: (List[Integer]) NR bands to enable (e.g., [3])
+        - `nof_prb`: (Integer) Number of Physical Resource Blocks
+    - `[usim]`:
+        - `imsi`: (String) International Mobile Subscriber Identity
+        - `k`: (String) Secret Key (can be defaulted if not provided)
+        - `opc`: (String) Operator Variant Algorithm Configuration Field (can be defaulted if not provided)
+    - `[nas]`:
+        - `apn`: (String) Access Point Name
+
+    **Defaults for Optional Parameters:**
+    - Most parameters have sensible defaults for a standard test setup. The model should generate a complete configuration file. Key defaults include:
+        - `[rf] device_name`: "uhd"
+        - `[pcap] enable`: "none"
+        - `[log] all_level`: "info"
+        - `[rrc] release`: 15
+        - `[gui] enable`: false
+
+    DO NOT CODE. JUST GIVE AN OUTPUT LIKE THE FOLLOWING:
+
+    TYPE: rtue
+    ID: rtue_example_2
+    CONFIG: ```conf
+    [rf]
+    freq_offset = 0
+    tx_gain = 50
+    rx_gain = 40
+    srate = 23.04e6
+    nof_antennas = 1
+    device_name = "uhd"
+    device_args = "clock=internal"
+    time_adv_nsamples = 300
+
+    [rat.eutra]
+    dl_earfcn = 2850
+    nof_carriers = 0
+
+    [rat.nr]
+    bands = [3]
+    nof_carriers = 1
+    max_nof_prb = 106
+    nof_prb = 106
+
+    [pcap]
+    enable = "none"
+    mac_filename = "/tmp/ue_mac.pcap"
+    mac_nr_filename = "/tmp/ue_mac_nr.pcap"
+    nas_filename = "/tmp/ue_nas.pcap"
+
+    [log]
+    all_level = "info"
+    phy_lib_level = "none"
+    all_hex_limit = 32
+    filename = "/tmp/ue.log"
+    file_max_size = -1
+
+    [usim]
+    mode = "soft"
+    algo = "milenage"
+    opc  = "63BFA50EE6523365FF14C1F45F88737D"
+    k    = "00112233445566778899aabbccddeeff"
+    imsi = "001010123456789"
+    imei = "353490069873319"
+
+    [rrc]
+    release = 15
+    ue_category = 4
+
+    [nas]
+    apn = "srsapn"
+    apn_protocol = "ipv4"
+
+    [gw]
+    #netns = ue1
+    #ip_devname = tun_srsue
+    #ip_netmask = 255.255.255.0
+
+    [gui]
+    enable = false
+    ```
+
+user_prompt: |
+  DO NOT CODE AT ALL. NEVER WRITE CODE. ONLY GIVE OUTPUT AS STATED ABOVE. start a sniffer process
