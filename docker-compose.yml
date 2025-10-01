@@ -1,6 +1,6 @@
 services:
   controller:
-    image: ghcr.io/oran-testing/controller
+    image: ghcr.io/oran-testing/controller 
     volumes:
       # Pass in the docker soket for starting rtue
       - /var/run/docker.sock:/var/run/docker.sock
@@ -82,9 +82,9 @@ services:
     image: ghcr.io/oran-testing/rtue
     build:
       context: ./rtue
-      dockerfile: Dockerfile.alpine
-    depends_on:
-      - components_base
+      dockerfile: Dockerfile
+    #depends_on:
+    #  - components_base
     privileged: true
     env_file:
       - .env
