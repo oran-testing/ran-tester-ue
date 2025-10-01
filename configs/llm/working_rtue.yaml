@@ -1,5 +1,8 @@
-model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct # model : TinyLlama/TinyLlama-1.1B-Chat-v1.0
+model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
+# model : TinyLlama/TinyLlama-1.1B-Chat-v1.0
 # model: codellama/CodeLlama-7b-Instruct-hf
+
+results_dir: llm_test 
 
 nof_plan_attempts: 10
 
@@ -7,7 +10,7 @@ planner: |
   You are an expert security tester.
   Your task is to take a user request and formulate a plan for executing and inspecting test components to run a security test.
 
-  There are four types of test components, a jammer, a sniffer, a 5G UE called rtue, and uu_agent.
+  There are three types of test components, a jammer, a sniffer, and a 5G UE called rtue
 
   There are 5 actions that can be taken as described below. The action name is its endpoint. ALL FIELDS ARE REQUIRED FOR EACH ACTION.
 
@@ -22,12 +25,14 @@ planner: |
   The parameter "id" should be the same for a given component, and each test component must have a different id
 
   The parameter "type" is the component type. Each component has a type, which is required for certain actions, such as start and logs
-  This type should be one of the test component types mentioned above: jammer, sniffer, rtue, or uu_agent
+  This type should be onr of the test component types mentioned above
 
   the parameter "rf" should be string of either "b200" or "zmq", depending on the users request.
 
   The parameter "desc" for the start action is an english description of reasonable length that 
-  describes to a skilled operator how to configure the component. The operator should be given information like the frequency or other useful information for getting the component to work as the user request states. DO NOT copy the example description directly.  include information on the rf, which is required for the skilled operator
+  describes to a skilled operator how to configure the component. The operator should be given information like the frequency or
+  other useful information for getting the component to work as the user request states. DO NOT copy the example description directly. 
+  include information on the rf, which is required for the skilled operator
 
   ### CRITICAL RULES:
   1. Your entire response **MUST** be a single, valid **JSON object**.
@@ -66,7 +71,7 @@ planner: |
   [
     {"id": "rtue_zmq_1", "type": "rtue", "desc": "Run this UE with ZMQ as the RF", "endpoint":"start", "rf": "zmq"},
     {"endpoint": "list"},
-    {"id": "rtue_zmq_1", "endpoint": "health"}
+    {"id": "rtue_zmq_1", "endpoint": "health"},
   ]
   ```
 
@@ -111,7 +116,7 @@ jammer: |
     "write_iq": bool,
     "write_csv": bool,
     "tx_gain": number,
-    "device_args": string (standard UHD arguments for b200)
+    "device_args": string (standard UHD arguments for b200),
   }
   ```
 
@@ -141,7 +146,7 @@ sniffer: |
     "pdcch_interleaving_pattern": "non-interleaved",
     "pdcch_coreset_duration": number,
     "pdcch_AL_corr_thresholds": array of numbers with 5 elements,
-    "pdcch_num_candidates_per_AL": array of numbers with 5 elements
+    "pdcch_num_candidates_per_AL": array of numbers with 5 elements,
   }
   ```
 
@@ -292,59 +297,5 @@ rtue: |
   }
   ```
 
-
-uu_agent: |
-  ### Example response structure:
-  ```json
-  {
-    "id": "String, Example: uuagent_collection_001",
-    "rf.type": "String, either 'uhd' or 'zmq', Default: 'uhd'",
-    "rf.rx_freq": "Float, receive frequency in Hz (use scientific notation, e.g., 1.84e9)",
-    "rf.srate": "Float, sample rate in Hz (standard rates: 15.36e6, 23.04e6, 30.72e6)",
-    "rf.rx_gain": "Integer, receiver gain in dB (0-90), Default: 40",
-    "rf.tx_gain": "Integer, transmitter gain in dB (0-90), Default: 0 (collection-only)",
-    "rf.num_samples": "Integer, number of samples to collect (>0, ≤1,000,000,000), Default: 100000000",
-    "rf.iq_file": "String, output file path (must start with '/output/'), Default: '/output/iq_data.fc32'",
-    "rf.device_args": "String, hardware-specific arguments, Default: 'type=b200,clock=external'"
-  }
-  ```
-
-  ### Example Request:
-  Configure UU-Agent to collect RF signals at 1.84 GHz using B200 hardware for 5 seconds
-
-  ### Example Response
-  ```json
-  {
-    "id": "uuagent_collection_001",
-    "rf.type": "uhd",
-    "rf.rx_freq": 1.84e9,
-    "rf.srate": 23.04e6,
-    "rf.rx_gain": 40,
-    "rf.tx_gain": 0,
-    "rf.num_samples": 1000000,
-    "rf.iq_file": "/output/rf_signals_1840mhz.fc32",
-    "rf.device_args": "type=b200,clock=external"
-  }
-  ```
-
-  ### Example Request:
-  Make a basic UU-Agent that uses ZMQ for RF collection at 2.4 GHz
-
-  ### Example Response
-  ```json
-  {
-    "id": "uuagent_zmq_001",
-    "rf.type": "zmq",
-    "rf.rx_freq": 2.4e9,
-    "rf.srate": 23.04e6,
-    "rf.rx_gain": 40,
-    "rf.tx_gain": 0,
-    "rf.num_samples": 20,
-    "rf.iq_file": "/output/zmq_samples.fc32",
-    "rf.device_args": "tcp://172.22.0.2:2001"
-  }
-  ```
-
-
 user_prompt: |
-  Make a basic UU-Agent that uses UHD for RF collection at 2.4 GHz
+  Run a basic rtue with default configuration, use ZMQ as the rf. Run health and list actions 10 times each to verify it is alive. Run only ONE UE. Do not stop the UE at the end

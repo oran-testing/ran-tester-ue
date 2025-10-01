@@ -1,7 +1,17 @@
 processes:
   - type: "uu_agent"
-    id: "uu_agent_gnb_test"
-    config_file: "configs/uuagent/gnb_test.conf"
+    id: "uu-agent"
+    config_file: "configs/llm/test.yaml"
+    permissions:
+      - sniffer
+      - jammer
+      - rtue
+      - llm_worker
+      - uu-agent
     rf:
-      type: "b200"
       images_dir: "/usr/share/uhd/images/"
+      type: "zmq"
+      tcp_subnet: "172.22.0.0/24"
+      gateway: "172.22.0.1"
+
+

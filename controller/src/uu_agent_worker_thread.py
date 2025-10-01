@@ -10,7 +10,7 @@ class uu_agent(WorkerThread):
         self.setup_env()
         self.setup_networks()
 
-        self.config.container_volumes[self.config.config_file] = {"bind": "/uuagent.conf", "mode": "ro"} #update the config file binding
+        self.config.container_volumes[self.config.config_file] = {"bind": "/uu-agent.conf", "mode": "ro"} #update the config file binding
 
         # Add IQ output volume
         iq_output_dir = f"{os.getenv('DOCKER_SYSTEM_DIRECTORY')}/.uuagent_results"

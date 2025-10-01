@@ -104,7 +104,7 @@ services:
     profiles:
       - components
 
-  uuagent:
+  uu-agent:
     image: ghcr.io/oran-testing/uu-agent
     build:
       context: ./uu-agent

@@ -93,6 +93,7 @@ def run_plan_loop(planner, plan_validator):
         is_valid_plan, val_res = plan_validator.validate(raw_plan)
         if not is_valid_plan:
             errors = val_res
+            logging.info(f"PLANNER OUTPUT: {raw_plan}")
             logging.error(f"Encountered errors in plan validation: {val_res}")
             continue
 

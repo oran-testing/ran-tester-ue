@@ -1,6 +1,5 @@
 from llm_wrapper import LLMWrapper
 from config import Config
-import logging
 
 class Planner:
     def __init__(self, llm_ref: LLMWrapper):
@@ -22,8 +21,6 @@ class Planner:
 
         if errors:
             combined_prompt = f"{combined_prompt}\n\nENCOUNTERED ERRORS{', '.join(errors)}"
-
-        logging.info(f"PROMPT TO PLANNER:\n\n {combined_prompt}\n\n")
 
         model_response = self.llm_ref._generate_response(combined_prompt)
         if self.errors:
