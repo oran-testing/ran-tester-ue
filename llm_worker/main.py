@@ -141,7 +141,7 @@ def run_plan_loop(planner, plan_validator, logger=None, trial_id=None):  # <-- s
 
     sys.exit(0)
 
-def run_exec_loop(executor, current_validator, plan_item, logger=None, trial_id=None):  # <-- signature extended
+def run_exec_loop(executor, current_validator, plan_item, logger=None, trial_id=None):  # logger
     is_successful, is_valid_plan = False, False
     exec_attempt = 0
     errors = []

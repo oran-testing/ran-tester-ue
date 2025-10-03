@@ -137,6 +137,8 @@ services:
       dockerfile: Dockerfile.alpine
     ports:
       - "8000:8000"
+    volumes:
+      - ${DOCKER_SYSTEM_DIRECTORY}:/host:rw
     deploy:
       resources:
         reservations:

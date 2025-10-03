@@ -34,7 +34,7 @@ class JammerValidator(Validator):
         }
         return toml.dumps({"jammer": jammer})
 
-    def validate(self):
+    def validate(self, raw_str):
         self.errors = []
         raw_str = (raw_str or "").strip()
         json_obj = self._extract_json(raw_str)

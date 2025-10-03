@@ -347,8 +347,7 @@ uu_agent: |
 
 
 user_prompt: |
-  Make a basic UU-Agent that uses UHD for RF collection at 2.4 GHz
-
+  Start a jammer on B200 to sweep around 3.50 GHz (n78), ~10 MHz bandwidth, moderate power. Include health and logs after start.
 
 
 

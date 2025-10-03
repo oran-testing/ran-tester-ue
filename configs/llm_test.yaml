@@ -2,6 +2,7 @@ processes:
   - type: "llm_worker"
     id: "llm_worker_1"
     config_file: "configs/llm/test.yaml"
+    results_dir: run1
     permissions:
       - sniffer
       - jammer
@@ -10,4 +11,3 @@ processes:
       - uu-agent
     rf:
       type: none
-    results_dir: llm_testing
