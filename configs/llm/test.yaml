@@ -348,3 +348,38 @@ uu_agent: |
 
 user_prompt: |
   Make a basic UU-Agent that uses UHD for RF collection at 2.4 GHz
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# sample jammer test user prompts
+
+# Start a jammer on B200 to sweep around 3.50 GHz (n78), ~10 MHz bandwidth, moderate power. Include health and logs after start.
+
+# Spin up a ZMQ-based jammer targeting 3.55 GHz with 20 MHz bandwidth and 15 MHz sampling. List components, then show health.
+
+# Start a B200 jammer at 28 GHz (FR2) with narrow bandwidth and low amplitude; capture logs after start.
+
+# Deploy a jammer at 700 MHz (FR1), B200, bandwidth 5 MHz, sampling 7 MHz, amplitude 0.6; check health and then stop it.
+
+# Create a ZMQ jammer at 2.40 GHz for Wi-Fi interference tests, bandwidth 40 MHz, amplitude 0.9, sample at 80 MHz, then fetch logs.
+
+# Start a B210 jammer at 3.80 GHz, bandwidth 70 MHz, sampling 92 MHz, amplitude 0.7; run health afterwards.
+
+# Launch a jammer at 0 Hz (DC) using B200, amplitude 0.5, bandwidth 1 MHz, minimal samples; report logs.
+
+# Start a ZMQ jammer at 5.20 GHz with amplitude 1.2 and tx_gain 95; record health.
+
+# Bring up a B200 jammer at 6.50 GHz, bandwidth 20 MHz, num_samples −1, amplitude 0.3; then get logs.
+
+# Start a ZMQ jammer at 24.30 GHz (FR2) with bandwidth 50 MHz, amplitude 0.4, sampling 120 MHz; list components and show health.

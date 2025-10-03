@@ -21,6 +21,7 @@ from planner import Planner
 from api_interface import ApiInterface
 from knowledge_augmentor import KnowledgeAugmentor
 
+from experiment_logger import ExperimentLogger 
 
 
 def configure():
@@ -74,7 +75,7 @@ def configure():
 
     return control_ip, control_port, control_token
 
-def run_plan_loop(planner, plan_validator):
+def run_plan_loop(planner, plan_validator, logger=None, trial_id=None):  # <-- signature extended
     is_successful, is_valid_plan = False, False
     plan_attempt = 0
 
@@ -86,11 +87,37 @@ def run_plan_loop(planner, plan_validator):
             is_successful, raw_plan = planner.generate_plan(errors=errors)
         else:
             is_successful, raw_plan = planner.generate_plan()
+
+        # Logger: log raw planner output
+        if logger and trial_id:
+            logger.log_planner_attempt(
+                trial_id=trial_id,
+                attempt=plan_attempt,
+                input_errors=(errors or []),
+                raw_output=raw_plan,
+                is_successful=is_successful,
+                is_valid=None,
+                validator_errors=None
+            )
+
         if not is_successful:
             logging.error(f"Encountered errors in plan generation: {raw_plan}")
             continue
 
         is_valid_plan, val_res = plan_validator.validate(raw_plan)
+
+        # Logger: log planner validation result
+        if logger and trial_id:
+            logger.log_planner_attempt(
+                trial_id=trial_id,
+                attempt=plan_attempt,
+                input_errors=(errors or []),
+                raw_output=raw_plan,
+                is_successful=True,
+                is_valid=is_valid_plan,
+                validator_errors=(None if is_valid_plan else val_res)
+            )
+
         if not is_valid_plan:
             errors = val_res
             logging.info(f"PLANNER OUTPUT: {raw_plan}")
@@ -99,13 +126,22 @@ def run_plan_loop(planner, plan_validator):
 
         with open(os.path.join(Config.results_dir, "plan.json"), "w") as f:
             json.dump(val_res, f, indent=4)
+
+        # Logger: log planner final success
+        if logger and trial_id:
+            logger.log_phase_final(trial_id, "planner", True, parsed_json=val_res)
+
         return val_res
 
     logging.critical("Failed to create valid plan")
+
+    # Logger: log planner final failure (keeps original exit code 0)
+    if logger and trial_id:
+        logger.log_phase_final(trial_id, "planner", False, parsed_json=None, note="max attempts reached")
+
     sys.exit(0)
 
-
-def run_exec_loop(executor, current_validator, plan_item):
+def run_exec_loop(executor, current_validator, plan_item, logger=None, trial_id=None):  # <-- signature extended
     is_successful, is_valid_plan = False, False
     exec_attempt = 0
     errors = []
@@ -121,6 +157,19 @@ def run_exec_loop(executor, current_validator, plan_item):
         else:
             is_successful, raw_exec = executor.execute(plan_item)
 
+        # Logger: log executor raw output
+        if logger and trial_id:
+            logger.log_executor_attempt(
+                trial_id=trial_id,
+                plan_item=plan_item,
+                attempt=exec_attempt,
+                input_errors=(errors or []),
+                raw_output=raw_exec,
+                is_successful=is_successful,
+                is_valid=None,
+                validator_errors=None
+            )
+
         if not is_successful:
             execution_log.write(f"\tEncountered errors in execution: {raw_exec}\n")
             continue
@@ -129,18 +178,41 @@ def run_exec_loop(executor, current_validator, plan_item):
         if not is_valid_plan:
             errors = val_res
             execution_log.write(f"\tEncountered errors in execution validation: {val_res}\n")
+
+        # Logger: log executor validation result
+        if logger and trial_id:
+            logger.log_executor_attempt(
+                trial_id=trial_id,
+                plan_item=plan_item,
+                attempt=exec_attempt,
+                input_errors=(errors or []),
+                raw_output=raw_exec,
+                is_successful=True,
+                is_valid=is_valid_plan,
+                validator_errors=(None if is_valid_plan else val_res)
+            )
+
+        if not is_valid_plan:
             continue
 
     if exec_attempt > Config.options.get("nof_exec_attempts", 10):
         execution_log.write(f"Failed to create valid plan\n")
         execution_log.close()
+
+        # Logger: log executor final failure (keeps original exit code 0)
+        if logger and trial_id:
+            logger.log_phase_final(trial_id, "executor", False, parsed_json=None, note="max attempts reached")
+
         sys.exit(0)
 
     execution_log.write(f"Created valid exec JSON:\n{json.dumps(val_res, indent=2)}\n\n\n")
     execution_log.close()
+
+    # Logger: log executor final success
+    if logger and trial_id:
+        logger.log_phase_final(trial_id, "executor", True, parsed_json=val_res)
+
     return val_res
-
-
 
 
 if __name__ == '__main__':
@@ -159,7 +231,11 @@ if __name__ == '__main__':
     api = ApiInterface(*api_args)
     kb = KnowledgeAugmentor()
 
-    finalized_plan = run_plan_loop(planner, plan_validator)
+    # Logger: experiment logger + per-run trial dir (no behavior change to core flow)
+    logger = ExperimentLogger(Config.results_dir)
+    trial_id = logger.new_trial(Config.options.get("user_prompt", ""))
+
+    finalized_plan = run_plan_loop(planner, plan_validator, logger=logger, trial_id=trial_id)
 
     payload_log = open(os.path.join(Config.results_dir, "messages.txt"), "a")
 
@@ -176,7 +252,7 @@ if __name__ == '__main__':
                 current_validator = SnifferValidator()
             elif component_type == "uu_agent":
                 current_validator = UuagentValidator()
-            api_payload = run_exec_loop(executor, current_validator, plan_item)
+            api_payload = run_exec_loop(executor, current_validator, plan_item, logger=logger, trial_id=trial_id)
             if plan_item.get("rf") == "b200":
                 api_payload["rf"] = {"type": "b200", "images_dir": "/usr/share/uhd/images/"}
             elif plan_item.get("rf") == "zmq":
