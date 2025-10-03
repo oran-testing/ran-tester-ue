@@ -1,7 +1,6 @@
 processes:
-  - type: "rtue"
-    id: "rtue_uhd_1"
-    config_file: "configs/zmq/ue_zmq_docker.conf"
-    rf:
-      type: "zmq"
-
+- type: rtue
+  id: rtue_uhd_1
+  config_file: configs/uhd/ue_uhd.conf
+  rf:
+    type: zmq
