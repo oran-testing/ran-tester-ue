@@ -33,6 +33,7 @@ class PlanValidator(Validator):
 
 
     def validate(self, raw_str):
+        self.errors = []
         raw_str = raw_str.strip()
         json_obj = self._extract_json(raw_str)
         if not json_obj:

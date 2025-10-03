@@ -1,4 +1,5 @@
 import yaml
+import toml
 
 from validator import Validator
 
@@ -15,20 +16,27 @@ class JammerValidator(Validator):
         }
 
     def _json_to_config(self, json_obj):
-        sniffer_section = {}
-        pdcch_section = {}
-
-        for key, value in json_obj.items():
-            if key.startswith("pdcch_"):
-                new_key = key.replace("pdcch_", "", 1)
-                pdcch_section[new_key] = value
-            elif key in ["file_path", "sample_rate", "frequency", "nid_1", "ssb_numerology"]:
-                sniffer_section[key] = value
-        final_toml_structure = {"sniffer": sniffer_section, "pdcch": [pdcch_section]}
-        return toml.dumps(final_toml_structure)
+        jammer = {
+            "id": json_obj["id"],
+            "center_frequency": float(json_obj["center_frequency"]),
+            "bandwidth": float(json_obj["bandwidth"]),
+            "amplitude": float(json_obj["amplitude"]),
+            "amplitude_width": float(json_obj["amplitude_width"]),
+            "initial_phase": float(json_obj["initial_phase"]),
+            "sampling_freq": float(json_obj["sampling_freq"]),
+            "num_samples": int(json_obj["num_samples"]),
+            "tx_gain": float(json_obj["tx_gain"]),
+            "device_args": json_obj["device_args"],
+            "write_iq": bool(json_obj["write_iq"]),
+            "write_csv": bool(json_obj["write_csv"]),
+            "output_iq_file": json_obj["output_iq_file"],
+            "output_csv_file": json_obj["output_csv_file"],
+        }
+        return toml.dumps({"jammer": jammer})
 
     def validate(self):
-        raw_str = raw_str.strip()
+        self.errors = []
+        raw_str = (raw_str or "").strip()
         json_obj = self._extract_json(raw_str)
         if not json_obj:
             return False, self.errors
