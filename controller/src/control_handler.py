@@ -3,7 +3,7 @@ import http.server
 from globals import Config, Globals
 import logging
 import os
-
+import logging
 from rtue_worker_thread import rtue
 from jammer_worker_thread import jammer
 from sniffer_worker_thread import sniffer
@@ -128,6 +128,8 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         logging.debug(f"{payload.keys()}")
+        logging.debug(f"{payload}")
+        
         if not all(k in payload for k in ("id", "type", "config_str", "rf")):
                 self._set_headers(400)
                 self.wfile.write(json.dumps({"error": "Missing required fields: id, type, config_str, rf"}).encode("utf-8"))
@@ -218,6 +220,7 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         payload = {}
         try:
             payload = json.loads(post_data)
+            logging.info(f"Stop payload: {payload}")
         except json.JSONDecodeError:
             self._send_unauthorized()
             return

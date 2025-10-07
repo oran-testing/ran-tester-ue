@@ -16,6 +16,7 @@ class ExperimentLogger:
     """
 
     def __init__(self, results_dir: str):
+        print(f"ExperimentLogger initialized with results_dir: {results_dir}")
         self.results_dir = results_dir
         self.trials_root = os.path.join(results_dir, "trials")
         os.makedirs(self.trials_root, exist_ok=True)

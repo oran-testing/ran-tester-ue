@@ -2,7 +2,7 @@ processes:
   - type: "llm_worker"
     id: "llm_worker_1"
     config_file: "configs/llm/test.yaml"
-    results_dir: run1
+    results_dir: "data_collection"
     permissions:
       - sniffer
       - jammer
