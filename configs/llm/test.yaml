@@ -367,18 +367,18 @@ user_prompt: |
 
 # Spin up a ZMQ-based jammer targeting 3.55 GHz with 20 MHz bandwidth and 15 MHz sampling. List components, then show health.
 
-# Start a B200 jammer at 28 GHz (FR2) with narrow bandwidth and low amplitude; capture logs after start.
+# Start a B200 jammer at 2.60 GHz (FR1 high band) with narrow bandwidth and low amplitude; capture logs after start.
 
-# Deploy a jammer at 700 MHz (FR1), B200, bandwidth 5 MHz, sampling 7 MHz, amplitude 0.6; check health and then stop it.
+# Deploy a jammer at 700 MHz (FR1), B200, bandwidth 5 MHz, sampling 15 MHz, amplitude 0.6; check health and then stop it.
 
 # Create a ZMQ jammer at 2.40 GHz for Wi-Fi interference tests, bandwidth 40 MHz, amplitude 0.9, sample at 80 MHz, then fetch logs.
 
-# Start a B210 jammer at 3.80 GHz, bandwidth 70 MHz, sampling 92 MHz, amplitude 0.7; run health afterwards.
+# Start a B200 jammer at 3.80 GHz, bandwidth 50 MHz, sampling 100 MHz, amplitude 0.7; run health afterwards.
 
-# Launch a jammer at 0 Hz (DC) using B200, amplitude 0.5, bandwidth 1 MHz, minimal samples; report logs.
+# Launch a jammer at 500 MHz using B200, amplitude 0.5, bandwidth 1 MHz, sampling 5 MHz, 10000 samples; report logs.
 
-# Start a ZMQ jammer at 5.20 GHz with amplitude 1.2 and tx_gain 95; record health.
+# Start a ZMQ jammer at 5.20 GHz with amplitude 0.8 and tx_gain 75; record health.
 
-# Bring up a B200 jammer at 6.50 GHz, bandwidth 20 MHz, num_samples −1, amplitude 0.3; then get logs.
+# Bring up a B200 jammer at 5.50 GHz, bandwidth 20 MHz, num_samples 100000, amplitude 0.3; then get logs.
 
-# Start a ZMQ jammer at 24.30 GHz (FR2) with bandwidth 50 MHz, amplitude 0.4, sampling 120 MHz; list components and show health.
+# Start a ZMQ jammer at 5.90 GHz (upper FR1) with bandwidth 50 MHz, amplitude 0.4, sampling 120 MHz; list components and show health.

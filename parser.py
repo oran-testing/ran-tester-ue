@@ -119,30 +119,19 @@ class ExperimentLogParser:
             
             row = {
                 "run_no": idx,
-                "trial_id": meta.get("trial_id", ""),
-                "created_at_utc": meta.get("created_at_utc", ""),
-                "user_prompt": meta.get("user_prompt", ""),
+                "created": meta.get("created_at_utc", ""),
+                "prompt": meta.get("user_prompt", ""),
+                "from_p": executor_analysis["from_planner"],
                 
-                "planner_total_attempts": meta.get("planner_total_attempts", planner_analysis["total_attempts"]),
-                "planner_success_attempt": meta.get("planner_success_attempt"),
-                "planner_reached_max_retry": meta.get("planner_reached_max_retry", False),
-                "planner_final_status": meta.get("planner_final_status", "unknown"),
+                # Planner metrics (shortened)
+                "p_total": meta.get("planner_total_attempts", planner_analysis["total_attempts"]),
+                "p_success": meta.get("planner_success_attempt"),
+                "p_max": meta.get("planner_reached_max_retry", False),
                 
-                "executor_total_attempts": meta.get("executor_total_attempts", executor_analysis["total_attempts"]),
-                "executor_success_attempt": meta.get("executor_success_attempt"),
-                "executor_reached_max_retry": meta.get("executor_reached_max_retry", False),
-                "executor_final_status": meta.get("executor_final_status", "unknown"),
-                
-                "from_planner": executor_analysis["from_planner"],
-                "planner_llm_failures": planner_analysis["llm_failures"],
-                "planner_validation_failures": planner_analysis["validation_failures"],
-                "executor_llm_failures": executor_analysis["llm_failures"],
-                "executor_validation_failures": executor_analysis["validation_failures"],
-                
-                "overall_success": (
-                    meta.get("planner_final_status") == "success" and 
-                    meta.get("executor_final_status") == "success"
-                ),
+                # Executor metrics (shortened)
+                "e_total": meta.get("executor_total_attempts", executor_analysis["total_attempts"]),
+                "e_success": meta.get("executor_success_attempt"),
+                "e_max": meta.get("executor_reached_max_retry", False),
             }
             
             data.append(row)
