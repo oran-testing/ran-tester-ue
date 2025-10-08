@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import List, Dict, Any
 import pandas as pd
 from datetime import datetime
+from tabulate import tabulate
+import textwrap
 
 
 class ExperimentLogParser:
@@ -26,7 +28,6 @@ class ExperimentLogParser:
     def get_trial_dirs(self, n: int = None) -> List[Path]:
         """Get the last N trial directories, sorted by creation time"""
         trial_dirs = [d for d in self.trials_dir.iterdir() if d.is_dir()]
-        # Sort by directory name (which contains timestamp)
         trial_dirs.sort(reverse=True)
         
         if n is not None:
@@ -122,26 +123,22 @@ class ExperimentLogParser:
                 "created_at_utc": meta.get("created_at_utc", ""),
                 "user_prompt": meta.get("user_prompt", ""),
                 
-                # Planner metadata (from meta.json)
                 "planner_total_attempts": meta.get("planner_total_attempts", planner_analysis["total_attempts"]),
                 "planner_success_attempt": meta.get("planner_success_attempt"),
                 "planner_reached_max_retry": meta.get("planner_reached_max_retry", False),
                 "planner_final_status": meta.get("planner_final_status", "unknown"),
                 
-                # Executor metadata (from meta.json)
                 "executor_total_attempts": meta.get("executor_total_attempts", executor_analysis["total_attempts"]),
                 "executor_success_attempt": meta.get("executor_success_attempt"),
                 "executor_reached_max_retry": meta.get("executor_reached_max_retry", False),
                 "executor_final_status": meta.get("executor_final_status", "unknown"),
                 
-                # Analysis from JSONL files
                 "from_planner": executor_analysis["from_planner"],
                 "planner_llm_failures": planner_analysis["llm_failures"],
                 "planner_validation_failures": planner_analysis["validation_failures"],
                 "executor_llm_failures": executor_analysis["llm_failures"],
                 "executor_validation_failures": executor_analysis["validation_failures"],
                 
-                # Overall status
                 "overall_success": (
                     meta.get("planner_final_status") == "success" and 
                     meta.get("executor_final_status") == "success"
@@ -171,41 +168,31 @@ class ExperimentLogParser:
 
 
 def pretty_print_csv(df: pd.DataFrame) -> None:
-    """Pretty print a DataFrame as a formatted table"""
+    """Pretty print a DataFrame using the tabulate library with text wrapping."""
     if df.empty:
         print("No data to display.")
         return
-    
-    # Calculate column widths
-    col_widths = {}
-    for col in df.columns:
-        # Get max width between column name and values
-        max_val_len = df[col].astype(str).str.len().max()
-        col_widths[col] = max(len(str(col)), max_val_len)
-    
-    # Print header
-    header = " | ".join(str(col).ljust(col_widths[col]) for col in df.columns)
-    separator = "-+-".join("-" * col_widths[col] for col in df.columns)
-    
-    print("\n" + "=" * len(header))
-    print(header)
-    print(separator)
-    
-    # Print rows
-    for _, row in df.iterrows():
-        row_str = " | ".join(str(row[col]).ljust(col_widths[col]) for col in df.columns)
-        print(row_str)
-    
-    print("=" * len(header) + "\n")
-    
-    # Print summary statistics
+
+    df_display = df.copy()
+
+    wrap_columns = ['user_prompt', 'from_planner']
+    wrap_width = 45
+
+    for col in wrap_columns:
+        if col in df_display.columns:
+            df_display[col] = df_display[col].apply(
+                lambda x: textwrap.fill(str(x).strip(), width=wrap_width) if pd.notna(x) else ""
+            )
+
+    print(tabulate(df_display, headers='keys', tablefmt='grid', showindex=False))
+
     total_runs = len(df)
     successful_runs = df["overall_success"].sum()
     success_rate = (successful_runs / total_runs * 100) if total_runs > 0 else 0
-    
-    print(f"Total Runs: {total_runs}")
+
+    print(f"\nTotal Runs: {total_runs}")
     print(f"Successful: {successful_runs} ({success_rate:.1f}%)")
-    print(f"Failed: {total_runs - successful_runs} ({100 - success_rate:.1f}%)")
+    print(f"Failed: {total_runs - successful_runs} ({100.0 - success_rate:.1f}%)")
     print()
 
 
@@ -250,23 +237,19 @@ def main():
     
     args = parser.parse_args()
     
-    # Parse trials
     log_parser = ExperimentLogParser(args.results_dir)
     
     if args.detail:
-        # Show detailed breakdown for specific trial
         details = log_parser.get_detailed_attempts(args.detail)
         print(json.dumps(details, indent=2))
         return
     
-    # Get summary DataFrame
     df = log_parser.parse_trials(args.num_trials)
     
     if df.empty:
         print("No trials found.")
         return
     
-    # Output results
     if args.format == "json":
         output = df.to_json(orient="records", indent=2)
         if args.output:
@@ -275,21 +258,17 @@ def main():
             print(f"Results saved to {args.output}")
         else:
             print(output)
-    else:  # csv format (default)
+    else:
         if args.output:
             df.to_csv(args.output, index=False)
             print(f"Results saved to {args.output}")
-            # Also pretty print to console
             if not args.no_pretty:
                 print("\nPreview:")
                 pretty_print_csv(df)
         else:
-            # Print to stdout
             if args.no_pretty:
-                # Raw CSV output
                 print(df.to_csv(index=False))
             else:
-                # Pretty printed table
                 pretty_print_csv(df)
 
 
