@@ -85,6 +85,7 @@ class ExperimentLogger:
             "attempt": attempt,
             "phase": "executor",
             "plan_item": plan_item,
+            "from_planner": plan_item.get("desc", ""),
             "input_errors": input_errors or [],
             "raw_output": raw_output,
             "llm_success": bool(is_successful),
@@ -94,21 +95,12 @@ class ExperimentLogger:
         path = os.path.join(self.trial_dir(trial_id), "executor.jsonl")
         self._append_jsonl(path, rec)
 
-    def log_phase_final(
-        self,
-        trial_id: str,
-        phase: str,  # "planner" or "executor"
-        succeeded: bool,
-        parsed_json: Optional[Union[Dict[str, Any], List[Any]]],
-        note: str = "",
-    ) -> None:
-        rec = {
-            "ts_utc": self._now(),
-            "phase": phase,
-            "final": True,
-            "succeeded": bool(succeeded),
-            "parsed_json": parsed_json,
-            "note": note,
-        }
-        path = os.path.join(self.trial_dir(trial_id), f"{phase}.jsonl")
-        self._append_jsonl(path, rec)
+    def update_metadata(self, trial_id: str, updates: Dict[str, Any]) -> None:
+        """Update metadata.json with additional fields"""
+        meta_path = os.path.join(self.trial_dir(trial_id), "meta.json")
+        with open(meta_path, "r") as f:
+            meta = json.load(f)
+        meta.update(updates)
+        with open(meta_path, "w") as f:
+            json.dump(meta, f, indent=2)
+    

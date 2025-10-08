@@ -127,17 +127,27 @@ def run_plan_loop(planner, plan_validator, logger=None, trial_id=None):  # <-- s
         with open(os.path.join(Config.results_dir, "plan.json"), "w") as f:
             json.dump(val_res, f, indent=4)
 
-        # Logger: log planner final success
+        # Logger: update planner metadata
         if logger and trial_id:
-            logger.log_phase_final(trial_id, "planner", True, parsed_json=val_res)
+            logger.update_metadata(trial_id, {
+                "planner_total_attempts": plan_attempt,
+                "planner_success_attempt": plan_attempt,
+                "planner_reached_max_retry": False,
+                "planner_final_status": "success"
+            })
 
         return val_res
 
     logging.critical("Failed to create valid plan")
 
-    # Logger: log planner final failure (keeps original exit code 0)
+    # Logger: update planner metadata
     if logger and trial_id:
-        logger.log_phase_final(trial_id, "planner", False, parsed_json=None, note="max attempts reached")
+        logger.update_metadata(trial_id, {
+            "planner_total_attempts": plan_attempt,
+            "planner_success_attempt": None,
+            "planner_reached_max_retry": True,
+            "planner_final_status": "failed"
+        })
 
     sys.exit(0)
 
@@ -199,18 +209,28 @@ def run_exec_loop(executor, current_validator, plan_item, logger=None, trial_id=
         execution_log.write(f"Failed to create valid plan\n")
         execution_log.close()
 
-        # Logger: log executor final failure (keeps original exit code 0)
+        # Logger: update executor metadata
         if logger and trial_id:
-            logger.log_phase_final(trial_id, "executor", False, parsed_json=None, note="max attempts reached")
+            logger.update_metadata(trial_id, {
+                "executor_total_attempts": exec_attempt,
+                "executor_success_attempt": None,
+                "executor_reached_max_retry": True,
+                "executor_final_status": "failed"
+            })
 
         sys.exit(0)
 
     execution_log.write(f"Created valid exec JSON:\n{json.dumps(val_res, indent=2)}\n\n\n")
     execution_log.close()
 
-    # Logger: log executor final success
+    # Logger: update executor metadata
     if logger and trial_id:
-        logger.log_phase_final(trial_id, "executor", True, parsed_json=val_res)
+        logger.update_metadata(trial_id, {
+            "executor_total_attempts": exec_attempt,
+            "executor_success_attempt": exec_attempt,
+            "executor_reached_max_retry": False,
+            "executor_final_status": "success"
+        })
 
     return val_res
 
@@ -231,7 +251,7 @@ if __name__ == '__main__':
     api = ApiInterface(*api_args)
     kb = KnowledgeAugmentor()
 
-    # Logger: experiment logger + per-run trial dir (no behavior change to core flow)
+    # Logger: experiment logger and per-run trial dir (no behavior change to core flow)
     logger = ExperimentLogger(Config.results_dir)
     trial_id = logger.new_trial(Config.options.get("user_prompt", ""))
 
