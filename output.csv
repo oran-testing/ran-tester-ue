@@ -1,0 +1,21 @@
+run_no,created,prompt,from_p,p_total,p_success,p_max,e_total,e_success,e_max
+1,2025-10-08T21:17:41,"Start a jammer on B200 to sweep around 3.50 GHz (n78), ~10 MHz bandwidth, moderate power. Include health and logs after start.
+",Run this jammer at 3.50 GHz (n78) with a bandwidth of ~10 MHz and a moderate power,1,1,False,1,1.0,False
+2,2025-10-08T21:18:22,"Spin up a ZMQ-based jammer targeting 3.55 GHz with 20 MHz bandwidth and 15 MHz sampling. List components, then show health.
+",Run this ZMQ-based jammer targeting 3.55 GHz with 20 MHz bandwidth and 15 MHz sampling,1,1,False,11,,True
+3,2025-10-08T21:20:48,"Start a B200 jammer at 2.60 GHz (FR1 high band) with narrow bandwidth and low amplitude; capture logs after start.
+",Run this B200 jammer at 2.60 GHz with a narrow bandwidth and low amplitude,1,1,False,1,1.0,False
+4,2025-10-08T21:21:56,"Deploy a jammer at 700 MHz (FR1), B200, bandwidth 5 MHz, sampling 15 MHz, amplitude 0.6; check health and then stop it.
+","Deploy a jammer at 700 MHz with B200, bandwidth 5 MHz, sampling 15 MHz, amplitude 0.6",1,1,False,1,1.0,False
+5,2025-10-08T21:22:54,"Create a ZMQ jammer at 2.40 GHz for Wi-Fi interference tests, bandwidth 40 MHz, amplitude 0.9, sample at 80 MHz, then fetch logs.
+","Run this ZMQ Jammer at 2.40 GHz with a bandwidth of 40 MHz, amplitude of 0.9, and sample rate of 80 MHz",1,1,False,11,,True
+6,2025-10-08T21:24:55,"Start a B200 jammer at 3.80 GHz, bandwidth 50 MHz, sampling 100 MHz, amplitude 0.7; run health afterwards.
+","Run this B200 Jammer at 3.8 GHz with a bandwidth of 50 MHz, sampling rate of 100 MHz, and an amplitude of 0.7",1,1,False,2,2.0,False
+7,2025-10-08T21:25:40,"Launch a jammer at 500 MHz using B200, amplitude 0.5, bandwidth 1 MHz, sampling 5 MHz, 10000 samples; report logs.
+","Run this jammer at 500 MHz with B200, amplitude 0.5, bandwidth 1 MHz, sampling 5 MHz, 10000 samples",1,1,False,1,1.0,False
+8,2025-10-08T21:26:32,"Start a ZMQ jammer at 5.20 GHz with amplitude 0.8 and tx_gain 75; record health.
+",Run this ZMQ Jammer at 5.20 GHz with amplitude 0.8 and tx_gain 75,1,1,False,1,1.0,False
+9,2025-10-08T21:27:20,"Bring up a B200 jammer at 5.50 GHz, bandwidth 20 MHz, num_samples 100000, amplitude 0.3; then get logs.
+",Run this B200 Jammer at 5.50 GHz with a bandwidth of 20 MHz and 100000 samples with an amplitude of 0.3,1,1,False,2,2.0,False
+10,2025-10-08T21:29:13,"Start a ZMQ jammer at 5.90 GHz (upper FR1) with bandwidth 50 MHz, amplitude 0.4, sampling 120 MHz; list components and show health.
+","Run this ZMQ Jammer at 5.90 GHz with a bandwidth of 50 MHz, amplitude of 0.4, and a sampling rate of 120 MHz",1,1,False,2,2.0,False

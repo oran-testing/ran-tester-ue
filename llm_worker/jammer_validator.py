@@ -75,6 +75,11 @@ class JammerValidator(Validator):
         dev = json_obj.get("device_args", "") or ""
         dev_lower = dev.lower()
 
+        # Require device_args to include a known device type
+        known_types = ["b200", "b210", "zmq", "uhd", "usrp"]
+        if not any(t in dev_lower for t in known_types):
+            self.errors.append("device_args must include a known device type (e.g., b200, b210, zmq, uhd, usrp)")
+
         # USRP B200-family constraints
         if "b200" in dev_lower or "b210" in dev_lower:
             if isinstance(f0, (int, float)):

@@ -175,14 +175,14 @@ def pretty_print_csv(df: pd.DataFrame) -> None:
 
     print(tabulate(df_display, headers='keys', tablefmt='grid', showindex=False))
 
-    total_runs = len(df)
-    successful_runs = df["overall_success"].sum()
-    success_rate = (successful_runs / total_runs * 100) if total_runs > 0 else 0
+    # total_runs = len(df)
+    # successful_runs = df["overall_success"].sum()
+    # success_rate = (successful_runs / total_runs * 100) if total_runs > 0 else 0
 
-    print(f"\nTotal Runs: {total_runs}")
-    print(f"Successful: {successful_runs} ({success_rate:.1f}%)")
-    print(f"Failed: {total_runs - successful_runs} ({100.0 - success_rate:.1f}%)")
-    print()
+    # print(f"\nTotal Runs: {total_runs}")
+    # print(f"Successful: {successful_runs} ({success_rate:.1f}%)")
+    # print(f"Failed: {total_runs - successful_runs} ({100.0 - success_rate:.1f}%)")
+    # print()
 
 
 def main():

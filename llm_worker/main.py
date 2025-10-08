@@ -299,5 +299,3 @@ if __name__ == '__main__':
         time.sleep(2)
 
     payload_log.close()
-    while True:
-        time.sleep(10)

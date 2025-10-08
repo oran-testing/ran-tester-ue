@@ -1,4 +1,5 @@
-model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct # model : TinyLlama/TinyLlama-1.1B-Chat-v1.0
+model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct 
+# model : TinyLlama/TinyLlama-1.1B-Chat-v1.0
 # model: codellama/CodeLlama-7b-Instruct-hf
 
 nof_plan_attempts: 10
@@ -347,9 +348,7 @@ uu_agent: |
 
 
 user_prompt: |
-  Start a jammer on B200 to sweep around 3.50 GHz (n78), ~10 MHz bandwidth, moderate power. Include health and logs after start.
-
-
+  Start a ZMQ jammer at 5.90 GHz (upper FR1) with bandwidth 50 MHz, amplitude 0.4, sampling 120 MHz; list components and show health.
 
 
 
