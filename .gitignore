@@ -3,3 +3,4 @@
 venv/
 .llm_worker_cache
 .generated
+.cache/
