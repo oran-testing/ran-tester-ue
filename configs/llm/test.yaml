@@ -2,16 +2,19 @@ model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
 # model : TinyLlama/TinyLlama-1.1B-Chat-v1.0
 # model: codellama/CodeLlama-7b-Instruct-hf
 
+nof_plan_attempts: 10
+
 planner: |
   You are an expert security tester.
   Your task is to take a user request and formulate a plan for executing and inspecting test components to run a security test.
 
-  There are three types of test components, a jammer, a sniffer, and a 5G UE called rtue
+  There are four types of test components, a jammer, a sniffer, a 5G UE called rtue, and uu_agent.
 
-  There are 5 actions that can be taken as described below. The action name is its endpoint.
-  "start": {"id":str, "type":str, "desc":str, "endpoint":str},
+  There are 5 actions that can be taken as described below. The action name is its endpoint. ALL FIELDS ARE REQUIRED FOR EACH ACTION.
+
+  "start": {"id":str, "type":str, "desc":str, "endpoint":str, "rf":str},
   "stop": {"id":str, "endpoint":str},
-  "logs": {"id":str, "endpoint":str},
+  "logs": {"id":str, "type":str, "endpoint":str},
   "list": {"endpoint":str},
   "health": {"id":str, "endpoint":str}
 
@@ -19,12 +22,15 @@ planner: |
 
   The parameter "id" should be the same for a given component, and each test component must have a different id
 
-  The parameter "type" is the component type. Each component has a type, supplied to start, which determines what component is run.
-  This type should be onr of the test component types mentioned above
+  The parameter "type" is the component type. Each component has a type, which is required for certain actions, such as start and logs
+  This type should be one of the test component types mentioned above: jammer, sniffer, rtue, or uu_agent
+
+  the parameter "rf" should be string of either "b200" or "zmq", depending on the users request.
 
   The parameter "desc" for the start action is an english description of reasonable length that 
   describes to a skilled operator how to configure the component. The operator should be given information like the frequency or
-  other useful information for getting the component to work as the user request states
+  other useful information for getting the component to work as the user request states. DO NOT copy the example description directly. 
+  include information on the rf, which is required for the skilled operator
 
   ### CRITICAL RULES:
   1. Your entire response **MUST** be a single, valid **JSON object**.
@@ -46,12 +52,24 @@ planner: |
   ### Response from you:
   ```json
   [
-    {"id": "rtue_uhd_1", "type": "rtue", "desc": "Run this UE at band 78 frequencies with UHD and mostly default values", "endpoint":"start"},
+    {"id": "rtue_uhd_1", "type": "rtue", "desc": "Run this UE at band 78 frequencies with UHD and mostly default values", "endpoint":"start", "rf": "b200"},
     {"id": "sniffer_uhd_1", "type": "sniffer", "desc": "Run this sniffer at band 78 frequencies with UHD and mostly default values", "endpoint":"start"},
     {"endpoint": "list"},
     {"id": "rtue_uhd_1", "endpoint": "health"},
     {"id": "sniffer_uhd_1", "endpoint": "health"},
-    {"id": "sniffer_uhd_1", "endpoint": "logs"}
+    {"id": "sniffer_uhd_1", "type": "sniffer", endpoint": "logs"},
+    {"id": "rtue_uhd_1", "type": "rtue", endpoint": "logs"}
+  ]
+  ```
+
+  ### User request: Make me a UE with a ZMQ RF and mostly default parameters
+
+  ### Response from you:
+  ```json
+  [
+    {"id": "rtue_zmq_1", "type": "rtue", "desc": "Run this UE with ZMQ as the RF", "endpoint":"start", "rf": "zmq"},
+    {"endpoint": "list"},
+    {"id": "rtue_zmq_1", "endpoint": "health"},
   ]
   ```
 
@@ -132,10 +150,7 @@ sniffer: |
 
 
 rtue: |
-  ### Example Request:
-  configure an RTUE with default parameters
-
-  ### Example output:
+  ### Example response structure:
   ```json
   {
     "id": "String, Example: rtue_testing_001",
@@ -145,8 +160,8 @@ rtue: |
     "rf_srate": "Float, Must be a standard 5G sample rate (e.g., 15.36e6, 23.04e6)",
     "rf_nof_antennas": "Default: 1",
     "rf_device_name": "String, (e.g. uhd, zmq, file) Default: 'uhd'",
-    "rf_device_args": "String, (standard UHD or ZMQ arguments depending on rf_device_name) Default: 'clock=internal'",
-    "rf_time_adv_nsamples": "Integer, number of samples to offset in RF, Default: 300",
+    "rf_device_args": "String, (standard UHD or ZMQ arguments depending on rf_device_name)",
+    "rf_time_adv_nsamples": "Optional String or Integer, number of samples to offset in RF, ZMQ: auto UHD: 300",
     "rat_eutra_dl_earfcn": "Integer, Default for a common test band: 2850",
     "rat_eutra_nof_carriers": "Integer, Default: 0 (Disables E-UTRA)",
     "rat_nr_bands": "Integer, An integer signifying the number of bands, Default: 3",
@@ -177,9 +192,162 @@ rtue: |
     "general_metrics_influxdb_token": "String, Always put: 605bc59413b7d5457d181ccf20f9fda15693f81b068d70396cc183081b264f3b",
     "general_metrics_influxdb_bucket": "String, Always put: rtusystem",
     "general_metrics_period_secs": "float, Always put: 0.5",
-    "general_ue_data_identifier": "string, Always put: generic_zmq"
+    "general_ue_data_identifier": "string, put something that matches the request"
   }
   ```
 
+  ### Example Request:
+  Make me a basic UE with a UHD RF. Add the argument clock=external to the rf arguments
+  Use the following id: rtue_testing_001
+
+  ### Example Response
+  ```json
+  {
+    "id": "rtue_testing_001",
+    "rf_freq_offset": 0,
+    "rf_tx_gain": 50,
+    "rf_rx_gain": 40,
+    "rf_srate": 23.04e6,
+    "rf_nof_antennas": 1,
+    "rf_device_name": "uhd",
+    "rf_device_args": "clock=external",
+    "rf_time_adv_nsamples": 300,
+    "rat_eutra_dl_earfcn": 2850,
+    "rat_eutra_nof_carriers": 0,
+    "rat_nr_bands": 3,
+    "rat_nr_nof_carriers": 1,
+    "rat_nr_max_nof_prb": 106,
+    "rat_nr_nof_prb": 106,
+    "pcap_enable": "none",
+    "pcap_mac_filename": "/tmp/ue_mac.pcap",
+    "pcap_mac_nr_filename": "/tmp/ue_mac_nr.pcap",
+    "pcap_nas_filename": "/tmp/ue_nas.pcap",
+    "usim_mode": "soft",
+    "usim_algo": "milenage",
+    "usim_opc": "63BFA50EE6523365FF14C1F45F88737D",
+    "usim_k": "00112233445566778899aabbccddeeff",
+    "usim_imsi": "001010123456789",
+    "usim_imei": "353490069873319",
+    "rrc_release": 15,
+    "rrc_ue_category": 4,
+    "nas_apn": "srsapn",
+    "nas_apn_protocol": "ipv4",
+    "gui_enable": false,
+    "gw_ip_devname": "tun_rtue",
+    "gw_ip_netmask": "255.255.255.0",
+    "general_metrics_influxdb_enable": true,
+    "general_metrics_influxdb_url": "influxdb",
+    "general_metrics_influxdb_port": 8086,
+    "general_metrics_influxdb_org": "rtu",
+    "general_metrics_influxdb_token": "605bc59413b7d5457d181ccf20f9fda15693f81b068d70396cc183081b264f3b",
+    "general_metrics_influxdb_bucket": "rtusystem",
+    "general_metrics_period_secs": 0.5,
+    "general_ue_data_identifier": "rtue_uhd_1"
+  }
+  ```
+
+  ### Example Request:
+  Make me a basic UE that uses ZMQ as the RF.
+  Use the following id: rtue_zmq_001
+
+  ### Example Response
+  ```json
+  {
+    "id": "rtue_zmq_001",
+    "rf_freq_offset": 0,
+    "rf_tx_gain": 50,
+    "rf_rx_gain": 40,
+    "rf_srate": 23.04e6,
+    "rf_nof_antennas": 1,
+    "rf_device_name": "zmq",
+    "rf_device_args": "tx_port=tcp://172.22.0.2:2001,rx_port=tcp://172.22.0.1:2000,base_srate=23.04e6",
+    "rat_eutra_dl_earfcn": 2850,
+    "rat_eutra_nof_carriers": 0,
+    "rat_nr_bands": 3,
+    "rat_nr_nof_carriers": 1,
+    "rat_nr_max_nof_prb": 106,
+    "rat_nr_nof_prb": 106,
+    "pcap_enable": "none",
+    "pcap_mac_filename": "/tmp/ue_mac.pcap",
+    "pcap_mac_nr_filename": "/tmp/ue_mac_nr.pcap",
+    "pcap_nas_filename": "/tmp/ue_nas.pcap",
+    "usim_mode": "soft",
+    "usim_algo": "milenage",
+    "usim_opc": "63BFA50EE6523365FF14C1F45F88737D",
+    "usim_k": "00112233445566778899aabbccddeeff",
+    "usim_imsi": "001010123456789",
+    "usim_imei": "353490069873319",
+    "rrc_release": 15,
+    "rrc_ue_category": 4,
+    "nas_apn": "srsapn",
+    "nas_apn_protocol": "ipv4",
+    "gui_enable": false,
+    "gw_ip_devname": "tun_rtue",
+    "gw_ip_netmask": "255.255.255.0",
+    "general_metrics_influxdb_enable": true,
+    "general_metrics_influxdb_url": "influxdb",
+    "general_metrics_influxdb_port": 8086,
+    "general_metrics_influxdb_org": "rtu",
+    "general_metrics_influxdb_token": "605bc59413b7d5457d181ccf20f9fda15693f81b068d70396cc183081b264f3b",
+    "general_metrics_influxdb_bucket": "rtusystem",
+    "general_metrics_period_secs": 0.5,
+    "general_ue_data_identifier": "generic_zmq"
+  }
+  ```
+
+
+uu_agent: |
+  ### Example response structure:
+  ```json
+  {
+    "id": "String, Example: uuagent_collection_001",
+    "rf_type": "String, either 'uhd' or 'zmq', Default: 'uhd'",
+    "rf_rx_freq": "Float, receive frequency in Hz (use scientific notation, e.g., 1.84e9)",
+    "rf_srate": "Float, sample rate in Hz (standard rates: 15.36e6, 23.04e6, 30.72e6)",
+    "rf_rx_gain": "Integer, receiver gain in dB (0-90), Default: 40",
+    "rf_tx_gain": "Integer, transmitter gain in dB (0-90), Default: 0 (collection-only)",
+    "rf_num_samples": "Integer, number of samples to collect (>0, ≤1,000,000,000), Default: 100000000",
+    "rf_iq_file": "String, output file path (must start with '/output/'), Default: '/output/iq_data.fc32'",
+    "rf_device_args": "String, hardware-specific arguments, Default: 'type=b200,clock=external'"
+  }
+  ```
+
+  ### Example Request:
+  Configure UU-Agent to collect RF signals at 1.84 GHz using B200 hardware for 5 seconds
+
+  ### Example Response
+  ```json
+  {
+    "id": "uuagent_collection_001",
+    "rf_type": "uhd",
+    "rf_rx_freq": 1.84e9,
+    "rf_srate": 23.04e6,
+    "rf_rx_gain": 40,
+    "rf_tx_gain": 0,
+    "rf_num_samples": 30,
+    "rf_iq_file": "/output/rf_signals_1840mhz.fc32",
+    "rf_device_args": "type=b200,clock=external"
+  }
+  ```
+
+  ### Example Request:
+  Make a basic UU-Agent that uses ZMQ for RF collection at 2.4 GHz
+
+  ### Example Response
+  ```json
+  {
+    "id": "uuagent_zmq_001",
+    "rf_type": "zmq",
+    "rf_rx_freq": 2.4e9,
+    "rf_srate": 23.04e6,
+    "rf_rx_gain": 40,
+    "rf_tx_gain": 0,
+    "rf_num_samples": 20,
+    "rf_iq_file": "/output/zmq_samples.fc32",
+    "rf_device_args": "tx_port=tcp://172.22.0.2:2001,rx_port=tcp://172.22.0.1:2000,base_srate=23.04e6"
+  }
+  ```
+
+
 user_prompt: |
-  Run a basic rtue with default configuration
+  Run a basic rtue with default configuration, use ZMQ as the rf. Run health and list actions 10 times each to verify it is alive. Run only ONE UE. Do not stop the UE at the end

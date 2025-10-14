@@ -27,17 +27,16 @@ class Validator:
         return None
 
     def _validate_schema(self, parsed_json):
-        if required_keys:
-            for key in required_keys:
-                if key not in parsed_json.keys():
-                    self.errors.append(f"Missing required key: '{key}'")
-                    return False
+        for key in self.required_keys:
+            if key not in parsed_json.keys():
+                self.errors.append(f"Missing required key: '{key}'")
+                return False
 
         for key, value in parsed_json.items():
-            if key not in schema:
+            if key not in self.schema.keys():
                 self.errors.append(f"Unknown key provided in response: '{key}'")
                 continue
-            expected_type = schema[key]
+            expected_type = self.schema.get(key)
             if not isinstance(value, expected_type):
                 self.errors.append(f"Invalid type for key '{key}': expected {expected_type}, but got {type(value)}")
                 return False

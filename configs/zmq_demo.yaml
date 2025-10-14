@@ -4,3 +4,5 @@ processes:
     config_file: "configs/zmq/ue_zmq_docker.conf"
     rf:
       type: "zmq"
+      tcp_subnet: 172.25.0.0/25
+      gateway: 172.25.0.1

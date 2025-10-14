@@ -1,8 +1,13 @@
 from llm_wrapper import LLMWrapper
 from config import Config
+import logging
 
-class Planner(LLMWrapper):
-    def generate_plan(self):
+class Planner:
+    def __init__(self, llm_ref: LLMWrapper):
+        self.llm_ref = llm_ref
+        self.errors = []
+
+    def generate_plan(self, errors=[]):
         planner_prompt = Config.options.get("planner", None)
         if not planner_prompt:
             self.errors.append("No planner prompt in config")
@@ -15,7 +20,12 @@ class Planner(LLMWrapper):
 
         combined_prompt = f"{planner_prompt}\n\n# USER REQUEST: {user_prompt}"
 
-        model_response = self._generate_response(combined_prompt)
+        if errors:
+            combined_prompt = f"{combined_prompt}\n\nENCOUNTERED ERRORS{', '.join(errors)}"
+
+        logging.info(f"PROMPT TO PLANNER:\n\n {combined_prompt}\n\n")
+
+        model_response = self.llm_ref._generate_response(combined_prompt)
         if self.errors:
             return False, self.errors
 

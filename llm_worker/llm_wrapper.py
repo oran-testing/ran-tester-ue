@@ -11,7 +11,6 @@ class LLMWrapper:
     def __init__(self):
         self.model = AutoModelForCausalLM.from_pretrained(Config.model_str, torch_dtype=torch.bfloat16, device_map="auto")
         self.tokenizer = AutoTokenizer.from_pretrained(Config.model_str)
-        self.errors = []
 
     def _generate_response(self, prompt: str) -> str:
         messages = [{"role": "user", "content": prompt}]

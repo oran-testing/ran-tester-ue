@@ -1,11 +1,13 @@
 import configparser
+import logging
 from io import StringIO
+import re
 
 from validator import Validator
 
 class RTUEValidator(Validator):
     def __init__(self):
-        super()._init__()
+        super().__init__()
 
         self.required_keys = [
             'id', 'rf_srate', 'rf_tx_gain', 'rf_rx_gain', 'rat_nr_bands',
@@ -15,7 +17,7 @@ class RTUEValidator(Validator):
         self.schema = {
             "id": str, "rf_freq_offset": int, "rf_tx_gain": int, "rf_rx_gain": int,
             "rf_srate": (float, int), "rf_nof_antennas": int, "rf_device_name": str,
-            "rf_device_args": str, "rf_time_adv_nsamples": int, "rat_eutra_dl_earfcn": int,
+            "rf_device_args": str, "rat_eutra_dl_earfcn": int,
             "rat_eutra_nof_carriers": int, "rat_nr_bands": int, "rat_nr_nof_carriers": int,
             "rat_nr_max_nof_prb": int, "rat_nr_nof_prb": int, "pcap_enable": str,
             "pcap_mac_filename": str, "pcap_mac_nr_filename": str, "pcap_nas_filename": str,
@@ -51,6 +53,35 @@ class RTUEValidator(Validator):
             config.write(output)
             return output.getvalue()
 
+    def _parse_rf_args(self, args: str) -> dict:
+        result = {}
+        for part in args.split(','):
+            if '=' not in part:
+                continue
+            key, value = part.split('=', 1)
+            result[key.strip()] = value.strip()
+        return result
+
+    def _validate_uhd_args(self, args: str):
+        parsed = self._parse_rf_args(args)
+
+        if 'addr' not in parsed:
+            self.errors.append("Missing 'addr' in UHD args.")
+
+    def _validate_zmq_args(self, args: str):
+        parsed = self._parse_rf_args(args)
+
+        if 'tx_port' not in parsed:
+            self.errors.append("Missing 'tx_port' in ZMQ args.")
+
+        if 'rx_port' not in parsed:
+            self.errors.append("Missing 'rx_port' in ZMQ args.")
+
+        for port in ['tx_port', 'rx_port']:
+            if port in parsed:
+                if not re.match(r'^tcp://[\d\.]+:\d+$', parsed[port]):
+                    self.errors.append(f"Invalid format for {port}: {parsed[port]}")
+
     def validate(self, raw_str):
         raw_str = raw_str.strip()
         json_obj = self._extract_json(raw_str)
@@ -58,8 +89,18 @@ class RTUEValidator(Validator):
             return False, self.errors
         component_id = json_obj.get("id")
 
+        logging.info(f"EXEC JSON: {json_obj}")
+
         if not self._validate_schema(json_obj):
             return False, self.errors
+
+        rf_type = json_obj.get("rf_device_name")
+        if rf_type == "uhd":
+            self._validate_uhd_args(json_obj.get("rf_device_args"))
+        elif rf_type == "zmq":
+            self._validate_zmq_args(json_obj.get("rf_device_args"))
+        else:
+            self.errors.append(f"Unknown rf_device_name {rf_type}. Valid options are uhd, zmq")
 
         srate = json_obj.get("rf_srate")
         if isinstance(srate, (int, float)) and srate <= 0:
