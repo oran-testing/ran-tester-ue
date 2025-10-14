@@ -1,0 +1,6 @@
+processes:
+  - type: "ofh_attacker"
+    id: "ofh_attacker_1"
+    config_file: "configs/ofh/ofh.toml"
+    rf:
+      type: none

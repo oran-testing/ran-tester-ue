@@ -22,6 +22,7 @@ from sniffer_worker_thread import sniffer
 from decoder_worker_thread import decoder
 from llm_worker_thread import llm_worker
 from rach_worker_thread import rach_agent
+from ofh_worker_thread import ofh_attacker
 from uu_agent_worker_thread import uu_agent
 
 from influxdb_client import InfluxDBClient, WriteApi
