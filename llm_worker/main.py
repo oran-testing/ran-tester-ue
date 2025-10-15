@@ -75,18 +75,19 @@ def configure():
 
     return control_ip, control_port, control_token
 
-def run_plan_loop(planner, plan_validator, logger=None, trial_id=None):  # <-- signature extended
+def run_plan_loop(planner, plan_validator, logger=None, trial_id=None):  # logger
     is_successful, is_valid_plan = False, False
     plan_attempt = 0
-
     errors = []
+    token_acc = {}
     while (not is_valid_plan or not is_successful) and plan_attempt <= Config.options.get("nof_plan_attempts", 10):
         raw_plan = ""
         plan_attempt += 1
+        call_type = "validation" if errors else "initial"
         if errors:
-            is_successful, raw_plan = planner.generate_plan(errors=errors)
+            is_successful, raw_plan = planner.generate_plan(errors=errors, call_type=call_type, token_acc=token_acc)
         else:
-            is_successful, raw_plan = planner.generate_plan()
+            is_successful, raw_plan = planner.generate_plan(call_type=call_type, token_acc=token_acc)
 
         # Logger: log raw planner output
         if logger and trial_id:
@@ -155,17 +156,18 @@ def run_exec_loop(executor, current_validator, plan_item, logger=None, trial_id=
     is_successful, is_valid_plan = False, False
     exec_attempt = 0
     errors = []
+    token_acc = {}
     execution_log = open(os.path.join(Config.results_dir, f"execution_log.txt"), "a")
-
     execution_log.write(f"Running execution loop for:\n{json.dumps(plan_item, indent=2)}")
 
     while (not is_valid_plan or not is_successful) and exec_attempt <= Config.options.get("nof_exec_attempts", 10):
         raw_exec = ""
         exec_attempt += 1
+        call_type = "validation" if errors else "initial"
         if errors:
-            is_successful, raw_exec = executor.execute(plan_item, errors=errors)
+            is_successful, raw_exec = executor.execute(plan_item, errors=errors, call_type=call_type, token_acc=token_acc)
         else:
-            is_successful, raw_exec = executor.execute(plan_item)
+            is_successful, raw_exec = executor.execute(plan_item, call_type=call_type, token_acc=token_acc)
 
         # Logger: log executor raw output
         if logger and trial_id:

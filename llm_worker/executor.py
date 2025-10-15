@@ -7,7 +7,7 @@ class Executor:
         self.llm_ref = llm_ref
         self.errors = []
 
-    def execute(self, plan_json, errors=[]):
+    def execute(self, plan_json, errors=[], call_type="initial", token_acc=None):
         for val in ["type", "endpoint", "desc", "id"]:
             if val not in plan_json.keys():
                 self.errors.append(f"Planner JSON does not have field {val}")
@@ -35,7 +35,7 @@ class Executor:
         if errors:
             combined_prompt = f"{combined_prompt}\nERRORS ENCOUNTERED: {errors}"
 
-        model_response = self.llm_ref._generate_response(combined_prompt)
+        model_response = self.llm_ref._generate_response(combined_prompt, phase="executor", call_type=call_type, token_acc=token_acc)
 
         if self.errors:
             return False, self.errors
