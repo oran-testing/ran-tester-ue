@@ -53,7 +53,7 @@ services:
      - system
 
   grafana:
-     image: rtu/grafana
+     image: ghcr.io/oran-testing/grafana
      build:
        context: grafana
      volumes:
