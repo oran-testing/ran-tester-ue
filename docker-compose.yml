@@ -128,24 +128,7 @@ services:
     profiles:
       - components
 
-  llm_worker:
-    image: ghcr.io/oran-testing/llm_worker
-    env_file:
-      - .env
-    build:
-      context: ./llm_worker/
-      dockerfile: Dockerfile.alpine
-    ports:
-      - "8000:8000"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    profiles:
-      - components
+
 
   ofh_attacker:
     image: ghcr.io/oran-testing/ofh
