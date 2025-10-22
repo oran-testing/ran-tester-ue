@@ -144,11 +144,6 @@ def start_subprocess_threads():
                 if not found_dep:
                     raise RuntimeError(f"Did not find dependent process '{dependency}' for '{process_config['id']}'")
 
-        if "sleep_ms" in process_config.keys():
-            logging.debug(f"Sleeping for {process_config['sleep_ms']}")
-            sleep_time = float(process_config["sleep_ms"])/1000.0
-            time.sleep(sleep_time)
-
         permissions = []
         if "permissions" in process_config.keys():
             permissions = process_config["permissions"]
@@ -172,8 +167,12 @@ def start_subprocess_threads():
             'handle': process_handle,
             'token': {process_token: permissions}
         })
-
         process_handle.start()
+
+        if "sleep_ms" in process_config.keys():
+            logging.debug(f"Sleeping for {process_config['sleep_ms']}")
+            sleep_time = float(process_config["sleep_ms"])/1000.0
+            time.sleep(sleep_time)
 
     for obj in process_metadata:
         logging.debug(f"{obj['id']} {obj['token']}")
