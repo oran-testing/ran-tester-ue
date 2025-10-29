@@ -15,14 +15,14 @@ ru_sdr:
   device_driver: uhd
   device_args: type=b200,serial=32C751C
   clock: external
-  srate: 23.04
-  tx_gain: 80
-  rx_gain: 40
+  srate: 11.52
+  tx_gain: 50
+  rx_gain: 20
 
 cell_cfg:
   dl_arfcn: 368500
   band: 3
-  channel_bandwidth_MHz: 20
+  channel_bandwidth_MHz: 10
   common_scs: 15
   plmn: "00101"
   tac: 7

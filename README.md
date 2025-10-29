@@ -35,14 +35,15 @@ sudo ./scripts/system_setup.sh
 ***Now, pull the necessary containers from our registry:***
 
 ```bash
-sudo docker compose --profile components pull  # rtUE, Jammer, Uu agent, and Sniffer
-sudo docker compose --profile system pull      # Grafana, InfluxDB, and Controller
+sudo docker compose --profile components pull  # Pulls all attack components
+sudo docker compose --profile system pull      # Pulls Grafana, InfluxDB, and Controller
 ```
 
 Alternatively, you can build the images yourself:
 
 ```bash
-sudo docker compose build
+sudo docker compose --profile components build  # Builds all attack components
+sudo docker compose --profile system build      # Builds Grafana, InfluxDB, and Controller
 ```
 
 The environment is defined in the controller config (`ran-tester-ue/configs`):

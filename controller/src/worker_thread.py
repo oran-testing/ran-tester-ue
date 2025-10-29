@@ -61,8 +61,6 @@ class WorkerThread:
         self.config.rf_config = process_config["rf"]
         if self.config.rf_config["type"] == "b200":
             self.config.rf_type = RfType.B200
-            if "images_dir" not in self.config.rf_config:
-                raise RuntimeError(f"Error parsing rf configuration of {self.config.container_id}: RF type b200 requires images_dir")
         elif self.config.rf_config["type"] == "zmq":
             self.config.rf_type = RfType.ZMQ
             if "tcp_subnet" not in self.config.rf_config:
@@ -101,22 +99,20 @@ class WorkerThread:
         self.config.container_volumes["/tmp"] = {"bind":"/tmp", "mode": "rw"}
         if self.config.rf_type == RfType.B200:
             self.config.container_volumes["/dev/bus/usb/"] = {"bind": "/dev/bus/usb/", "mode": "rw"}
-            if "images_dir" not in self.config.rf_config.keys():
-                raise RuntimeError("images_dir is required for UHD RF")
-            if type(self.config.rf_config["images_dir"]) != str:
-                raise RuntimeError("images_dir must be a string")
-            self.config.container_volumes[self.config.rf_config["images_dir"]] = {"bind": self.config.rf_config["images_dir"], "mode": "ro"}
+            images_dir = os.path.join(os.getenv("DOCKER_SYSTEM_DIRECTORY"), ".uhd_images")
+            images_dir_local = "/host/.uhd_images"
+            self.config.container_volumes["/usr/local/share/uhd"] = {"bind": images_dir, "mode": "ro"}
 
-            firmware_file = os.path.join(self.config.rf_config["images_dir"], "usrp_b200_fw.hex")
-            image_file = os.path.join(self.config.rf_config["images_dir"], "usrp_b200_fpga.bin")
+            firmware_file = os.path.join(images_dir_local, "usrp_b200_fw.hex")
+            image_file = os.path.join(images_dir_local, "usrp_b200_fpga.bin")
             logging.debug(f"Checking for {firmware_file} and {image_file}")
             if not os.path.exists(firmware_file) or not os.path.exists(image_file):
-                raise RuntimeError(f"Required images for {self.config.rf_config['type']} missing in {self.config.rf_config['images_dir']}: run uhd_images_downloader")
+                raise RuntimeError(f"Required images for {self.config.rf_config['type']} missing in {images_dir}: run scripts/system_setup.sh")
 
     def setup_env(self):
         self.config.container_env["ARGS"] = " ".join(self.config.cli_args)
         if self.config.rf_type == RfType.B200:
-            self.config.container_env["UHD_IMAGES_DIR"] = self.config.rf_config["images_dir"]
+            self.config.container_env["UHD_IMAGES_DIR"] = "/usr/local/share/uhd"
 
     def setup_networks(self):
         self.config.container_networks.append(self.config.docker_client.networks.get("rt_metrics"))

@@ -16,8 +16,8 @@ ru_sdr:
   device_args: type=b200,serial=32C751C
   clock: external
   srate: 23.04
-  tx_gain: 80
-  rx_gain: 40
+  tx_gain: 78
+  rx_gain: 20
 
 cell_cfg:
   dl_arfcn: 368500
@@ -49,3 +49,4 @@ pcap:
   mac_filename: /tmp/gnb_mac.pcap
   ngap_enable: enable
   ngap_filename: /tmp/gnb_ngap.pcap
+
