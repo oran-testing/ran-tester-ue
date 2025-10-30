@@ -17,7 +17,6 @@ class LLMWrapper:
         self.model = Config.model_str
         logging.info(f"Initialized OpenAI client with model: {self.model}")
 
-
     def _generate_response(self, prompt: str) -> str:
         try:
             kwargs = {
@@ -42,4 +41,3 @@ class LLMWrapper:
 
     def _generate_response_with_sampling(self, prompt: str) -> str:
         return self._generate_response(prompt)
-

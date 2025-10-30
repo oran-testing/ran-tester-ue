@@ -6,7 +6,7 @@ class Planner:
         self.llm_ref = llm_ref
         self.errors = []
 
-    def generate_plan(self, errors=[]):
+    def generate_plan(self, errors=[], call_type="initial", token_acc=None):
         planner_prompt = Config.options.get("planner", None)
         if not planner_prompt:
             self.errors.append("No planner prompt in config")
@@ -22,7 +22,7 @@ class Planner:
         if errors:
             combined_prompt = f"{combined_prompt}\n\nENCOUNTERED ERRORS{', '.join(errors)}"
 
-        model_response = self.llm_ref._generate_response(combined_prompt)
+        model_response = self.llm_ref._generate_response(combined_prompt, phase="planner", call_type=call_type, token_acc=token_acc)
         if self.errors:
             return False, self.errors
 
