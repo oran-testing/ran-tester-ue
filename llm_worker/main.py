@@ -1,6 +1,6 @@
 import time
 import json
-import torch
+# import torch
 import yaml
 import logging
 import os
@@ -27,8 +27,8 @@ from experiment_logger import ExperimentLogger
 def configure():
     if os.geteuid() != 0:
         raise RuntimeError("The LLM worker must be run as root.")
-    if not torch.cuda.is_available():
-        raise RuntimeError("No available GPU in the LLM container")
+    # if not torch.cuda.is_available():
+    #     raise RuntimeError("No available GPU in the LLM container")
     control_ip = os.getenv("CONTROL_IP")
     if not control_ip:
         raise RuntimeError("CONTROL_IP is not set in environment")
@@ -46,7 +46,11 @@ def configure():
     results_dir = os.getenv("RESULTS_DIR")
     if not results_dir:
         raise RuntimeError("RESULTS_DIR is not set in environment")
-
+    
+    api_key = os.getenv("OPENAI_API_KEY") or Config.options.get("api_key")
+    if not api_key:
+        raise RuntimeError("OPENAI API KEY is not set in environment")
+        
     Config.results_dir = os.path.join(f"/host/logs/", results_dir)
     os.makedirs(Config.results_dir, exist_ok=True)
 
@@ -75,7 +79,7 @@ def configure():
 
     return control_ip, control_port, control_token
 
-def run_plan_loop(planner, plan_validator, logger=None, trial_id=None):  # <-- signature extended
+def run_plan_loop(planner, plan_validator, logger=None, trial_id=None): 
     is_successful, is_valid_plan = False, False
     plan_attempt = 0
 
@@ -88,20 +92,18 @@ def run_plan_loop(planner, plan_validator, logger=None, trial_id=None):  # <-- s
         else:
             is_successful, raw_plan = planner.generate_plan()
 
-        # Logger: log raw planner output
-        if logger and trial_id:
-            logger.log_planner_attempt(
-                trial_id=trial_id,
-                attempt=plan_attempt,
-                input_errors=(errors or []),
-                raw_output=raw_plan,
-                is_successful=is_successful,
-                is_valid=None,
-                validator_errors=None
-            )
-
         if not is_successful:
             logging.error(f"Encountered errors in plan generation: {raw_plan}")
+            if logger and trial_id:
+                logger.log_planner_attempt(
+                    trial_id=trial_id,
+                    attempt=plan_attempt,
+                    input_errors=(errors or []),
+                    raw_output=raw_plan,
+                    is_successful=False,
+                    is_valid=None,
+                    validator_errors=None
+                )
             continue
 
         is_valid_plan, val_res = plan_validator.validate(raw_plan)
@@ -167,21 +169,20 @@ def run_exec_loop(executor, current_validator, plan_item, logger=None, trial_id=
         else:
             is_successful, raw_exec = executor.execute(plan_item)
 
-        # Logger: log executor raw output
-        if logger and trial_id:
-            logger.log_executor_attempt(
-                trial_id=trial_id,
-                plan_item=plan_item,
-                attempt=exec_attempt,
-                input_errors=(errors or []),
-                raw_output=raw_exec,
-                is_successful=is_successful,
-                is_valid=None,
-                validator_errors=None
-            )
-
         if not is_successful:
             execution_log.write(f"\tEncountered errors in execution: {raw_exec}\n")
+            # Log failed LLM call
+            if logger and trial_id:
+                logger.log_executor_attempt(
+                    trial_id=trial_id,
+                    plan_item=plan_item,
+                    attempt=exec_attempt,
+                    input_errors=(errors or []),
+                    raw_output=raw_exec,
+                    is_successful=False,
+                    is_valid=None,
+                    validator_errors=None
+                )
             continue
 
         is_valid_plan, val_res = current_validator.validate(raw_exec)
@@ -220,7 +221,7 @@ def run_exec_loop(executor, current_validator, plan_item, logger=None, trial_id=
 
         sys.exit(0)
 
-    execution_log.write(f"Created valid exec JSON:\n{json.dumps(val_res, indent=2)}\n\n\n")
+    execution_log.write(f"Created valid exec JSON:\n{json.dumps(val_res, indent=10)}\n\n\n")
     execution_log.close()
 
     # Logger: update executor metadata
@@ -251,7 +252,7 @@ if __name__ == '__main__':
     api = ApiInterface(*api_args)
     kb = KnowledgeAugmentor()
 
-    # Logger: experiment logger and per-run trial dir (no behavior change to core flow)
+    # Logger: experiment logger and per-run trial dir
     logger = ExperimentLogger(Config.results_dir)
     trial_id = logger.new_trial(Config.options.get("user_prompt", ""))
 

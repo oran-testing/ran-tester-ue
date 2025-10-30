@@ -22,8 +22,10 @@ class llm_worker(WorkerThread):
             "CONTROL_PORT": os.getenv("DOCKER_CONTROLLER_API_PORT"),
             "CONTROL_TOKEN": self.access_token,
             "RESULTS_DIR": results_dir,
-            "NVIDIA_VISIBLE_DEVICES": "all",
-            "NVIDIA_DRIVER_CAPABILITIES": "all"
+            # "NVIDIA_VISIBLE_DEVICES": "all",
+            # "NVIDIA_DRIVER_CAPABILITIES": "all"
+            "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY")
+
         }
         self.setup_env()
         self.setup_networks()
@@ -34,13 +36,13 @@ class llm_worker(WorkerThread):
         self.config.container_volumes["/tmp/.rt_results"] = {"bind": "/host/logs/", "mode": "rw"}
         self.setup_volumes()
 
-        self.config.device_requests.append(
-            DeviceRequest(
-                count=-1,
-                capabilities=[["gpu"]],
-                driver="nvidia"
-            )
-        )
+        # self.config.device_requests.append(
+        #     DeviceRequest(
+        #         count=-1,
+        #         capabilities=[["gpu"]],
+        #         driver="nvidia"
+        #     )
+        # )
 
         self.start_container()
 

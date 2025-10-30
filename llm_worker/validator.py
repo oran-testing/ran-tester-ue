@@ -15,14 +15,27 @@ class Validator:
         raise RuntimeError("validate(self) must be implemented by derived class")
 
     def _extract_json(self, raw_str):
-        fenced_blocks = re.findall(r"```(?:json)?\n([\s\S]*?)```", raw_str)
+        # find fenced code blocks (preferred format)
+        fenced_blocks = re.findall(r"```(?:json)?\s*\n([\s\S]*?)```", raw_str)
         for block in fenced_blocks:
             block = block.strip()
+            if not block:
+                continue
             try:
                 return json.loads(block)
             except json.JSONDecodeError as e:
-                self.errors.append(f"Invalid JSON object: {str(e)}")
-
+                logging.debug(f"Failed to parse fenced JSON block: {str(e)}")
+                continue  # Try next block if multiple exist
+        
+        # If no fenced blocks, try parsing the raw string directly
+        raw_str = raw_str.strip()
+        if raw_str:
+            try:
+                return json.loads(raw_str)
+            except json.JSONDecodeError as e:
+                logging.debug(f"Failed to parse raw JSON: {str(e)}")
+        
+        # If all parsing attempts failed, add error and return None
         self.errors.append("No valid JSON structure (array or object) could be parsed.")
         return None
 
