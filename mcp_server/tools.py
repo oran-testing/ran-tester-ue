@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 def create_list_components_tool(adapter):
     return Tool(
         name="list_components",
-        description="List all running RAN tester components",
+        description="List all currently running RAN tester components. Returns component ID, type, and config file path for each running component. Use this first to see what's already running before starting new components.",
         inputSchema={
             "type": "object",
             "properties": {},
@@ -343,8 +343,177 @@ async def handle_list_configs(adapter, arguments):
     )]
 
 
+def create_usage_guide_tool():
+    return Tool(
+        name="get_usage_guide",
+        description="""Get the complete usage guide for the RAN Tester UE MCP server.
+Call this tool FIRST to understand how to use all available tools, component types,
+configuration formats, validation rules, and example workflows.
+
+This is the primary reference for agents learning how to operate the RAN testing system.""",
+        inputSchema={
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    )
+
+
+async def handle_usage_guide(adapter, arguments):
+    guide = """# RAN Tester UE MCP Server - Usage Guide
+
+## Overview
+This MCP server controls a 5G RAN (Radio Access Network) testing system. You can start, stop, monitor, and validate test components that interact with real or simulated radio hardware.
+
+## Available Tools
+
+### 1. list_components
+Lists all currently running components. Use this first to see what's active.
+- No parameters required
+- Returns: Component ID, type, and config file path
+
+### 2. start_component
+Starts a new test component. Automatically validates and converts your JSON config.
+- **component_type**: One of: rtue, sniffer, sni5gect, jammer, ssb_spoofer, uuagent
+- **config_json**: JSON object with component configuration (must include "id" field)
+- **rf_config**: RF hardware config, e.g., {"type": "b200"}
+
+### 3. stop_component
+Stops a running component.
+- **component_id**: The ID of the component to stop
+
+### 4. get_component_logs
+Retrieves logs from a component.
+- **component_id**: Component ID
+- **component_type**: Component type (rtue, sniffer, etc.)
+
+### 5. get_component_health
+Checks if a component is running properly.
+- **component_id**: Component ID
+
+### 6. get_component_schema
+Gets the JSON schema showing required fields for a component type.
+- **component_type**: Component type
+- Use this BEFORE creating configs to understand what fields are needed
+
+### 7. validate_config
+Validates a config without starting the component. Shows the converted config format.
+- **component_type**: Component type
+- **config_json**: Configuration to validate
+- Use this to verify your config is correct before starting
+
+### 8. list_available_configs
+Lists existing configuration templates on the system.
+
+## Component Types
+
+| Type | Description | Output Format | Use Case |
+|------|-------------|---------------|----------|
+| rtue | RAN Tester UE | .conf (INI) | Simulates a 5G phone/device connecting to a network |
+| sniffer | Packet sniffer | .toml | Captures and analyzes 5G radio traffic |
+| sni5gect | Security testing | .yaml | Tests RAN security vulnerabilities |
+| jammer | Jamming simulation | .yaml | Simulates RF jamming attacks |
+| ssb_spoofer | SSB spoofing | .yaml | Spoofs synchronization signals |
+| uuagent | UU interface | .conf (INI) | UU interface agent for testing |
+
+## RF Hardware Types
+
+| Type | Description |
+|------|-------------|
+| b200 | USRP B200/B210 software-defined radio (real hardware) |
+| zmq | ZeroMQ for simulation/testing (no hardware needed) |
+| none | No RF hardware |
+
+**B200/B210 Device Limits:**
+- Max frequency: 6 GHz (cannot use FR2 bands)
+- Max sample rate: 61.44 MHz
+- Max bandwidth: ~56 MHz
+
+## Key 5G Concepts
+
+### Frequency Bands
+- n1: 2100 MHz (LTE/5G)
+- n3: 1800 MHz (LTE/5G)
+- n28: 700 MHz (5G)
+- n41: 2.5 GHz (5G)
+- n78: 3.5 GHz (5G - most common)
+- n79: 4.9 GHz (5G)
+
+### Frequency Ranges
+- FR1 (Sub-6GHz): 410 MHz to 7.125 GHz
+- FR2 (mmWave): 24.25 GHz to 52.6 GHz (requires specialized hardware, not B200)
+
+### Sample Rates vs Bandwidth
+| Sample Rate | Bandwidth | PRBs |
+|-------------|-----------|------|
+| 15.36 MHz | 10 MHz | 50 |
+| 23.04 MHz | 20 MHz | 106 |
+| 30.72 MHz | 20 MHz | 106 |
+| 61.44 MHz | 100 MHz | 273 |
+
+## Configuration Format Conversion
+You provide JSON, the server converts it automatically:
+- rtue/uuagent: JSON -> .conf (INI format with sections like [rf], [nas])
+- sniffer: JSON -> .toml (with [sniffer] and [[pdcch]] sections)
+- sni5gect/jammer/ssb_spoofer: JSON -> .yaml
+
+## Validation Rules
+
+### RTUE Required Fields
+- id, rf_srate, rf_tx_gain, rf_rx_gain, rat_nr_bands, rat_nr_nof_prb, usim_imsi, nas_apn
+- rf_tx_gain: 0-90
+- rf_rx_gain: 0-90
+- rf_srate: > 0
+- usim_imsi: exactly 15 digits
+
+### Sniffer Required Fields
+- id, file_path, sample_rate, frequency, nid_1, ssb_numerology
+- frequency: must be in FR1 (410e6-7.125e9) or FR2 (24.25e9-52.6e9)
+- ssb_numerology: 0-4
+- sample_rate: > 0
+
+### Jammer Required Fields
+- id, center_frequency, bandwidth, amplitude, sampling_freq, tx_gain, device_args
+- center_frequency: FR1 or FR2 range
+- amplitude: 0-1
+- tx_gain: 0-90
+- bandwidth: > 0
+- sampling_freq: >= 2 * bandwidth (Nyquist)
+
+## Example Workflows
+
+### Workflow: Start a UE and Sniffer
+1. Call get_component_schema for "rtue" to see required fields
+2. Call start_component with rtue config
+3. Call start_component with sniffer config
+4. Call list_components to verify both running
+5. Call get_component_logs to check operation
+
+### Workflow: Run Security Test
+1. Call validate_config with your jammer config first
+2. Call start_component with jammer config
+3. Call get_component_health to verify running
+4. When done, call stop_component
+
+### Workflow: Debug a Component
+1. Call list_components to see what's running
+2. Call get_component_health for the problem component
+3. Call get_component_logs to see error messages
+4. Fix config based on errors and restart
+
+## Recommended Workflow
+1. ALWAYS call get_component_schema first to understand required fields
+2. Build your config JSON
+3. Call validate_config to verify it's correct
+4. Call start_component to launch it
+5. Call get_component_logs to monitor operation"""
+
+    return [TextContent(type="text", text=guide)]
+
+
 def create_tools(adapter):
     return [
+        create_usage_guide_tool(),
         create_list_components_tool(adapter),
         create_start_component_tool(adapter),
         create_stop_component_tool(adapter),
@@ -357,6 +526,7 @@ def create_tools(adapter):
 
 
 TOOL_HANDLERS = {
+    "get_usage_guide": handle_usage_guide,
     "list_components": handle_list_components,
     "start_component": handle_start_component,
     "stop_component": handle_stop_component,

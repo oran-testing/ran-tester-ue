@@ -66,11 +66,6 @@ async def read_resource(uri: str):
     raise ValueError(f"Unknown resource: {uri}")
 
 
-@server.on_ready
-async def on_ready():
-    logger.info("MCP Server started")
-    logger.info(f"Controller URL: {CONTROLLER_URL}")
-    logger.info(f"Configs directory: {CONFIGS_DIR}")
 
 
 async def main():

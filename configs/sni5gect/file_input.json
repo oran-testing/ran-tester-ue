@@ -1,0 +1,68 @@
+# File-based sniffer configuration for pdcch_1842MHz.fc32
+# Start via MCP: POST /start_from_json with this JSON
+
+{
+  "id": "sniffer_file_01",
+  "type": "sni5gect",
+  "component": "cueltschey/sni5gect-compact",
+  "config_json": {
+    "id": "sniffer_file_01",
+    "cell": {
+      "band": 3,
+      "nof_prb": 52,
+      "scs_common": 15,
+      "scs_ssb": 15,
+      "ssb_period_ms": 10,
+      "dl_arfcn": 368500,
+      "ssb_arfcn": 368500
+    },
+    "source": {
+      "source_type": "file",
+      "source_params": "/iq/pdcch_1842MHz.fc32"
+    },
+    "enable_recorder": false,
+    "pcap_folder": "logs/",
+    "rf": {
+      "sample_rate": 23.04e6,
+      "num_channels": 1,
+      "uplink_cfo": 0,
+      "downlink_cfo": 0,
+      "padding": {"front_padding": 0, "back_padding": 0},
+      "channels": [{
+        "rx_frequency": 1842.5e6,
+        "tx_frequency": 1842.5e6,
+        "rx_offset": 0,
+        "tx_offset": 3000,
+        "rx_gain": 40,
+        "tx_gain": 50,
+        "enable": true
+      }]
+    },
+    "workers": {
+      "pool_size": 24,
+      "n_ue_dl_worker": 4,
+      "n_ue_ul_worker": 4,
+      "n_gnb_dl_worker": 4,
+      "n_gnb_ul_worker": 4
+    },
+    "uetracker": {
+      "close_timeout": 5000,
+      "parse_messages": true,
+      "num_ues": 1,
+      "enable_gpu": false
+    },
+    "downlink_injector": {
+      "delay_n_slots": 5,
+      "duplications": 2,
+      "tx_cfo_correction": 0,
+      "tx_advancement": 160,
+      "pdsch_mcs": 3,
+      "pdsch_prbs": 24
+    },
+    "exploit": "build/modules/lib_dummy_exploit.so",
+    "log": {
+      "log_level": "INFO"
+    }
+  },
+  "rf": {"type": "none"}
+}

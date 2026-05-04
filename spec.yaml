@@ -1,5 +1,20 @@
 enable_cli: true
 
+api_auth:
+  - name: "mcp-server"
+    token: "default_changeme"
+    scopes:
+      - "start_from_json"
+      - "schemas/rtue"
+      - "schemas/sniffer"
+      - "schemas/jammer"
+      - "schemas/sni5gect"
+      - "components"
+      - "status"
+      - "stop"
+      - "logs"
+    allowed_components: ["rtue", "sniffer", "jammer", "sni5gect", "ssb_spoofer", "uuagent"]
+
 build_spec:
   - component: "cueltschey/sni5gect-compact"
     branch: "iq_file"

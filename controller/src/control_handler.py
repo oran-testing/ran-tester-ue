@@ -10,9 +10,9 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         is_valid_token = False
         permissions = []
         auth_header = self.headers.get("Authorization")
-        if not auth_header.startswith("Bearer "):
+        if not auth_header or not auth_header.startswith("Bearer "):
             return False, []
-        token = auth_header.removeprefix("Bearer").strip()
+        token = auth_header.removeprefix("Bearer ").strip()
         for api in Globals.api_auth:
             if api.get("token", "") == token:
                 if self.path[1:] in api.get("scopes", []):
@@ -310,7 +310,7 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         new_process_config = {
             "config_file": config_file,
             "name": payload["id"],
-            "component": component_type,
+            "component": payload.get("component", component_type),
             "rf": payload["rf"],
             "permissions": [],
         }

@@ -38,13 +38,13 @@ AI Agent (Claude Desktop, Cursor, etc.)
 
 ```bash
 # Start the full system including MCP server
-docker-compose up -d
+docker compose up -d
 
 # Or start only the MCP server (requires controller running)
-docker-compose up -d mcp-server
+docker compose up -d mcp-server
 
 # View logs
-docker-compose logs -f mcp-server
+docker compose logs -f mcp-server
 ```
 
 ### Environment Variables
@@ -59,9 +59,68 @@ MCP_CONTROLLER_TOKEN=testing_token
 MCP_LOG_LEVEL=INFO
 ```
 
-## Using with AI Agents
+## Using with Opencode (Recommended)
 
-### Claude Desktop
+Opencode uses `opencode.json` configuration files. Create one in your project root or at `~/.config/opencode/opencode.json`:
+
+**Project-level config** (`/home/charles/ran-tester-ue/opencode.json`):
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "ran_tester_ue": {
+      "type": "local",
+      "command": ["sudo", "docker", "compose", "-f", "/home/charles/ran-tester-ue/docker-compose.yml", "run", "--rm", "mcp-server"],
+      "environment": {
+        "MCP_CONTROLLER_TOKEN": "testing_token"
+      },
+      "enabled": true
+    }
+  }
+}
+```
+
+**Important:** The MCP server name in the config (`ran_tester_ue`) becomes the prefix for tool names. In opencode, the tools will be named:
+- `ran_tester_ue_list_components`
+- `ran_tester_ue_start_component`
+- `ran_tester_ue_stop_component`
+- etc.
+
+### How the Agent Discovers Tool Information
+
+When opencode starts, it:
+
+1. **Connects to the MCP server** using the command specified in `opencode.json`
+2. **Calls `list_tools()`** which returns all available tools with their descriptions and input schemas
+3. **The agent reads the tool descriptions** to understand what each tool does
+4. **The agent calls `get_usage_guide`** (first tool listed) which returns a comprehensive guide including:
+   - All available tools and their parameters
+   - Component types and their purposes
+   - RF hardware options
+   - 5G frequency bands and concepts
+   - Validation rules
+   - Example workflows
+
+This means **the agent self-documents** - it gets all the information it needs directly from the MCP server at startup, no external documentation required.
+
+### Using the Tools in Opencode
+
+Once configured, simply run `opencode` in the project directory. The agent will automatically have access to the MCP tools. You can prompt it:
+
+```
+use ran_tester_ue to list all running components
+```
+
+Or ask it to do something specific:
+
+```
+use ran_tester_ue to start a sniffer component at 3.5GHz with 20MHz bandwidth using zmq
+```
+
+The agent will automatically call `get_usage_guide` first to learn how to operate the system, then use the appropriate tools.
+
+### Using with Claude Desktop
 
 Add to your Claude Desktop configuration (`claude_desktop_config.json`):
 
@@ -73,7 +132,7 @@ Add to your Claude Desktop configuration (`claude_desktop_config.json`):
       "args": [
         "compose",
         "-f",
-        "/home/charles/ran-tester-ue/docker-compose.yml",
+        "$HOME/ran-tester-ue/docker-compose.yml",
         "run",
         "--rm",
         "mcp-server"
@@ -93,11 +152,11 @@ Alternatively, run the MCP server directly with Python:
   "mcpServers": {
     "ran-tester-ue": {
       "command": "python",
-      "args": ["/home/charles/ran-tester-ue/mcp_server/main.py"],
+      "args": ["$HOME/ran-tester-ue/mcp_server/main.py"],
       "env": {
         "CONTROLLER_URL": "http://localhost:1343",
         "CONTROLLER_TOKEN": "testing_token",
-        "CONFIGS_DIR": "/home/charles/ran-tester-ue/configs"
+        "CONFIGS_DIR": "$HOME/ran-tester-ue/configs"
       }
     }
   }
@@ -113,7 +172,7 @@ Add to Cursor MCP settings:
   "mcpServers": {
     "ran-tester-ue": {
       "command": "docker",
-      "args": ["compose", "-f", "/home/charles/ran-tester-ue/docker-compose.yml", "run", "--rm", "mcp-server"]
+      "args": ["compose", "-f", "$HOME/ran-tester-ue/docker-compose.yml", "run", "--rm", "mcp-server"]
     }
   }
 }
@@ -127,7 +186,7 @@ Add to Cursor MCP settings:
     "servers": {
       "ran-tester-ue": {
         "command": "docker",
-        "args": ["compose", "-f", "/home/charles/ran-tester-ue/docker-compose.yml", "run", "--rm", "mcp-server"]
+        "args": ["compose", "-f", "$HOME/ran-tester-ue/docker-compose.yml", "run", "--rm", "mcp-server"]
       }
     }
   }
@@ -486,8 +545,8 @@ docker ps | grep controller
 docker exec mcp-server ping controller
 
 # Check logs
-docker-compose logs -f mcp-server
-docker-compose logs -f controller
+docker compose logs -f mcp-server
+docker compose logs -f controller
 ```
 
 ### Configuration Validation Fails
@@ -535,7 +594,7 @@ MCP_LOG_LEVEL=DEBUG
 
 Then restart:
 ```bash
-docker-compose restart mcp-server
+docker compose restart mcp-server
 ```
 
 ## Development
@@ -545,11 +604,6 @@ docker-compose restart mcp-server
 ```bash
 cd mcp_server
 pip install -r requirements.txt
-
-# Set environment variables
-export CONTROLLER_URL=http://localhost:1343
-export CONTROLLER_TOKEN=testing_token
-export CONFIGS_DIR=/home/charles/ran-tester-ue/configs
 
 # Run the server
 python main.py
@@ -595,7 +649,7 @@ The MCP server interfaces with the controller's enhanced API:
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
 | `/list` | GET | List running components |
-| `/start` | POST | Start component (config_str) |
+| `/start` | POST | Start component (config\_str) |
 | `/start_from_json` | POST | Start component (JSON config) |
 | `/stop` | POST | Stop component |
 | `/logs` | POST | Get component logs |
@@ -611,4 +665,4 @@ The MCP server interfaces with the controller's enhanced API:
 
 ## License
 
-Same as RAN Tester UE project.
+TBD
