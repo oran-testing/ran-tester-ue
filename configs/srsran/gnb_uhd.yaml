@@ -13,8 +13,8 @@ cu_cp:
 
 ru_sdr:
   device_driver: uhd
-  device_args: type=b200,serial=32C751C
-  clock: external
+  device_args: type=b200,serial=32C751A
+  #clock: external
   srate: 23.04
   tx_gain: 70
   rx_gain: 40

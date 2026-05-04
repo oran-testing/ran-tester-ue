@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sniffer Configuration",
+  "description": "5G packet sniffer configuration",
+  "type": "object",
+  "required": [
+    "id",
+    "file_path",
+    "sample_rate",
+    "frequency",
+    "nid_1",
+    "ssb_numerology"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier"
+    },
+    "file_path": {
+      "type": "string",
+      "description": "Output PCAP file path"
+    },
+    "sample_rate": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Sample rate in Hz"
+    },
+    "frequency": {
+      "type": "number",
+      "description": "Center frequency in Hz (FR1: 410e6-7.125e9, FR2: 24.25e9-52.6e9)"
+    },
+    "nid_1": {
+      "type": "integer",
+      "description": "Network ID"
+    },
+    "ssb_numerology": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4,
+      "description": "SSB numerology (0-4)"
+    },
+    "pdcch_coreset_id": {
+      "type": "integer",
+      "description": "PDCCH coreset ID"
+    },
+    "pdcch_subcarrier_offset": {
+      "type": "integer",
+      "description": "PDCCH subcarrier offset"
+    },
+    "pdcch_num_prbs": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of PDCCH PRBs"
+    },
+    "pdcch_numerology": {
+      "type": "integer",
+      "description": "PDCCH numerology"
+    },
+    "pdcch_dci_sizes_list": {
+      "type": "array",
+      "items": {"type": "integer"},
+      "description": "PDCCH DCI sizes list"
+    },
+    "pdcch_scrambling_id_start": {
+      "type": "integer",
+      "description": "PDCCH scrambling ID start"
+    },
+    "pdcch_scrambling_id_end": {
+      "type": "integer",
+      "description": "PDCCH scrambling ID end"
+    },
+    "pdcch_rnti_start": {
+      "type": "integer",
+      "description": "PDCCH RNTI start"
+    },
+    "pdcch_rnti_end": {
+      "type": "integer",
+      "description": "PDCCH RNTI end"
+    },
+    "pdcch_interleaving_pattern": {
+      "type": "string",
+      "description": "PDCCH interleaving pattern"
+    },
+    "pdcch_coreset_duration": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "description": "PDCCH coreset duration"
+    },
+    "pdcch_AL_corr_thresholds": {
+      "type": "array",
+      "items": {"type": "number"},
+      "description": "PDCCH AL correlation thresholds"
+    },
+    "pdcch_num_candidates_per_AL": {
+      "type": "array",
+      "items": {"type": "integer"},
+      "description": "PDCCH number of candidates per AL"
+    }
+  }
+}
