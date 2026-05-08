@@ -250,12 +250,20 @@ class ComponentManager:
             time.sleep(sleep_time)
 
 
-        process_class = None
-        try:
-            process_class = Globals.worker_thread_registry[process_config["component"]]
-        except KeyError:
-            logging.critical(f"No worker thread class found for: {process_config['component']}")
+        logging.debug(Globals.worker_thread_registry)
+        classes = Globals.worker_thread_registry.get(process_config.get("component"))
+        if not classes:
+            logging.critical(f"No worker thread classes found for component: {process_config.get('component')}")
             return
+
+        class_name = process_config.get("worker_thread")
+        if class_name:
+            process_class = classes.get(class_name)
+            if not process_class:
+                logging.critical(f"Worker thread class '{class_name}' not found for component: {process_config.get('component')}")
+                return
+        else:
+            process_class = next(iter(classes.values()))
 
         process_config["influxdb_metadata"] = self.influxdb_metadata
         process_handle = process_class(self.influxdb_client, self.docker_client, process_config)
@@ -416,12 +424,18 @@ class ComponentManager:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
+        classes = {}
         for _, cls in inspect.getmembers(module, inspect.isclass):
             if cls.__name__ in ["WorkerThread", "ComponentManager"]:
                 continue
+            if cls.__module__ != module.__name__:
+                continue
+            classes[cls.__name__] = cls
             logging.info(f"Loaded worker class {cls.__name__} from {url}")
-            Globals.worker_thread_registry[component_path] = cls
-            return cls
 
-        raise RuntimeError(f"No class definitions found in worker file from {url}")
+        if not classes:
+            raise RuntimeError(f"No class definitions found in worker file from {url}")
+
+        Globals.worker_thread_registry[component_path] = classes
+        return next(iter(classes.values()))
 
