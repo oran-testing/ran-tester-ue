@@ -1,0 +1,45 @@
+cell:
+  band: 3
+  nof_prb: 52
+  scs_common: 15
+  scs_ssb: 15
+  ssb_period_ms: 10
+  dl_arfcn: 368500
+  ssb_arfcn: 368500
+
+source:
+  source_type: file
+  source_params: /tmp/pdcch_1842MHz.fc32
+
+rf:
+  sample_rate: 23.04e6
+  num_channels: 1
+  uplink_cfo: 0
+  downlink_cfo: 0
+  padding:
+    front_padding: 0
+    back_padding: 0
+  channels:
+    - rx_frequency: 1842e6
+      tx_frequency: 1842e6
+      rx_offset: 0
+      tx_offset: 0
+      rx_gain: 40
+      tx_gain: 80
+      enable: true
+
+workers:
+  pool_size: 24
+  n_ue_dl_worker: 4
+  n_ue_ul_worker: 4
+  n_gnb_dl_worker: 4
+  n_gnb_ul_worker: 4
+
+uetracker:
+  close_timeout: 5000
+  parse_messages: true
+  num_ues: 5
+  enable_gpu: false
+
+log:
+  log_level: INFO

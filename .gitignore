@@ -5,3 +5,4 @@ venv/
 .generated
 .uhd_images
 .uuagent_results
+opencode.json

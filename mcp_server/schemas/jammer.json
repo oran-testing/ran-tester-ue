@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Jammer Configuration",
+  "description": "Jamming attack simulation configuration",
+  "type": "object",
+  "required": [
+    "id",
+    "center_frequency",
+    "bandwidth",
+    "amplitude",
+    "sampling_freq",
+    "tx_gain",
+    "device_args"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier"
+    },
+    "center_frequency": {
+      "type": "number",
+      "description": "Center frequency in Hz (FR1: 410e6-7.125e9, FR2: 24.25e9-52.6e9)"
+    },
+    "bandwidth": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Bandwidth in Hz"
+    },
+    "amplitude": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1.0,
+      "description": "Signal amplitude (0-1)"
+    },
+    "amplitude_width": {
+      "type": "number",
+      "description": "Amplitude width"
+    },
+    "initial_phase": {
+      "type": "number",
+      "description": "Initial phase"
+    },
+    "sampling_freq": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Sampling frequency in Hz (must be >= 2x bandwidth)"
+    },
+    "num_samples": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of samples"
+    },
+    "tx_gain": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 90,
+      "description": "TX gain in dB (0-90)"
+    },
+    "device_args": {
+      "type": "string",
+      "description": "Device arguments (e.g., type=b200)"
+    },
+    "write_iq": {
+      "type": "boolean",
+      "description": "Write IQ samples to file"
+    },
+    "write_csv": {
+      "type": "boolean",
+      "description": "Write CSV output"
+    },
+    "output_iq_file": {
+      "type": "string",
+      "description": "Output IQ file path"
+    },
+    "output_csv_file": {
+      "type": "string",
+      "description": "Output CSV file path"
+    }
+  }
+}

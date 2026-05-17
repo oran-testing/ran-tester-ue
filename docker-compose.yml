@@ -38,6 +38,25 @@ services:
 
 
 
+  mcp-server:
+    build:
+      context: ./mcp_server
+      dockerfile: Dockerfile
+    container_name: mcp-server
+    volumes:
+      - ${DOCKER_SYSTEM_DIRECTORY}/configs:/host/configs:ro
+    environment:
+      - CONTROLLER_URL=http://controller:1343
+      - CONTROLLER_TOKEN=${MCP_CONTROLLER_TOKEN}
+      - CONFIGS_DIR=/host/configs
+      - LOG_LEVEL=${MCP_LOG_LEVEL:-INFO}
+    networks:
+      - control
+    depends_on:
+      - controller
+    stdin_open: true
+    tty: true
+
   influxdb:
     container_name: influxdb
     image: influxdb:${DOCKER_INFLUXDB_VERSION}
@@ -76,18 +95,14 @@ volumes:
   grafana-storage:
 
 networks:
-  default:
-    driver: bridge
 
   metrics:
     name: rt_metrics
     ipam:
-      driver: default
       config:
         - subnet: 172.19.1.0/24
   control:
     name: rt_control
     ipam:
-      driver: default
       config:
         - subnet: 172.20.1.0/24

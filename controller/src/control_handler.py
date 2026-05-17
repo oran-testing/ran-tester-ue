@@ -3,15 +3,16 @@ import http.server
 from globals import Globals
 import logging
 import os
+from config_converters import CONFIG_CONVERTERS
 
 class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
     def _get_permissions(self):
         is_valid_token = False
         permissions = []
         auth_header = self.headers.get("Authorization")
-        if not auth_header.startswith("Bearer "):
+        if not auth_header or not auth_header.startswith("Bearer "):
             return False, []
-        token = auth_header.removeprefix("Bearer").strip()
+        token = auth_header.removeprefix("Bearer ").strip()
         for api in Globals.api_auth:
             if api.get("token", "") == token:
                 if self.path[1:] in api.get("scopes", []):
@@ -223,15 +224,169 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
         self._set_headers(404)
         self.wfile.write(json.dumps({"error":"Component with ID does not exist"}).encode("utf-8"))
 
+    def start_component_from_json(self):
+        is_valid_token, perms = self._get_permissions()
+        if not is_valid_token:
+            self._send_unauthorized()
+            return
+
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length)
+        payload = {}
+        try:
+            payload = json.loads(post_data)
+        except json.JSONDecodeError:
+            self._set_headers(400)
+            self.wfile.write(json.dumps({"error": "malformed JSON"}).encode("utf-8"))
+            return
+
+        required_fields = ("id", "type", "config_json", "rf")
+        missing = [k for k in required_fields if k not in payload]
+        if missing:
+            self._set_headers(400)
+            self.wfile.write(json.dumps({
+                "error": "Missing required fields",
+                "missing": missing,
+                "required": list(required_fields)
+            }).encode("utf-8"))
+            return
+
+        component_type = payload["type"]
+        if component_type not in CONFIG_CONVERTERS:
+            self._set_headers(400)
+            self.wfile.write(json.dumps({
+                "error": f"Unsupported component type: {component_type}",
+                "supported_types": list(CONFIG_CONVERTERS.keys())
+            }).encode("utf-8"))
+            return
+
+        converter = CONFIG_CONVERTERS[component_type]
+
+        try:
+            config_str = converter.from_json(payload["config_json"])
+        except ValueError as e:
+            self._set_headers(400)
+            self.wfile.write(json.dumps({
+                "error": "Configuration validation failed",
+                "details": str(e)
+            }).encode("utf-8"))
+            return
+        except Exception as e:
+            self._set_headers(500)
+            self.wfile.write(json.dumps({
+                "error": "Configuration conversion failed",
+                "details": str(e)
+            }).encode("utf-8"))
+            return
+
+        if component_type not in perms:
+            self._set_headers(403)
+            self.wfile.write(json.dumps({"error":"unauthorized to start that component"}).encode("utf-8"))
+            return
+
+        if any(p["id"] == payload["id"] for p in Globals.thread_manager.process_metadata):
+            self._set_headers(409)
+            self.wfile.write(json.dumps({"error": "ID conflict with existing component"}).encode("utf-8"))
+            return
+
+        if not os.path.isdir("/host/.generated/"):
+            os.makedirs("/host/.generated", exist_ok=True)
+
+        file_ext = {
+            "rtue": "conf",
+            "sniffer": "toml"
+        }.get(component_type, "yaml")
+
+        config_file = f"/host/.generated/{payload['id']}.{file_ext}"
+
+        try:
+            with open(config_file, "w") as f:
+                f.write(config_str)
+        except IOError as e:
+            self._set_headers(500)
+            self.wfile.write(json.dumps({"error":f"Failed to write config to file {config_file}"}))
+            return
+
+        new_process_config = {
+            "config_file": config_file,
+            "name": payload["id"],
+            "component": payload.get("component", component_type),
+            "rf": payload["rf"],
+            "permissions": [],
+        }
+
+        Globals.thread_manager.start(new_process_config)
+
+        self._set_headers()
+        self.wfile.write(json.dumps({"msg":f"process started: {payload['id']}"}).encode("utf-8"))
+
+    def get_component_schema(self):
+        is_valid_token, _ = self._get_permissions()
+        if not is_valid_token:
+            self._send_unauthorized()
+            return
+
+        parts = self.path.split('/')
+        if len(parts) < 3 or not parts[2]:
+            self._set_headers(400)
+            self.wfile.write(json.dumps({"error": "Missing component type"}).encode("utf-8"))
+            return
+
+        component_type = parts[2]
+
+        if component_type not in CONFIG_CONVERTERS:
+            self._set_headers(404)
+            self.wfile.write(json.dumps({
+                "error": f"Schema not found for component type: {component_type}",
+                "available_types": list(CONFIG_CONVERTERS.keys())
+            }).encode("utf-8"))
+            return
+
+        converter = CONFIG_CONVERTERS[component_type]
+
+        schema = {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": f"{component_type} Configuration",
+            "type": "object",
+            "required": converter.REQUIRED_KEYS,
+            "properties": {}
+        }
+
+        if hasattr(converter, 'SCHEMA'):
+            for key, type_hint in converter.SCHEMA.items():
+                if isinstance(type_hint, tuple):
+                    json_type = self._python_to_json_type(type_hint[0])
+                else:
+                    json_type = self._python_to_json_type(type_hint)
+                schema["properties"][key] = {"type": json_type}
+
+        self._set_headers()
+        self.wfile.write(json.dumps(schema).encode("utf-8"))
+
+    def _python_to_json_type(self, python_type):
+        type_map = {
+            str: "string",
+            int: "integer",
+            float: "number",
+            bool: "boolean",
+            list: "array",
+            dict: "object"
+        }
+        return type_map.get(python_type, "string")
+
 
     def do_GET(self):
         if self.path.startswith("/list"):
             self.get_components()
+        elif self.path.startswith("/schemas"):
+            self.get_component_schema()
         else:
             self._send_nonexistent()
 
     def do_POST(self):
-        if self.path.startswith("/start"):
+        if self.path.startswith("/start_from_json"):
+            self.start_component_from_json()
+        elif self.path.startswith("/start"):
             self.start_component()
         elif self.path.startswith("/stop"):
             self.stop_component()

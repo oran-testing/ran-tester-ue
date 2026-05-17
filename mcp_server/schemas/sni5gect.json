@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sni5gect Configuration",
+  "description": "5G security testing framework configuration",
+  "type": "object",
+  "required": [
+    "id"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier"
+    },
+    "cell": {
+      "type": "object",
+      "properties": {
+        "band": {"type": "integer"},
+        "nof_prb": {"type": "integer"},
+        "scs_common": {"type": "integer"},
+        "scs_ssb": {"type": "integer"},
+        "ssb_period_ms": {"type": "integer"},
+        "dl_arfcn": {"type": "integer"},
+        "ssb_arfcn": {"type": "integer"}
+      }
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "source_type": {"type": "string"},
+        "source_params": {"type": "string"}
+      }
+    },
+    "enable_recorder": {
+      "type": "boolean",
+      "description": "Enable IQ recording"
+    },
+    "pcap_folder": {
+      "type": "string",
+      "description": "PCAP output folder"
+    },
+    "rf": {
+      "type": "object",
+      "properties": {
+        "sample_rate": {"type": "number"},
+        "num_channels": {"type": "integer"},
+        "uplink_cfo": {"type": "number"},
+        "downlink_cfo": {"type": "number"},
+        "padding": {
+          "type": "object",
+          "properties": {
+            "front_padding": {"type": "integer"},
+            "back_padding": {"type": "integer"}
+          }
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rx_frequency": {"type": "number"},
+              "tx_frequency": {"type": "number"},
+              "rx_offset": {"type": "integer"},
+              "tx_offset": {"type": "integer"},
+              "rx_gain": {"type": "integer"},
+              "tx_gain": {"type": "integer"},
+              "enable": {"type": "boolean"}
+            }
+          }
+        }
+      }
+    },
+    "workers": {
+      "type": "object",
+      "properties": {
+        "pool_size": {"type": "integer"},
+        "n_ue_dl_worker": {"type": "integer"},
+        "n_ue_ul_worker": {"type": "integer"},
+        "n_gnb_dl_worker": {"type": "integer"},
+        "n_gnb_ul_worker": {"type": "integer"}
+      }
+    },
+    "uetracker": {
+      "type": "object",
+      "properties": {
+        "close_timeout": {"type": "integer"},
+        "parse_messages": {"type": "boolean"},
+        "num_ues": {"type": "integer"},
+        "enable_gpu": {"type": "boolean"}
+      }
+    },
+    "databases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "enable": {"type": "boolean"},
+          "host": {"type": "string"},
+          "port": {"type": "integer"},
+          "org": {"type": "string"},
+          "token": {"type": "string"},
+          "bucket": {"type": "string"}
+        }
+      }
+    },
+    "log": {
+      "type": "object",
+      "properties": {
+        "log_level": {"type": "string"},
+        "syncer": {"type": "string"},
+        "worker": {"type": "string"},
+        "bc_worker": {"type": "string"}
+      }
+    }
+  }
+}
