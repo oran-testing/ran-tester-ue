@@ -88,10 +88,12 @@ async def handle_start_component(adapter, arguments):
             text="Error: 'id' field required in config_json"
         )]
 
+    config_str, _ = ConfigConverter.convert(component_type, config_json)
+
     payload = {
         "id": config_json["id"],
         "type": component_type,
-        "config_json": config_json,
+        "config_str": config_str,
         "rf": rf_config
     }
 

@@ -18,6 +18,7 @@ class RTUEConfigConverter(ConfigConverter):
     """Converts JSON to .conf (INI-style) format for RTUE"""
 
     SECTION_MAP = {
+        'ue': 'ue_',
         'rf': 'rf_',
         'rat.eutra': 'rat_eutra_',
         'rat.nr': 'rat_nr_',
@@ -28,7 +29,8 @@ class RTUEConfigConverter(ConfigConverter):
         'nas': 'nas_',
         'gui': 'gui_',
         'gw': 'gw_',
-        'general': 'general_'
+        'general': 'general_',
+        'recon': 'recon_'
     }
 
     REQUIRED_KEYS = [

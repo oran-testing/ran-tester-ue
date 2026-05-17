@@ -31,6 +31,7 @@ class ConfigConverter:
 
 def convert_rtue(json_obj: Dict[str, Any]) -> str:
     section_map = {
+        'ue': 'ue_',
         'rf': 'rf_',
         'rat.eutra': 'rat_eutra_',
         'rat.nr': 'rat_nr_',
@@ -41,7 +42,8 @@ def convert_rtue(json_obj: Dict[str, Any]) -> str:
         'nas': 'nas_',
         'gui': 'gui_',
         'gw': 'gw_',
-        'general': 'general_'
+        'general': 'general_',
+        'recon': 'recon_'
     }
 
     config = configparser.ConfigParser()
