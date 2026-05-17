@@ -1,0 +1,15 @@
+exit_on_component_failure: true
+
+build_spec:
+  - component: "oran-testing/rtue"
+    branch: "main"
+    pull: true
+
+run_spec:
+  - component: "oran-testing/rtue"
+    name: "rtue_zmq_ci"
+    config_file: "configs/srsran/ue_zmq_docker.conf"
+    rf:
+      type: "zmq"
+      tcp_subnet: "172.22.0.0/24"
+      gateway: "172.22.0.254"

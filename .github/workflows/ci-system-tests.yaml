@@ -46,6 +46,7 @@ jobs:
           - ci_configs/system_environment_tests/test_uhd_images.yaml
           - ci_configs/system_environment_tests/test_influx_access.yaml
           - ci_configs/system_environment_tests/test_conf_pass.yaml
+          - configs/system_tests/zmq_rtue_ci.yaml
 
           # Build tests
           - ci_configs/component_build_tests/test_build_ssb_spoofer.yaml
@@ -70,8 +71,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y uhd-host
 
+      - name: Install gNB emulation dependency
+        if: matrix.system_test_config == 'configs/system_tests/zmq_rtue_ci.yaml'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static
+
       - name: Run system setup
         run: ./scripts/system_setup.sh --no-confirm
+
+      - name: Start ZMQ gNB service
+        if: matrix.system_test_config == 'configs/system_tests/zmq_rtue_ci.yaml'
+        run: |
+          docker rm -f srsgnb-ci >/dev/null 2>&1 || true
+          docker network inspect rt_zmq >/dev/null 2>&1 || \
+            docker network create --subnet 172.22.0.0/24 --gateway 172.22.0.254 rt_zmq
+
+          docker run -d \
+            --name srsgnb-ci \
+            --network rt_zmq \
+            --ip 172.22.0.1 \
+            --privileged \
+            -v /usr/bin/qemu-x86_64-static:/usr/bin/qemu-x86_64-static:ro \
+            -v "${GITHUB_WORKSPACE}/configs/srsran/gnb_zmq_docker.yaml:/gnb.yaml:ro" \
+            ghcr.io/cueltschey/srsgnb \
+            sh -lc "qemu-x86_64-static /usr/local/bin/gnb -c /gnb.yaml"
+
+          # Give gNB/open5gs stack time to initialize before starting the UE.
+          sleep 40
+          docker logs srsgnb-ci --tail 100 || true
 
       #- name: Download Docker image artifact
       #  uses: actions/download-artifact@v4
@@ -84,9 +112,40 @@ jobs:
       - name: Run system test
         run: |
           sed -i "s|DOCKER_CONTROLLER_INIT_CONFIG=.*|DOCKER_CONTROLLER_INIT_CONFIG=${{ matrix.system_test_config }}|g" .env
-          docker compose up --abort-on-container-exit --exit-code-from controller
+
+          if [ "${{ matrix.system_test_config }}" = "configs/system_tests/zmq_rtue_ci.yaml" ]; then
+            # rtue in this ZMQ scenario is expected to stay alive; bound runtime and verify attach via logs.
+            set +e
+            timeout 180 docker compose up --abort-on-container-exit --exit-code-from controller
+            compose_rc=$?
+            set -e
+
+            if [ "$compose_rc" -ne 0 ] && [ "$compose_rc" -ne 124 ]; then
+              echo "ZMQ compose run failed with unexpected code: $compose_rc"
+              exit "$compose_rc"
+            fi
+          else
+            docker compose up --abort-on-container-exit --exit-code-from controller
+          fi
+
+      - name: Verify ZMQ UE connection in gNB logs
+        if: always() && matrix.system_test_config == 'configs/system_tests/zmq_rtue_ci.yaml'
+        run: |
+          docker logs srsgnb-ci > /tmp/srsgnb.log 2>&1 || true
+          tail -n 200 /tmp/srsgnb.log || true
+
+          ATTACH_REGEX='(Registration[[:space:]_-]*Accept|InitialUEMessage|UE[[:space:]_-]*Context|RRC[[:space:]_-]*Setup|PDU[[:space:]_-]*Session)'
+          if ! grep -Eiq "$ATTACH_REGEX" /tmp/srsgnb.log; then
+            echo "Failed to find UE attach/registration evidence in srsgnb logs"
+            exit 1
+          fi
 
       - name: Tear down containers
         if: always()
         run: docker compose down -v
+      - name: Tear down gNB resources
+        if: always()
+        run: |
+          docker rm -f srsgnb-ci >/dev/null 2>&1 || true
+          docker network rm rt_zmq >/dev/null 2>&1 || true
 
