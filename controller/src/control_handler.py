@@ -140,7 +140,8 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
 
         file_ext = {
             "rtue": "conf",
-            "sniffer": "toml"
+            "sniffer": "toml",
+            "ra_spoof": "yaml"
         }.get(payload["type"], "yaml")
 
         config_file = f"/host/.generated/{payload['id']}.{file_ext}"
@@ -294,7 +295,8 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
 
         file_ext = {
             "rtue": "conf",
-            "sniffer": "toml"
+            "sniffer": "toml",
+            "ra_spoof": "yaml"
         }.get(component_type, "yaml")
 
         config_file = f"/host/.generated/{payload['id']}.{file_ext}"

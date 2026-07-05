@@ -25,7 +25,7 @@ services:
       metrics:
         ipv4_address: 172.19.1.7
       control:
-        ipv4_address: 172.20.1.7
+        ipv4_address: 172.38.1.7
     configs:
       - controller.yml
     ports:
@@ -105,4 +105,4 @@ networks:
     name: rt_control
     ipam:
       config:
-        - subnet: 172.20.1.0/24
+        - subnet: 172.38.1.0/24

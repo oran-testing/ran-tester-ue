@@ -273,6 +273,7 @@ class JammerConfigConverter(ConfigConverter):
 
     SCHEMA = {
         "id": str,
+        "attack_type": str,
         "center_frequency": (int, float),
         "bandwidth": (int, float),
         "amplitude": (int, float),
@@ -282,11 +283,19 @@ class JammerConfigConverter(ConfigConverter):
         "num_samples": int,
         "tx_gain": (int, float),
         "device_args": str,
+        "tone_offset_hz": (int, float),
+        "burst_duration_ms": (int, float),
+        "idle_duration_ms": (int, float),
+        "jam_bandwidth_hz": (int, float),
+        "num_tones": int,
         "write_iq": bool,
         "write_csv": bool,
         "output_iq_file": str,
-        "output_csv_file": str
+        "output_csv_file": str,
+        "enable_autoconfigure": bool
     }
+
+    VALID_ATTACK_TYPES = {"barrage", "constant", "random"}
 
     def validate(self, json_obj: dict) -> list:
         errors = []
@@ -302,6 +311,12 @@ class JammerConfigConverter(ConfigConverter):
                     errors.append(
                         f"Invalid type for '{key}': expected {expected_type}, got {type(value).__name__}"
                     )
+
+        if 'attack_type' in json_obj:
+            if json_obj['attack_type'] not in self.VALID_ATTACK_TYPES:
+                errors.append(
+                    f"attack_type must be one of: {', '.join(sorted(self.VALID_ATTACK_TYPES))}"
+                )
 
         if 'center_frequency' in json_obj:
             f0 = json_obj['center_frequency']
@@ -328,6 +343,19 @@ class JammerConfigConverter(ConfigConverter):
             if json_obj['sampling_freq'] < 2.0 * json_obj['bandwidth']:
                 errors.append("sampling_freq must be at least 2x bandwidth")
 
+        if json_obj.get('attack_type') == 'random':
+            if 'burst_duration_ms' in json_obj and json_obj['burst_duration_ms'] <= 0:
+                errors.append("burst_duration_ms must be > 0 for random attack type")
+            if 'idle_duration_ms' in json_obj and json_obj['idle_duration_ms'] <= 0:
+                errors.append("idle_duration_ms must be > 0 for random attack type")
+
+        if json_obj.get('attack_type') == 'constant':
+            if 'tone_offset_hz' in json_obj:
+                if abs(json_obj['tone_offset_hz']) > json_obj.get('sampling_freq', float('inf')) / 2:
+                    errors.append("tone_offset_hz must be within +/- sampling_freq/2")
+            if 'jam_bandwidth_hz' in json_obj and json_obj['jam_bandwidth_hz'] <= 0:
+                errors.append("jam_bandwidth_hz must be > 0 for constant attack type")
+
         return errors
 
     def from_json(self, json_obj: dict) -> str:
@@ -340,6 +368,142 @@ class JammerConfigConverter(ConfigConverter):
         return yaml.dump(config_data, sort_keys=False, indent=2)
 
 
+class RaSpoofConfigConverter(ConfigConverter):
+    """Converts JSON to YAML format for RA Spoof (PRACH injector)"""
+
+    REQUIRED_KEYS = [
+        'id', 'tx_gain_db', 'tx_device_args',
+        'influx_host', 'influx_org', 'influx_token', 'influx_bucket'
+    ]
+
+    SCHEMA = {
+        "id": str,
+        "tx_gain_db": (int, float),
+        "tx_preamble_index": int,
+        "tx_device_args": str,
+        "influx_host": str,
+        "influx_port": int,
+        "influx_org": str,
+        "influx_token": str,
+        "influx_bucket": str,
+        "influx_data_id": str,
+        "cfo_correct": bool,
+        "cfo_sign": int,
+        "cfo_manual_hz": (int, float),
+        "timing_tx_offset_us": (int, float),
+        "timing_rx_to_tx_cal_us": (int, float),
+        "timing_ssb_first_symbol_override": int,
+        "freq_msg1_freq_start_override": int,
+        "freq_msg1_fdm_override": int,
+        "run_continuous": bool,
+        "run_max_tx": int,
+        "run_resync_every": int,
+        "run_gnb_log_path": str,
+        "run_autotune": bool,
+        "flood_enabled": bool,
+        "flood_num_preambles": int,
+        "flood_strategy": str,
+        "flood_power_backoff_db": (int, float),
+        "flood_slm_candidates": int,
+        "multi_ro_freq_pos_count": int
+    }
+
+    def validate(self, json_obj: dict) -> list:
+        errors = []
+
+        for key in self.REQUIRED_KEYS:
+            if key not in json_obj:
+                errors.append(f"Missing required key: '{key}'")
+
+        for key, value in json_obj.items():
+            if key in self.SCHEMA:
+                expected_type = self.SCHEMA[key]
+                if not isinstance(value, expected_type):
+                    errors.append(
+                        f"Invalid type for '{key}': expected {expected_type}, got {type(value).__name__}"
+                    )
+
+        if 'tx_gain_db' in json_obj:
+            if not (0 <= json_obj['tx_gain_db'] <= 90):
+                errors.append("tx_gain_db must be between 0 and 90")
+
+        if 'tx_preamble_index' in json_obj:
+            if not (0 <= json_obj['tx_preamble_index'] <= 63):
+                errors.append("tx_preamble_index must be between 0 and 63")
+
+        if 'flood_num_preambles' in json_obj:
+            if not (1 <= json_obj['flood_num_preambles'] <= 64):
+                errors.append("flood_num_preambles must be between 1 and 64")
+
+        if 'flood_strategy' in json_obj:
+            if json_obj['flood_strategy'] not in ('superimpose', 'cycle'):
+                errors.append("flood_strategy must be 'superimpose' or 'cycle'")
+
+        if 'cfo_sign' in json_obj:
+            if json_obj['cfo_sign'] not in (-1, 1):
+                errors.append("cfo_sign must be -1 or 1")
+
+        if 'multi_ro_freq_pos_count' in json_obj:
+            if json_obj['multi_ro_freq_pos_count'] < 1:
+                errors.append("multi_ro_freq_pos_count must be >= 1")
+
+        if 'influx_port' in json_obj:
+            if not (1 <= json_obj['influx_port'] <= 65535):
+                errors.append("influx_port must be between 1 and 65535")
+
+        return errors
+
+    def from_json(self, json_obj: dict) -> str:
+        errors = self.validate(json_obj)
+        if errors:
+            raise ValueError(f"Validation failed: {'; '.join(errors)}")
+
+        config_data = {k: v for k, v in json_obj.items() if k != 'id'}
+
+        config = {}
+        flat_to_nested = {
+            "tx_gain_db": ("tx", "gain_db"),
+            "tx_preamble_index": ("tx", "preamble_index"),
+            "tx_device_args": ("tx", "device_args"),
+            "cfo_correct": ("cfo", "correct"),
+            "cfo_sign": ("cfo", "sign"),
+            "cfo_manual_hz": ("cfo", "manual_hz"),
+            "timing_tx_offset_us": ("timing", "tx_offset_us"),
+            "timing_rx_to_tx_cal_us": ("timing", "rx_to_tx_cal_us"),
+            "timing_ssb_first_symbol_override": ("timing", "ssb_first_symbol_override"),
+            "freq_msg1_freq_start_override": ("freq", "msg1_freq_start_override"),
+            "freq_msg1_fdm_override": ("freq", "msg1_fdm_override"),
+            "run_continuous": ("run", "continuous"),
+            "run_max_tx": ("run", "max_tx"),
+            "run_resync_every": ("run", "resync_every"),
+            "run_gnb_log_path": ("run", "gnb_log_path"),
+            "run_autotune": ("run", "autotune"),
+            "flood_enabled": ("flood", "enabled"),
+            "flood_num_preambles": ("flood", "num_preambles"),
+            "flood_strategy": ("flood", "strategy"),
+            "flood_power_backoff_db": ("flood", "power_backoff_db"),
+            "flood_slm_candidates": ("flood", "slm_candidates"),
+            "multi_ro_freq_pos_count": ("multi_ro", "freq_pos_count"),
+            "influx_host": ("influx", "host"),
+            "influx_port": ("influx", "port"),
+            "influx_org": ("influx", "org"),
+            "influx_token": ("influx", "token"),
+            "influx_bucket": ("influx", "bucket"),
+            "influx_data_id": ("influx", "data_id"),
+        }
+
+        for flat_key, value in config_data.items():
+            if flat_key in flat_to_nested:
+                section, key = flat_to_nested[flat_key]
+                if section not in config:
+                    config[section] = {}
+                config[section][key] = value
+            else:
+                config[flat_key] = value
+
+        return yaml.dump(config, sort_keys=False, indent=2)
+
+
 CONFIG_CONVERTERS = {
     "rtue": RTUEConfigConverter(),
     "sniffer": SnifferConfigConverter(),
@@ -347,4 +511,5 @@ CONFIG_CONVERTERS = {
     "jammer": JammerConfigConverter(),
     "ssb_spoofer": Sni5gectConfigConverter(),
     "uuagent": RTUEConfigConverter(),
+    "ra_spoof": RaSpoofConfigConverter(),
 }

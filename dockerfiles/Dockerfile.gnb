@@ -1,0 +1,5 @@
+FROM alpine:latest
+RUN apk add --no-cache libstdc++ mbedtls sctp lksctp-tools libgcc
+COPY gnb /usr/local/bin/gnb
+COPY configs/srsran/gnb_zmq_local.yaml /gnb_config.yaml
+CMD ["gnb", "-c", "/gnb_config.yaml"]

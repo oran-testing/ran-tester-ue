@@ -146,7 +146,8 @@ class ComponentManager:
                 repo_url = f"https://github.com/{component_path}"
                 repo_name = component_path.split('/')[-1]
                 clone_dir = f"/tmp/{repo_name}"
-                dockerfile_path = f"/tmp/{repo_name}/{component.get('dockerfile', 'Dockerfile')}"
+                dockerfile_spec = component.get('dockerfile', 'Dockerfile')
+                dockerfile_path = f"/tmp/{repo_name}/{dockerfile_spec}"
 
                 if os.path.exists(clone_dir):
                     shutil.rmtree(clone_dir)
@@ -167,7 +168,14 @@ class ComponentManager:
 
 
                 if not os.path.exists(dockerfile_path):
-                    raise RuntimeError(f"Dockerfile {dockerfile_path} does not exist")
+                    host_dockerfile = f"/host/{dockerfile_spec}"
+                    if os.path.exists(host_dockerfile):
+                        target_path = f"/tmp/{repo_name}/Dockerfile"
+                        logging.info(f"Copying local Dockerfile from {host_dockerfile} to {target_path}")
+                        shutil.copy2(host_dockerfile, target_path)
+                        dockerfile_path = target_path
+                    else:
+                        raise RuntimeError(f"Dockerfile {dockerfile_spec} not found at {dockerfile_path} or {host_dockerfile}")
 
                 logging.info(f"Building Docker image from: {dockerfile_path}")
                 build_context = os.path.dirname(dockerfile_path)
@@ -189,9 +197,12 @@ class ComponentManager:
 
         try:
             images = self.docker_client.images.list()
-            image_names = [image.tags[0] for image in images if image.tags]
-            if docker_image in image_names:
+            image_tags = [tag for image in images if image.tags for tag in image.tags]
+            image_exists = any(tag.startswith(docker_image) for tag in image_tags)
+            if image_exists:
                 logging.debug(f"Component {component['component']} already exists. Skipping build.")
+                thread_url = component.get("worker_thread_url", f"https://raw.githubusercontent.com/{component_path}/{component.get('branch', 'main')}/worker_thread.py")
+                self._load_worker_thread_from_url(thread_url, component_path)
             else:
                 logging.debug(f"Component {component['component']} does not exist. Building now.")
                 self.build(component)

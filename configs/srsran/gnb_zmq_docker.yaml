@@ -46,7 +46,7 @@ cell_cfg:
 
 log:
   filename: /tmp/gnb.log            # Path of the log file.
-  all_level: info                   # Logging level applied to all layers.
+  all_level: debug                   # Logging level applied to all layers.
   hex_max_size: 0
 
 pcap:

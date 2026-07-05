@@ -1,0 +1,42 @@
+rf:
+  device_name: "zmq"
+  device_args: "tx_port=tcp://*:6000,rx_port=tcp://172.17.0.1:5000,base_srate=23.04e6"
+  rx_freq_hz: 1842500000
+  tx_freq_hz: 1842500000
+  srate_hz: 23040000
+  rx_gain_db: 40.0
+  tx_gain_db: 60.0
+
+ssb:
+  pattern: "A"
+  scs_khz: 15
+  periodicity_ms: 10
+  ssb_freq_offset_hz: -450000
+  beta_pss: 1.0
+  beta_sss: 1.0
+  beta_pbch: 1.0
+  beta_pbch_dmrs: 1.0
+
+attack:
+  target_pci: 1
+  scan_for_target: true
+  modify_cell_barred: true
+  cell_barred_value: true
+  modify_coreset0_idx: false
+  coreset0_idx_value: 15
+  modify_ss0_idx: true
+  ss0_idx_value: 15
+  modify_intra_freq_resel: false
+  intra_freq_resel_value: false
+  tx_power_offset_db: 0.0
+  continuous_tx: true
+  max_bursts: 100
+  burst_interval_us: 100000
+  burst_length_ms: 1
+
+operation:
+  scan_duration_sec: 15.0
+  log_level: "debug"
+  log_file: "/tmp/ssb_spoofer.log"
+  save_samples: false
+  samples_file: "/tmp/rx_samples.dat"

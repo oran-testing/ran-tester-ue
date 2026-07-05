@@ -1,0 +1,46 @@
+# RA Spoof Configuration - Band n3 (FDD 1800 MHz)
+# Matches the srsRAN gNB lab setup at TEF building
+
+tx:
+  gain_db: 55
+  preamble_index: 0
+  device_args: "type=b200"
+
+cfo:
+  correct: false
+  sign: 1
+  manual_hz: 0.0
+
+timing:
+  tx_offset_us: 0.0
+  rx_to_tx_cal_us: 0.0
+  ssb_first_symbol_override: -1
+
+freq:
+  msg1_freq_start_override: -1
+  msg1_fdm_override: -1
+
+run:
+  continuous: true
+  max_tx: 99999999
+  resync_every: 0
+  gnb_log_path: ""
+  autotune: false
+
+flood:
+  enabled: true
+  num_preambles: 8
+  strategy: "superimpose"
+  power_backoff_db: 0.0
+  slm_candidates: 64
+
+multi_ro:
+  freq_pos_count: 1
+
+influx:
+  host: "influxdb"
+  port: 8086
+  org: "oran"
+  token: "admin_token"
+  bucket: "rtusystem"
+  data_id: "band3_lab"

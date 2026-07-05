@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RA Spoof Configuration",
+  "description": "5G NR PRACH Preamble Injector (Msg1 spoofing) configuration",
+  "type": "object",
+  "required": [
+    "id",
+    "tx_gain_db",
+    "tx_device_args",
+    "influx_host",
+    "influx_org",
+    "influx_token",
+    "influx_bucket"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique component identifier"
+    },
+    "tx_gain_db": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 90,
+      "description": "USRP TX gain in dB (0-90)"
+    },
+    "tx_preamble_index": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 63,
+      "description": "PRACH preamble index (0-63)"
+    },
+    "tx_device_args": {
+      "type": "string",
+      "description": "USRP device arguments (e.g., type=b200,serial=12345)"
+    },
+    "influx_host": {
+      "type": "string",
+      "description": "InfluxDB hostname"
+    },
+    "influx_port": {
+      "type": "integer",
+      "default": 8086,
+      "description": "InfluxDB port"
+    },
+    "influx_org": {
+      "type": "string",
+      "description": "InfluxDB organization"
+    },
+    "influx_token": {
+      "type": "string",
+      "description": "InfluxDB authentication token"
+    },
+    "influx_bucket": {
+      "type": "string",
+      "description": "InfluxDB bucket name"
+    },
+    "influx_data_id": {
+      "type": "string",
+      "description": "InfluxDB data identifier for cell config queries"
+    },
+    "cfo_correct": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable CFO correction"
+    },
+    "cfo_sign": {
+      "type": "integer",
+      "enum": [-1, 1],
+      "default": 1,
+      "description": "CFO sign correction"
+    },
+    "cfo_manual_hz": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Manual CFO offset in Hz"
+    },
+    "timing_tx_offset_us": {
+      "type": "number",
+      "default": 0.0,
+      "description": "TX timing offset in microseconds"
+    },
+    "timing_rx_to_tx_cal_us": {
+      "type": "number",
+      "default": 0.0,
+      "description": "RX-to-TX calibration offset in microseconds"
+    },
+    "timing_ssb_first_symbol_override": {
+      "type": "integer",
+      "default": -1,
+      "description": "Override SSB first symbol index (-1 = auto)"
+    },
+    "freq_msg1_freq_start_override": {
+      "type": "integer",
+      "default": -1,
+      "description": "Override Msg1 frequency start PRB (-1 = auto from config)"
+    },
+    "freq_msg1_fdm_override": {
+      "type": "integer",
+      "default": -1,
+      "description": "Override Msg1 FDM index (-1 = auto)"
+    },
+    "run_continuous": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable continuous transmission on every PRACH occasion"
+    },
+    "run_max_tx": {
+      "type": "integer",
+      "default": 99999999,
+      "description": "Maximum number of transmissions before stopping"
+    },
+    "run_resync_every": {
+      "type": "integer",
+      "default": 0,
+      "description": "Resync SSB every N transmissions (0 = never)"
+    },
+    "run_gnb_log_path": {
+      "type": "string",
+      "description": "Path to gNB log file for closed-loop detection feedback"
+    },
+    "run_autotune": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable auto-tuning based on gNB detection feedback"
+    },
+    "flood_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable flood mode (multiple preambles per occasion)"
+    },
+    "flood_num_preambles": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 64,
+      "default": 8,
+      "description": "Number of preamble indices per occasion (1-64)"
+    },
+    "flood_strategy": {
+      "type": "string",
+      "enum": ["superimpose", "cycle"],
+      "default": "superimpose",
+      "description": "Flood strategy: superimpose all in one burst, or cycle one per occasion"
+    },
+    "flood_power_backoff_db": {
+      "type": "number",
+      "default": 0.0,
+      "description": "Per-preamble power backoff in dB to avoid clipping"
+    },
+    "flood_slm_candidates": {
+      "type": "integer",
+      "default": 64,
+      "description": "SLM phase candidate count for PAPR reduction"
+    },
+    "multi_ro_freq_pos_count": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Number of frequency-domain PRACH positions (generates distinct RA-RNTIs)"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Jammer Configuration",
-  "description": "Jamming attack simulation configuration",
+  "description": "Jamming attack simulation configuration. Supports barrage (wideband), constant (narrowband Gaussian noise), and random (burst/idle cycling) attack types.",
   "type": "object",
   "required": [
     "id",
@@ -17,6 +17,11 @@
       "type": "string",
       "description": "Unique identifier"
     },
+    "attack_type": {
+      "type": "string",
+      "enum": ["barrage", "constant", "random"],
+      "description": "Type of jamming attack. barrage = wideband noise across full bandwidth, constant = narrowband Gaussian noise at a tone offset, random = burst/idle cycling of barrage"
+    },
     "center_frequency": {
       "type": "number",
       "description": "Center frequency in Hz (FR1: 410e6-7.125e9, FR2: 24.25e9-52.6e9)"
@@ -24,7 +29,7 @@
     "bandwidth": {
       "type": "number",
       "minimum": 1,
-      "description": "Bandwidth in Hz"
+      "description": "Total RF bandwidth in Hz"
     },
     "amplitude": {
       "type": "number",
@@ -34,21 +39,21 @@
     },
     "amplitude_width": {
       "type": "number",
-      "description": "Amplitude width"
+      "description": "Amplitude jitter/variation width"
     },
     "initial_phase": {
       "type": "number",
-      "description": "Initial phase"
+      "description": "Initial phase offset"
     },
     "sampling_freq": {
       "type": "number",
       "minimum": 1,
-      "description": "Sampling frequency in Hz (must be >= 2x bandwidth)"
+      "description": "Sampling frequency in Hz (must be >= 2x bandwidth for Nyquist)"
     },
     "num_samples": {
       "type": "integer",
       "minimum": 1,
-      "description": "Number of samples"
+      "description": "Number of waveform samples to generate (buffer size for streaming)"
     },
     "tx_gain": {
       "type": "number",
@@ -58,23 +63,51 @@
     },
     "device_args": {
       "type": "string",
-      "description": "Device arguments (e.g., type=b200)"
+      "description": "Device arguments (e.g., type=b200, type=b210)"
+    },
+    "tone_offset_hz": {
+      "type": "number",
+      "description": "Baseband frequency offset for constant/partial-band jamming in Hz. 0 = auto-shift to +1.92 MHz to avoid NR DC subcarrier. Typical values: +/-1.92e6, +/-3.84e6"
+    },
+    "burst_duration_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Burst duration in milliseconds for random attack type"
+    },
+    "idle_duration_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Idle duration in milliseconds for random attack type"
+    },
+    "jam_bandwidth_hz": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Narrowband noise bandwidth in Hz for constant attack type (e.g., 1.92e6 for SSB-targeted jamming)"
+    },
+    "num_tones": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of tones used to synthesize the noise comb for constant attack"
     },
     "write_iq": {
       "type": "boolean",
-      "description": "Write IQ samples to file"
+      "description": "Write IQ samples to .fc32 binary file"
     },
     "write_csv": {
       "type": "boolean",
-      "description": "Write CSV output"
+      "description": "Write CSV output (index, real, imag)"
     },
     "output_iq_file": {
       "type": "string",
-      "description": "Output IQ file path"
+      "description": "Output IQ binary file path"
     },
     "output_csv_file": {
       "type": "string",
       "description": "Output CSV file path"
+    },
+    "enable_autoconfigure": {
+      "type": "boolean",
+      "description": "Enable InfluxDB-based autoconfiguration of RF parameters"
     }
   }
 }

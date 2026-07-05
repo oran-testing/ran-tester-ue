@@ -1,4 +1,4 @@
-enable_cli: true
+enable_cli: false
 
 api_auth: 
   - name: "mcp-server"
@@ -20,27 +20,39 @@ api_auth:
 build_spec:
   - component: "cueltschey/sni5gect-compact"
     branch: "iq_file"
-    pull: false
+    pull: true
 
-  - component: "cueltschey/sstorm-rectest"
-    branch: "master"
+  - component: "oran-testing/ssb-spoofer"
+    branch: "autoconfiguration"
+    pull: true
+
+  - component: "oran-testing/rtue"
+    branch: "main"
     pull: false
+    dockerfile: "dockerfiles/Dockerfile.rtue"
+
 
 run_spec:
-  - component: "cueltschey/sni5gect-compact"
-    sleep_ms: 3000
-    worker_thread: "sni5gect"
-    name: "basic_file_sni5gect"
-    config_file: "configs/sni5gect/basic_file_test.yaml"
-    rf:
-      type: "none"
+  #- component: "cueltschey/sni5gect-compact"
+  #  name: "sni5gect_iq_file"
+  #  config_file: "configs/sni5gect/basic_file_test.yaml"
+  #  rf:
+  #    type: "none"
 
-  - component: "cueltschey/sstorm-rectest"
-    worker_thread: "sstorm"
-    name: "basic_zmq_signal_storm"
-    config_file: "configs/srsran/sstorm_zmq_docker_rectest.conf"
+  - component: "oran-testing/ssb-spoofer"
+    name: "zmq_ssb_spoof"
+    config_file: "configs/ssb_spoofer/zmq_relay.yaml"
     rf:
       type: "zmq"
       tcp_subnet: "172.22.0.0/24"
       gateway: "172.22.0.1"
+
+  - component: "oran-testing/rtue"
+    name: "zmq_ue"
+    config_file: "configs/srsran/ue_zmq_docker.conf"
+    rf:
+      type: "zmq"
+      tcp_subnet: "172.22.0.0/24"
+      gateway: "172.22.0.1"
+    sleep_ms: 3000
 

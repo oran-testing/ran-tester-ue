@@ -1,0 +1,26 @@
+FROM ubuntu:24.04 AS builder
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    cmake make gcc g++ pkg-config libfftw3-dev libmbedtls-dev libsctp-dev libyaml-cpp-dev \
+    libzmq3-dev libuhd-dev libboost-program-options-dev libgtest-dev git && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY . /src
+WORKDIR /build
+
+RUN cmake /src -DENABLE_UHD=Off -DENABLE_ZEROMQ=On -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    make -j$(nproc) gnb && \
+    make install
+
+FROM ubuntu:24.04
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libfftw3-dev libmbedtls-dev libsctp1 libyaml-cpp-dev libzmq3-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local/bin/gnb /usr/local/bin/gnb
+COPY --from=builder /usr/local/lib /usr/local/lib
+
+RUN ldconfig
+
+CMD ["gnb", "-c", "/gnb_config.yaml"]

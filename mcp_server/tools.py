@@ -40,9 +40,10 @@ Supported component types:
 - rtue: RAN Tester UE (.conf format)
 - sniffer: Packet sniffer (.toml format)
 - sni5gect: Security testing framework (.yaml format)
-- jammer: Jamming simulation (.yaml format)
+- jammer: Jamming simulation (.yaml format, supports attack_type: barrage/constant/random)
 - ssb_spoofer: SSB spoofing (.yaml format)
 - uuagent: UU interface agent (.conf format)
+- ra_spoof: PRACH preamble injector (.yaml format)
 
 RF types:
 - b200: USRP B200/B210 hardware
@@ -53,7 +54,7 @@ RF types:
             "properties": {
                 "component_type": {
                     "type": "string",
-                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent"],
+                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "ra_spoof"],
                     "description": "Type of component to start"
                 },
                 "config_json": {
@@ -240,7 +241,7 @@ def create_get_schema_tool(adapter):
             "properties": {
                 "component_type": {
                     "type": "string",
-                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent"],
+                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "ra_spoof"],
                     "description": "Component type to get schema for"
                 }
             },
@@ -273,7 +274,7 @@ def create_validate_config_tool(adapter):
             "properties": {
                 "component_type": {
                     "type": "string",
-                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent"]
+                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "ra_spoof"]
                 },
                 "config_json": {
                     "type": "object",
@@ -376,7 +377,7 @@ Lists all currently running components. Use this first to see what's active.
 
 ### 2. start_component
 Starts a new test component. Automatically validates and converts your JSON config.
-- **component_type**: One of: rtue, sniffer, sni5gect, jammer, ssb_spoofer, uuagent
+- **component_type**: One of: rtue, sniffer, sni5gect, jammer, ssb_spoofer, uuagent, ra_spoof
 - **config_json**: JSON object with component configuration (must include "id" field)
 - **rf_config**: RF hardware config, e.g., {"type": "b200"}
 
@@ -417,6 +418,7 @@ Lists existing configuration templates on the system.
 | jammer | Jamming simulation | .yaml | Simulates RF jamming attacks |
 | ssb_spoofer | SSB spoofing | .yaml | Spoofs synchronization signals |
 | uuagent | UU interface | .conf (INI) | UU interface agent for testing |
+| ra_spoof | PRACH injector | .yaml | Injects 5G NR PRACH preambles for security testing |
 
 ## RF Hardware Types
 
@@ -457,7 +459,7 @@ Lists existing configuration templates on the system.
 You provide JSON, the server converts it automatically:
 - rtue/uuagent: JSON -> .conf (INI format with sections like [rf], [nas])
 - sniffer: JSON -> .toml (with [sniffer] and [[pdcch]] sections)
-- sni5gect/jammer/ssb_spoofer: JSON -> .yaml
+- sni5gect/jammer/ssb_spoofer/ra_spoof: JSON -> .yaml
 
 ## Validation Rules
 
@@ -482,6 +484,26 @@ You provide JSON, the server converts it automatically:
 - bandwidth: > 0
 - sampling_freq: >= 2 * bandwidth (Nyquist)
 
+### Jammer Attack Types
+- **barrage** (default): Wideband noise across full bandwidth. Random frequency and amplitude per sample.
+- **constant**: Narrowband Gaussian noise at a configurable tone offset. Parameters: tone_offset_hz, jam_bandwidth_hz, num_tones. Used for targeted SSB/PBCH jamming.
+- **random**: Burst/idle cycling of barrage waveform. Parameters: burst_duration_ms, idle_duration_ms.
+
+### Jammer Attack-Specific Fields
+- **attack_type**: "barrage", "constant", or "random"
+- **tone_offset_hz**: Baseband offset for constant attack (0 = auto-shift to +1.92 MHz)
+- **jam_bandwidth_hz**: Noise bandwidth for constant attack (e.g., 1.92e6)
+- **burst_duration_ms**: TX burst duration for random attack
+- **idle_duration_ms**: Idle period for random attack
+
+### RA Spoof Required Fields
+- id, tx_gain_db, tx_device_args, influx_host, influx_org, influx_token, influx_bucket
+- tx_gain_db: 0-90
+- tx_preamble_index: 0-63
+- flood_num_preambles: 1-64 (if flood enabled)
+- flood_strategy: "superimpose" or "cycle"
+- multi_ro_freq_pos_count: >= 1
+
 ## Example Workflows
 
 ### Workflow: Start a UE and Sniffer
@@ -496,6 +518,15 @@ You provide JSON, the server converts it automatically:
 2. Call start_component with jammer config
 3. Call get_component_health to verify running
 4. When done, call stop_component
+
+### Workflow: PRACH Preamble Injection Attack
+1. Call get_component_schema for "ra_spoof" to see required fields
+2. Ensure InfluxDB is running with cell configuration data
+3. Call validate_config with ra_spoof config to verify fields
+4. Call start_component with ra_spoof config (USRP B200 required)
+5. Call get_component_logs to monitor preamble transmission
+6. Check gNB logs to verify PRACH preamble detection
+7. When done, call stop_component
 
 ### Workflow: Debug a Component
 1. Call list_components to see what's running
