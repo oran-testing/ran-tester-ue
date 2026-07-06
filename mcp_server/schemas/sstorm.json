@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Signal Storm Configuration",
+  "description": "Signal storm generator - generates signal storm attacks against 5G networks",
+  "type": "object",
+  "required": [
+    "id",
+    "ue_signal_storm",
+    "rf_srate",
+    "rf_tx_gain",
+    "rf_rx_gain"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for this component"
+    },
+    "ue_signal_storm": {
+      "type": "boolean",
+      "description": "Enable signal storm mode"
+    },
+    "rf_freq_offset": {
+      "type": "integer",
+      "description": "RF frequency offset"
+    },
+    "rf_tx_gain": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 90,
+      "description": "TX gain in dB (0-90)"
+    },
+    "rf_rx_gain": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 90,
+      "description": "RX gain in dB (0-90)"
+    },
+    "rf_srate": {
+      "type": "number",
+      "minimum": 1,
+      "description": "RF sample rate in Hz"
+    },
+    "rf_nof_antennas": {
+      "type": "integer",
+      "description": "Number of antennas"
+    },
+    "rf_device_name": {
+      "type": "string",
+      "description": "RF device name"
+    },
+    "rf_device_args": {
+      "type": "string",
+      "description": "Device arguments (e.g., type=b200)"
+    },
+    "rat_nr_bands": {
+      "type": "integer",
+      "description": "NR band number"
+    },
+    "rat_nr_nof_carriers": {
+      "type": "integer",
+      "description": "Number of NR carriers"
+    },
+    "rat_nr_max_nof_prb": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum number of PRBs"
+    },
+    "rat_nr_nof_prb": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of Physical Resource Blocks"
+    },
+    "usim_imsi": {
+      "type": "string",
+      "pattern": "^[0-9]{15}$",
+      "description": "IMSI (15 digits)"
+    },
+    "usim_mode": {
+      "type": "string",
+      "description": "USIM mode"
+    },
+    "usim_algo": {
+      "type": "string",
+      "description": "USIM algorithm"
+    },
+    "usim_opc": {
+      "type": "string",
+      "description": "USIM OPC"
+    },
+    "usim_k": {
+      "type": "string",
+      "description": "USIM K"
+    },
+    "usim_imei": {
+      "type": "string",
+      "description": "IMEI"
+    },
+    "nas_apn": {
+      "type": "string",
+      "description": "APN for NAS connection"
+    }
+  }
+}

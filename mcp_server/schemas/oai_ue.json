@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OAI UE Configuration",
+  "description": "OpenAirInterface UE emulator - uses CLI arguments for configuration",
+  "type": "object",
+  "required": [
+    "id"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for this component"
+    },
+    "args": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Explicit CLI arguments list (alternative to key-value fields)"
+    },
+    "r": {
+      "type": "string",
+      "description": "Number of PRBs (e.g., 106)"
+    },
+    "numerology": {
+      "type": "string",
+      "description": "Numerology (e.g., 1)"
+    },
+    "band": {
+      "type": "string",
+      "description": "NR band (e.g., 78)"
+    },
+    "C": {
+      "type": "string",
+      "description": "Downlink frequency in Hz (e.g., 3619200000)"
+    },
+    "ssb": {
+      "type": "string",
+      "description": "SSB position"
+    },
+    "ue-fo-compensation": {
+      "type": "string",
+      "description": "Enable frequency offset compensation"
+    },
+    "uicc0.imsi": {
+      "type": "string",
+      "description": "IMSI for UICC 0"
+    },
+    "uicc0.key": {
+      "type": "string",
+      "description": "Key for UICC 0"
+    },
+    "uicc0.opc": {
+      "type": "string",
+      "description": "OPC for UICC 0"
+    },
+    "uicc0.dnn": {
+      "type": "string",
+      "description": "DNN/APN for UICC 0"
+    },
+    "uicc0.nssai_sst": {
+      "type": "string",
+      "description": "NSSAI SST for UICC 0"
+    },
+    "usrp-args": {
+      "type": "string",
+      "description": "USRP device arguments"
+    }
+  }
+}

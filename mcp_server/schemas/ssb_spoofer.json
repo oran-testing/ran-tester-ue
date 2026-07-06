@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SSB Spoofer Configuration",
+  "description": "SSB Spoofing attack component configuration",
+  "type": "object",
+  "required": [
+    "id"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for this component"
+    },
+    "center_frequency": {
+      "type": "number",
+      "description": "Center frequency in Hz"
+    },
+    "bandwidth": {
+      "type": "number",
+      "description": "Bandwidth in Hz"
+    },
+    "tx_gain": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 90,
+      "description": "TX gain in dB (0-90)"
+    },
+    "device_args": {
+      "type": "string",
+      "description": "Device arguments (e.g., type=b200)"
+    },
+    "sampling_freq": {
+      "type": "number",
+      "description": "Sampling frequency in Hz"
+    },
+    "amplitude": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Signal amplitude (0-1)"
+    }
+  }
+}

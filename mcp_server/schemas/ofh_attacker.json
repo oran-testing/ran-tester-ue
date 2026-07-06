@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OFH Attacker Configuration",
+  "description": "Open Fronthaul attacker - intercepts and modifies O-RAN fronthaul traffic",
+  "type": "object",
+  "required": [
+    "id",
+    "injection_points",
+    "du",
+    "ru",
+    "attacker_dir",
+    "results_dir"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for this component"
+    },
+    "injection_points": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of injection points (e.g., [\"DU\", \"RU\"])"
+    },
+    "pcap_dir": {
+      "type": "string",
+      "description": "Directory for PCAP files"
+    },
+    "pcap_list": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of PCAP files to replay"
+    },
+    "du": {
+      "type": "string",
+      "description": "DU network interface (e.g., enp5s0f1)"
+    },
+    "ru": {
+      "type": "string",
+      "description": "RU network interface (e.g., enp8s0f0np0)"
+    },
+    "attacker_dir": {
+      "type": "string",
+      "description": "Attacker environment directory"
+    },
+    "results_dir": {
+      "type": "string",
+      "description": "Results output directory"
+    },
+    "duration_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Attack duration in seconds"
+    },
+    "tcpreplay_topspeed": {
+      "type": "integer",
+      "description": "tcpreplay top speed setting"
+    },
+    "tcpreplay_loop": {
+      "type": "integer",
+      "description": "Number of tcpreplay loops (0 = infinite)"
+    },
+    "keep_history": {
+      "type": "string",
+      "description": "Keep history setting"
+    }
+  }
+}
