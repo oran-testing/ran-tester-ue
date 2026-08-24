@@ -1,0 +1,24 @@
+
+--== srsRAN gNB (commit 4bf1543936) ==--
+
+Lower PHY in executor sequential baseband mode.
+Available radio types: uhd and zmq.
+Cell pci=1, bw=20 MHz, 1T1R, dl_arfcn=368500 (n3), dl_freq=1842.5 MHz, dl_ssb_arfcn=368410, ul_freq=1747.5 MHz
+
+N2: Connection to AMF on 10.53.1.2:38412 completed
+==== gNB started ===
+Type <h> to view help
+Stopping...
+Logfile stored in /tmp/gnb.log
+
+--== srsRAN gNB (commit 4bf1543936) ==--
+
+Lower PHY in executor sequential baseband mode.
+Available radio types: uhd and zmq.
+Cell pci=1, bw=20 MHz, 1T1R, dl_arfcn=368500 (n3), dl_freq=1842.5 MHz, dl_ssb_arfcn=368410, ul_freq=1747.5 MHz
+
+N2: Connection to AMF on 10.53.1.2:38412 completed
+==== gNB started ===
+Type <h> to view help
+Stopping...
+Logfile stored in /tmp/gnb.log

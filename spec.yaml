@@ -18,10 +18,6 @@ api_auth:
     allowed_components: ["rtue", "sniffer", "jammer", "sni5gect", "ssb_spoofer", "uuagent"]
 
 build_spec:
-  - component: "cueltschey/sni5gect-compact"
-    branch: "iq_file"
-    pull: true
-
   - component: "oran-testing/ssb-spoofer"
     branch: "autoconfiguration"
     pull: true
@@ -31,28 +27,31 @@ build_spec:
     pull: false
     dockerfile: "dockerfiles/Dockerfile.rtue"
 
+  - component: "cueltschey/sni5gect-compact"
+    branch: "iq_file"
+    pull: false
+
 
 run_spec:
-  #- component: "cueltschey/sni5gect-compact"
-  #  name: "sni5gect_iq_file"
-  #  config_file: "configs/sni5gect/basic_file_test.yaml"
-  #  rf:
-  #    type: "none"
-
-  - component: "oran-testing/ssb-spoofer"
-    name: "zmq_ssb_spoof"
-    config_file: "configs/ssb_spoofer/zmq_relay.yaml"
+  - component: "cueltschey/sni5gect-compact"
+    name: "basic_sniff"
+    config_file: "configs/sni5gect/basic_file_test.yaml"
     rf:
-      type: "zmq"
-      tcp_subnet: "172.22.0.0/24"
-      gateway: "172.22.0.1"
+      type: "none"
 
   - component: "oran-testing/rtue"
     name: "zmq_ue"
-    config_file: "configs/srsran/ue_zmq_docker.conf"
+    config_file: "configs/srsran/ue_zmq_relay.conf"
     rf:
       type: "zmq"
       tcp_subnet: "172.22.0.0/24"
       gateway: "172.22.0.1"
-    sleep_ms: 3000
 
+  - component: "oran-testing/ssb-spoofer"
+    name: "zmq_ssb_spoof"
+    config_file: "configs/ssb_spoofer/zmq_relay_mitm.yaml"
+    rf:
+      type: "zmq"
+      tcp_subnet: "172.22.0.0/24"
+      gateway: "172.22.0.1"
+    sleep_ms: 5000

@@ -2,7 +2,7 @@ cu_cp:
   amf:
     addr: 10.53.1.2
     port: 38412
-    bind_addr: 10.53.1.3
+    bind_addr: 10.53.1.1
     supported_tracking_areas:
       - tac: 7
         plmn_list:
@@ -40,7 +40,7 @@ cell_cfg:
 
 log:
   filename: /tmp/gnb.log
-  all_level: debug
+  all_level: info
   hex_max_size: 0
 
 pcap:

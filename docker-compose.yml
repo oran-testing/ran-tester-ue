@@ -36,7 +36,39 @@ services:
     tty: true
     stdin_open: true
 
+  zmq_relay:
+    build:
+      context: ./zmq_relay
+      dockerfile: Dockerfile
+    container_name: zmq_relay
+    environment:
+      - GNB_TX=tcp://172.22.0.1:5000
+      - SPOOFER_TX=tcp://zmq_ssb_spoof:7000
+      - UE_REP=tcp://*:5100
+      - SPOOFER_RX_REP=tcp://*:5101
+    networks:
+      rt_zmq:
+        ipv4_address: 172.22.0.10
+    restart: unless-stopped
 
+  zmq_ue_new:
+    image: ghcr.io/oran-testing/rtue:latest
+    container_name: zmq_ue_new
+    privileged: true
+    cap_add:
+      - SYS_NICE
+      - NET_ADMIN
+    depends_on:
+      zmq_relay:
+        condition: service_started
+    volumes:
+      - ./configs/srsran/ue_zmq_relay.conf:/ue.conf:ro
+    networks:
+      rt_zmq:
+        ipv4_address: 172.22.0.2
+    tty: true
+    stdin_open: true
+    restart: unless-stopped
 
   mcp-server:
     build:
@@ -106,3 +138,6 @@ networks:
     ipam:
       config:
         - subnet: 172.38.1.0/24
+  rt_zmq:
+    external: true
+    name: rt_zmq
