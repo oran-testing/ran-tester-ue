@@ -14,8 +14,8 @@ ru_sdr:
   device_driver: zmq
   device_args: tx_port=tcp://*:5000,rx_port=tcp://172.22.0.2:6000,base_srate=23.04e6
   srate: 23.04
-  tx_gain: 75
-  rx_gain: 40
+  tx_gain: -75
+  rx_gain: -40
 
 cell_cfg:
   dl_arfcn: 368500
