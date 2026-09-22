@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "ran-tester-ue": {
+      "type": "local",
+      "command": [
+        "docker",
+        "compose",
+        "run",
+        "--rm",
+        "mcp-server"
+      ],
+      "environment": {}
+    }
+  }
+}
