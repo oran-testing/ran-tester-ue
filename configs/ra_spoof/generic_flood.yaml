@@ -1,0 +1,33 @@
+# ra-spoof operational and test knobs
+# Precedence: built-in default < yaml < CLI flag
+
+tx:
+  gain_db: 55
+  preamble_index: 0
+  device_args: "type=b200"
+
+cfo:
+  correct: false
+  sign: 1
+  manual_hz: 0.0
+
+timing:
+  tx_offset_us: 0.0
+  ssb_first_symbol_override: -1
+
+freq:
+  msg1_freq_start_override: -1
+
+run:
+  continuous: true
+  max_tx: 99999999
+  resync_every: 0
+
+flood:
+  enabled: true           # master switch; --flood on CLI
+  num_preambles: 8        # how many indices to transmit per occasion (1–64)
+  strategy: "superimpose"  # "superimpose" = all in one burst (coherent add)
+                           # "cycle" = one index per occasion, rotate 0..N-1
+  power_backoff_db: 0.0    # reduce per-preamble amplitude to avoid clipping
+                           #   when superimposing (try 0 first; if gNB sees
+                           #   fewer than expected, try -3 to -6)

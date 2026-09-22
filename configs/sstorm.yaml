@@ -1,0 +1,43 @@
+enable_cli: true
+
+api_auth: 
+  - name: "mcp-server"
+    token: "testing_token"
+    scopes:
+      - "start_from_json"
+      - "start"
+      - "schemas/rtue"
+      - "schemas/sniffer"
+      - "schemas/jammer"
+      - "schemas/sni5gect"
+      - "list"
+      - "status"
+      - "stop"
+      - "logs"
+      - "health"
+    allowed_components: ["rtue", "sstorm", "sni5gect"]
+
+build_spec:
+  - component: "cueltschey/sni5gect-compact"
+    branch: "iq_file"
+    pull: false
+
+  - component: "cueltschey/sstorm-rectest"
+    branch: "master"
+    pull: false
+
+run_spec:
+  - component: "cueltschey/sni5gect-compact"
+    sleep_ms: 3000
+    worker_thread: "sni5gect"
+    name: "basic_file_sni5gect"
+    config_file: "configs/sni5gect/basic_file_test.yaml"
+    rf:
+      type: "none"
+
+  - component: "cueltschey/sstorm-rectest"
+    worker_thread: "sstorm"
+    name: "basic_zmq_signal_storm"
+    config_file: "configs/srsran/sstorm_zmq_docker_rectest.conf"
+    rf:
+      type: "b200"

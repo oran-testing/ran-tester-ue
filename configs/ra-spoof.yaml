@@ -1,4 +1,4 @@
-enable_cli: false
+enable_cli: true
 
 api_auth: 
   - name: "mcp-server"
@@ -15,17 +15,19 @@ api_auth:
       - "stop"
       - "logs"
       - "health"
-    allowed_components: ["sniffer", "ssb_spoofer"]
+    allowed_components: ["ra_spoof", "sni5gect"]
 
 build_spec:
-  - component: "cueltschey/ssb-spoofer"
-    branch: "master"
+  - component: "oran-testing/ra-spoof"
+    branch: "main"
     pull: false
 
 run_spec:
-  - component: "cueltschey/sstorm-rectest"
-    worker_thread: "ssb_spoofer"
-    name: "ocudu_band3_ssb_spoofer"
-    config_file: "configs/ssb_spoofer/srs_band3.yaml"
+  - component: "oran-testing/ra-spoof"
+    worker_thread: "ra_spoof"
+    name: "band3_rach_flood"
+    config_file: "configs/ra_spoof/generic_flood.yaml"
     rf:
       type: "b200"
+
+

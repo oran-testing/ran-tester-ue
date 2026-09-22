@@ -1,4 +1,4 @@
-enable_cli: false
+enable_cli: true
 
 api_auth: 
   - name: "mcp-server"
@@ -15,17 +15,17 @@ api_auth:
       - "stop"
       - "logs"
       - "health"
-    allowed_components: ["sniffer", "ssb_spoofer"]
+    allowed_components: ["sni5gect"]
 
 build_spec:
-  - component: "cueltschey/ssb-spoofer"
-    branch: "master"
+  - component: "cueltschey/sni5gect-compact"
+    branch: "main"
     pull: false
 
 run_spec:
-  - component: "cueltschey/sstorm-rectest"
-    worker_thread: "ssb_spoofer"
-    name: "ocudu_band3_ssb_spoofer"
-    config_file: "configs/ssb_spoofer/srs_band3.yaml"
+  - component: "cueltschey/sni5gect-compact"
+    worker_thread: "sni5gect"
+    name: "sni5gect_scan_band3"
+    config_file: "configs/sni5gect/srsgnb_band3.yaml"
     rf:
       type: "b200"
