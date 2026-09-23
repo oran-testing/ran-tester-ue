@@ -18,12 +18,23 @@ api_auth:
     allowed_components: ["sniffer", "ssb_spoofer"]
 
 build_spec:
-  - component: "cueltschey/ssb-spoofer"
-    branch: "master"
-    pull: false
+  - component: "oran-testing/ssb-spoofer"
+    branch: "main"
+    pull: true
+
+  - component: "oran-testing/rtue"
+    branch: "main"
+    pull: true
 
 run_spec:
-  - component: "cueltschey/sstorm-rectest"
+  - component: "oran-testing/rtue"
+    worker_thread: "rtue"
+    name: "victim_ue"
+    config_file: "configs/srsran/ue_uhd.conf"
+    sleep_ms: 3000
+    rf:
+      type: "b200"
+  - component: "oran-testing/ssb-spoofer"
     worker_thread: "ssb_spoofer"
     name: "ocudu_band3_ssb_spoofer"
     config_file: "configs/ssb_spoofer/srs_band3.yaml"

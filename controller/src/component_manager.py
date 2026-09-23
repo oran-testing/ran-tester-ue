@@ -139,8 +139,7 @@ class ComponentManager:
         try:
             enable_pull = component.get("pull", True)
             if enable_pull:
-                logging.info(f"Pulling Docker image: {docker_image}")
-                self.docker_client.images.pull(docker_image)
+                self._pull_image(docker_image)
             else:
                 logging.info(f"Building Docker image: {docker_image}")
                 repo_url = f"https://github.com/{component_path}"
@@ -367,6 +366,41 @@ class ComponentManager:
         })
 
         logging.debug(f"Got reponse from external target: {response}")
+
+    def _pull_image(self, docker_image):
+        logging.info(f"Pulling Docker image: {docker_image}")
+        last_heartbeat = 0.0
+
+        for line in self.docker_client.api.pull(docker_image, stream=True, decode=True):
+            if not isinstance(line, dict) or line.get("error"):
+                continue
+
+            status = line.get("status", "")
+            image_id = line.get("id", None)
+            progress = line.get("progress", None)
+
+            progress_detail = line.get("progressDetail") or {}
+            if not progress and progress_detail.get("current") and progress_detail.get("total"):
+                progress = (
+                    f"{progress_detail['current']}/{progress_detail['total']} "
+                    f"({100.0 * progress_detail['current'] / progress_detail['total']:.1f}%)"
+                )
+
+            message = f"[{image_id}] {status}" if image_id else status
+            if progress:
+                message = f"{message}: {progress}"
+
+            if not progress:
+                logging.info(message)
+            else:
+                now = time.time()
+                if now - last_heartbeat >= 5.0:
+                    logging.info(message)
+                    last_heartbeat = now
+                else:
+                    logging.debug(message)
+
+        logging.info(f"Pull of {docker_image} complete")
 
     def _run_buildx_build(self, docker_image, dockerfile_path, build_context):
         buildx_command = [

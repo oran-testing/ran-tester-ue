@@ -18,29 +18,27 @@ api_auth:
     allowed_components: ["rtue", "sniffer", "jammer", "sni5gect", "ssb_spoofer", "uuagent"]
 
 build_spec:
-  - component: "cueltschey/sni5gect-compact"
-    branch: "iq_file"
+  - component: "oran-testing/llm_worker"
+    branch: "main"
     pull: false
 
-  - component: "cueltschey/sstorm-rectest"
-    branch: "master"
-    pull: false
+  - component: "oran-testing/ra-spoof"
+    branch: "main"
+    pull: true
 
 run_spec:
-  - component: "cueltschey/sni5gect-compact"
-    sleep_ms: 3000
-    worker_thread: "sni5gect"
-    name: "basic_file_sni5gect"
-    config_file: "configs/sni5gect/basic_file_test.yaml"
+  - component: "oran-testing/rtue"
+    worker_thread: "rtue"
+    name: "rtue_test"
+    config_file: "configs/srsran/ue_uhd.conf"
     rf:
-      type: "none"
+      type: "b200"
 
-  - component: "cueltschey/sstorm-rectest"
-    worker_thread: "sstorm"
-    name: "basic_zmq_signal_storm"
-    config_file: "configs/srsran/sstorm_zmq_docker_rectest.conf"
+  - component: "oran-testing/ra-spoof"
+    sleep_ms: 3000
+    worker_thread: "ra_spoof"
+    name: "rach_spoofer"
+    config_file: "configs/ra_spoof/config.yaml"
     rf:
-      type: "zmq"
-      tcp_subnet: "172.22.0.0/24"
-      gateway: "172.22.0.1"
+        type: "b200"
 

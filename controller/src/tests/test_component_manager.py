@@ -116,6 +116,8 @@ def test_build_missing_docker_image(manager, mocker):
 
 
 def test_build_enable_pull(manager, mock_docker):
+    mock_docker.api.pull.return_value = iter([])
+
     manager.build(
         {
             "component": "cueltschey/rt-env-test",
@@ -124,7 +126,7 @@ def test_build_enable_pull(manager, mock_docker):
         }
     )
 
-    mock_docker.images.pull.assert_called_once_with("img")
+    mock_docker.api.pull.assert_called_once_with("img", stream=True, decode=True)
 
 
 # -------------------------
