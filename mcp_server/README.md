@@ -211,9 +211,12 @@ List all running RAN tester components.
 Start a component with JSON configuration. The MCP server automatically validates and converts the JSON to the appropriate format.
 
 **Input:**
-- `component_type`: One of `rtue`, `sniffer`, `sni5gect`, `jammer`, `ssb_spoofer`, `uuagent`
+- `component_type`: One of `rtue`, `sniffer`, `sni5gect`, `jammer`, `ssb_spoofer`, `uuagent`, `sstorm`
 - `config_json`: Component configuration as JSON object
 - `rf_config`: RF hardware configuration with `type` field (`b200`, `zmq`, or `none`)
+- `component` (optional): component repository override (e.g. `cueltschey/sstorm-rectest`).
+  The server maps each component type to the repository registered by the
+  controller's `build_spec`; override only if that registration differs.
 
 **Example - Start RTUE:**
 ```json
@@ -271,6 +274,29 @@ Start a component with JSON configuration. The MCP server automatically validate
   }
 }
 ```
+
+**Example - Start sstorm (5G NR signal storm / connection request flood):**
+```json
+{
+  "component_type": "sstorm",
+  "config_json": {
+    "id": "basic_zmq_signal_storm",
+    "ue_signal_storm": true,
+    "rf_srate": 23040000,
+    "rf_device_name": "uhd",
+    "rf_device_args": "type=b200, clock=external",
+    "rat_nr_bands": 3,
+    "rat_nr_nof_prb": 106,
+    "usim_imsi": "001010123456789",
+    "nas_apn": "srsapn"
+  },
+  "rf_config": {
+    "type": "b200"
+  }
+}
+```
+
+See `AGENTS.md` in the repository root for the full sstorm runbook.
 
 ### stop_component
 
@@ -364,6 +390,7 @@ The MCP server automatically converts JSON to the appropriate format based on co
 |----------------|---------------|-------------|
 | `rtue` | `.conf` (INI) | ConfigParser format with sections |
 | `uuagent` | `.conf` (INI) | Same as rtue |
+| `sstorm` | `.conf` (INI) | Same as rtue, plus `[ue] signal_storm` |
 | `sniffer` | `.toml` | TOML with sniffer and pdcch sections |
 | `sni5gect` | `.yaml` | YAML format |
 | `jammer` | `.yaml` | YAML format |
@@ -474,6 +501,7 @@ Available component types:
 - jammer: Jamming simulation (simulates RF jamming attacks)
 - ssb_spoofer: SSB spoofing (spoofs synchronization signals)
 - uuagent: UU interface agent
+- sstorm: 5G NR signal storm (floods connection requests against a RAN)
 
 RF hardware types:
 - b200: USRP B200/B210 software-defined radio

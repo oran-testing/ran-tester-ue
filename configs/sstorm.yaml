@@ -27,13 +27,13 @@ build_spec:
     pull: true
 
 run_spec:
-  - component: "cueltschey/sni5gect-compact"
-    sleep_ms: 3000
-    worker_thread: "sni5gect"
-    name: "sni5gect_to_configure"
-    config_file: "configs/sni5gect/srsgnb_band3.yaml"
-    rf:
-      type: "b200"
+  #- component: "cueltschey/sni5gect-compact"
+  #  sleep_ms: 3000
+  #  worker_thread: "sni5gect"
+  #  name: "sni5gect_to_configure"
+  #  config_file: "configs/sni5gect/srsgnb_band3.yaml"
+  #  rf:
+  #    type: "b200"
 
   - component: "cueltschey/sstorm-rectest"
     worker_thread: "sstorm"

@@ -149,6 +149,27 @@ class RTUEConfigConverter(ConfigConverter):
             return output.getvalue()
 
 
+class SstormConfigConverter(RTUEConfigConverter):
+    """Converts JSON to .conf (INI) format for the sstorm component
+
+    sstorm reuses the srsUE config layout, so the rtue section map and
+    validation rules apply unchanged. Only 'id' is required: every other
+    field is optional and the component keeps its own defaults.
+    """
+
+    REQUIRED_KEYS = [
+        'id'
+    ]
+
+    SCHEMA = dict(
+        RTUEConfigConverter.SCHEMA,
+        **{
+            "ue_signal_storm": bool,
+            "ue_signal_storm_cycle_interval_ms": int
+        }
+    )
+
+
 class SnifferConfigConverter(ConfigConverter):
     """Converts JSON to TOML format for Sniffer"""
 
@@ -347,4 +368,5 @@ CONFIG_CONVERTERS = {
     "jammer": JammerConfigConverter(),
     "ssb_spoofer": Sni5gectConfigConverter(),
     "uuagent": RTUEConfigConverter(),
+    "sstorm": SstormConfigConverter(),
 }

@@ -43,17 +43,27 @@ Supported component types:
 - jammer: Jamming simulation (.yaml format)
 - ssb_spoofer: SSB spoofing (.yaml format)
 - uuagent: UU interface agent (.conf format)
+- sstorm: 5G NR signal storm / connection request flood (.conf format)
 
 RF types:
 - b200: USRP B200/B210 hardware
 - zmq: ZeroMQ for simulation
-- none: No RF hardware""",
+- none: No RF hardware
+
+Notes:
+- The component image must already exist on the host (it is pulled by the
+  controller's build_spec at startup).
+- The component id must be unique among running components.
+- sstorm JSON example (see configs/srsran/sstorm.conf):
+  {"id": "basic_zmq_signal_storm", "ue_signal_storm": true, "rf_device_name": "uhd",
+   "rf_device_args": "type=b200", "rf_srate": 23040000, "rat_nr_bands": 3,
+   "rat_nr_nof_prb": 106, "usim_imsi": "001010123456789", "nas_apn": "srsapn"}""",
         inputSchema={
             "type": "object",
             "properties": {
                 "component_type": {
                     "type": "string",
-                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent"],
+                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "sstorm"],
                     "description": "Type of component to start"
                 },
                 "config_json": {
@@ -70,6 +80,10 @@ RF types:
                         }
                     },
                     "required": ["type"]
+                },
+                "component": {
+                    "type": "string",
+                    "description": "Optional component repository override (e.g. cueltschey/sstorm-rectest). Only needed if the controller's build_spec registers a different repository name for this component type."
                 }
             },
             "required": ["component_type", "config_json", "rf_config"]
@@ -81,6 +95,7 @@ async def handle_start_component(adapter, arguments):
     component_type = arguments["component_type"]
     config_json = arguments["config_json"]
     rf_config = arguments["rf_config"]
+    component_repo = arguments.get("component") or ConfigConverter.COMPONENT_REPOS.get(component_type)
 
     if "id" not in config_json:
         return [TextContent(
@@ -88,14 +103,25 @@ async def handle_start_component(adapter, arguments):
             text="Error: 'id' field required in config_json"
         )]
 
-    config_str, _ = ConfigConverter.convert(component_type, config_json)
+    try:
+        # Convert locally to fail fast on malformed configs. The controller
+        # re-validates and performs the authoritative conversion.
+        ConfigConverter.convert(component_type, config_json)
+    except ValueError as e:
+        return [TextContent(
+            type="text",
+            text=f"Invalid configuration:\n{str(e)}"
+        )]
 
     payload = {
         "id": config_json["id"],
         "type": component_type,
-        "config_str": config_str,
+        "config_json": config_json,
         "rf": rf_config
     }
+
+    if component_repo:
+        payload["component"] = component_repo
 
     success, result = adapter.start_component(payload)
 
@@ -240,7 +266,7 @@ def create_get_schema_tool(adapter):
             "properties": {
                 "component_type": {
                     "type": "string",
-                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent"],
+                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "sstorm"],
                     "description": "Component type to get schema for"
                 }
             },
@@ -273,7 +299,7 @@ def create_validate_config_tool(adapter):
             "properties": {
                 "component_type": {
                     "type": "string",
-                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent"]
+                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "sstorm"]
                 },
                 "config_json": {
                     "type": "object",
@@ -376,9 +402,12 @@ Lists all currently running components. Use this first to see what's active.
 
 ### 2. start_component
 Starts a new test component. Automatically validates and converts your JSON config.
-- **component_type**: One of: rtue, sniffer, sni5gect, jammer, ssb_spoofer, uuagent
+- **component_type**: One of: rtue, sniffer, sni5gect, jammer, ssb_spoofer, uuagent, sstorm
 - **config_json**: JSON object with component configuration (must include "id" field)
 - **rf_config**: RF hardware config, e.g., {"type": "b200"}
+- **component** (optional): component repository override, e.g., "cueltschey/sstorm-rectest".
+  Only needed when the controller's build_spec registers a repository name that differs
+  from the default mapping for the component type.
 
 ### 3. stop_component
 Stops a running component.
@@ -417,6 +446,44 @@ Lists existing configuration templates on the system.
 | jammer | Jamming simulation | .yaml | Simulates RF jamming attacks |
 | ssb_spoofer | SSB spoofing | .yaml | Spoofs synchronization signals |
 | uuagent | UU interface | .conf (INI) | UU interface agent for testing |
+| sstorm | NR signal storm | .conf (INI) | Floods connection requests against a RAN (recon stress test) |
+
+## SSTORM Quick Start
+`sstorm` repeatedly attaches to a cell and sends connection requests (RACH storm) to
+stress a RAN. Its config uses the srsUE `.conf` (INI) layout, so JSON keys are the INI
+keys prefixed with their section name: `ue_signal_storm`, `rf_srate`, `rat_nr_bands`, ...
+
+Ready-to-run payload (matches configs/srsran/sstorm.conf on a B200):
+
+```json
+{
+  "component_type": "sstorm",
+  "config_json": {
+    "id": "basic_zmq_signal_storm",
+    "ue_signal_storm": true,
+    "rf_srate": 23040000,
+    "rf_tx_gain": 70,
+    "rf_rx_gain": 40,
+    "rf_nof_antennas": 1,
+    "rf_device_name": "uhd",
+    "rf_device_args": "type=b200, clock=external",
+    "rf_time_adv_nsamples": 300,
+    "rat_nr_bands": 3,
+    "rat_nr_nof_carriers": 1,
+    "rat_nr_max_nof_prb": 106,
+    "rat_nr_nof_prb": 106,
+    "usim_imsi": "001010123456789",
+    "nas_apn": "srsapn",
+    "log_all_level": "error"
+  },
+  "rf_config": {"type": "b200"}
+}
+```
+
+Then: `get_component_health` with component_id "basic_zmq_signal_storm", read output with
+`get_component_logs`, and finish with `stop_component`. The generated `.conf` is written to
+`.generated/<id>.conf` on the host. Use rf_config {"type": "zmq"} plus
+configs/srsran/sstorm_zmq_docker.conf style device args for a hardware-free run.
 
 ## RF Hardware Types
 
@@ -455,7 +522,7 @@ Lists existing configuration templates on the system.
 
 ## Configuration Format Conversion
 You provide JSON, the server converts it automatically:
-- rtue/uuagent: JSON -> .conf (INI format with sections like [rf], [nas])
+- rtue/uuagent/sstorm: JSON -> .conf (INI format with sections like [rf], [nas])
 - sniffer: JSON -> .toml (with [sniffer] and [[pdcch]] sections)
 - sni5gect/jammer/ssb_spoofer: JSON -> .yaml
 

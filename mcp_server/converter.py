@@ -14,7 +14,20 @@ class ConfigConverter:
         "sni5gect": "yaml",
         "jammer": "yaml",
         "ssb_spoofer": "yaml",
-        "uuagent": "conf"
+        "uuagent": "conf",
+        "sstorm": "conf"
+    }
+
+    # The controller registers worker threads under the GitHub repository name
+    # from build_spec (e.g. "cueltschey/sstorm-rectest"), not the short
+    # component_type. The controller API accepts the repository name in the
+    # "component" field, which is what start_component sends.
+    COMPONENT_REPOS = {
+        "rtue": "oran-testing/rtue",
+        "sni5gect": "cueltschey/sni5gect-compact",
+        "ssb_spoofer": "oran-testing/ssb-spoofer",
+        "ra_spoof": "oran-testing/ra-spoof",
+        "sstorm": "cueltschey/sstorm-rectest"
     }
 
     @staticmethod
@@ -90,6 +103,7 @@ def convert_yaml_config(json_obj: Dict[str, Any]) -> str:
 CONVERTERS = {
     "rtue": convert_rtue,
     "uuagent": convert_rtue,
+    "sstorm": convert_rtue,
     "sniffer": convert_sniffer,
     "sni5gect": convert_yaml_config,
     "jammer": convert_yaml_config,

@@ -140,6 +140,7 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
 
         file_ext = {
             "rtue": "conf",
+            "sstorm": "conf",
             "sniffer": "toml"
         }.get(payload["type"], "yaml")
 
@@ -294,6 +295,7 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
 
         file_ext = {
             "rtue": "conf",
+            "sstorm": "conf",
             "sniffer": "toml"
         }.get(component_type, "yaml")
 

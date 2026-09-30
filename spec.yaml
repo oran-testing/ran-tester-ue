@@ -1,8 +1,26 @@
-enable_cli: true
+# Controller specification for the RAN Tester UE.
+#
+# This spec only PREPARES the system:
+#   - build_spec pulls/builds the component images (the controller registers the
+#     worker thread for every component listed here)
+#   - run_spec is empty and autorun is false, so nothing is started by the
+#     controller. Components are started on demand through the MCP server
+#     (start_component), which is the only supported way to run components here.
+#
+# Workflow:
+#   sudo docker compose up -d
+#   # then use the ran-tester-ue MCP tools: list_components, start_component, ...
+#
+# NOTE: api_auth[].token must match MCP_CONTROLLER_TOKEN in .env, otherwise the
+# MCP server gets HTTP 401 on every call.
 
-api_auth: 
+enable_cli: true
+autorun: false
+
+api_auth:
   - name: "mcp-server"
-    token: "testing_token"
+    # Must match MCP_CONTROLLER_TOKEN in .env
+    token: "default_changeme"
     scopes:
       - "start_from_json"
       - "start"
@@ -10,35 +28,33 @@ api_auth:
       - "schemas/sniffer"
       - "schemas/jammer"
       - "schemas/sni5gect"
+      - "schemas/ssb_spoofer"
+      - "schemas/uuagent"
+      - "schemas/sstorm"
       - "list"
       - "status"
       - "stop"
       - "logs"
       - "health"
-    allowed_components: ["rtue", "sniffer", "jammer", "sni5gect", "ssb_spoofer", "uuagent"]
+    # Component types this token may start. "sstorm" is the type name used by the
+    # MCP tools; it maps to the cueltschey/sstorm-rectest repository below.
+    allowed_components: ["rtue", "sniffer", "jammer", "sni5gect", "ssb_spoofer", "uuagent", "sstorm"]
 
+# Images are pulled here at controller startup. The worker thread is fetched from
+# https://raw.githubusercontent.com/<component>/<branch>/worker_thread.py and
+# registered under the component name, which is how start_component resolves
+# component_type -> worker thread.
 build_spec:
-  - component: "oran-testing/llm_worker"
-    branch: "main"
-    pull: false
-
-  - component: "oran-testing/ra-spoof"
-    branch: "main"
+  - component: "cueltschey/sstorm-rectest"
+    branch: "master"
     pull: true
 
-run_spec:
-  - component: "oran-testing/rtue"
-    worker_thread: "rtue"
-    name: "rtue_test"
-    config_file: "configs/srsran/ue_uhd.conf"
-    rf:
-      type: "b200"
-
-  - component: "oran-testing/ra-spoof"
-    sleep_ms: 3000
-    worker_thread: "ra_spoof"
-    name: "rach_spoofer"
-    config_file: "configs/ra_spoof/config.yaml"
-    rf:
-        type: "b200"
-
+# Intentionally empty: sstorm is started through MCP, not by the controller.
+# The equivalent controller entry (for reference only) is:
+#   - component: "cueltschey/sstorm-rectest"
+#     worker_thread: "sstorm"
+#     name: "basic_zmq_signal_storm"
+#     config_file: "configs/srsran/sstorm.conf"
+#     rf:
+#       type: "b200"
+run_spec: []
