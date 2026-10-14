@@ -1,0 +1,32 @@
+enable_cli: true
+
+api_auth: 
+  - name: "mcp-server"
+    token: "testing_token"
+    scopes:
+      - "start_from_json"
+      - "start"
+      - "schemas/rtue"
+      - "schemas/sniffer"
+      - "schemas/jammer"
+      - "schemas/sni5gect"
+      - "list"
+      - "status"
+      - "stop"
+      - "logs"
+      - "health"
+    allowed_components: ["rtue"]
+
+build_spec:
+  - component: "oran-testing/Dos-attacker"
+    branch: "main"
+    pull: true
+
+run_spec:
+
+  - component: "oran-testing/Dos-attacker"
+    worker_thread: "ofh_attacker"
+    name: "ofh_attacker_1"
+    config_file: "configs/ofh/ofh.toml"
+    rf:
+      type: "none"

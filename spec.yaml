@@ -15,7 +15,6 @@
 # MCP server gets HTTP 401 on every call.
 
 enable_cli: true
-autorun: false
 
 api_auth:
   - name: "mcp-server"
@@ -51,10 +50,10 @@ build_spec:
 
 # Intentionally empty: sstorm is started through MCP, not by the controller.
 # The equivalent controller entry (for reference only) is:
-#   - component: "cueltschey/sstorm-rectest"
-#     worker_thread: "sstorm"
-#     name: "basic_zmq_signal_storm"
-#     config_file: "configs/srsran/sstorm.conf"
-#     rf:
-#       type: "b200"
-run_spec: []
+run_spec:
+   - component: "cueltschey/sstorm-rectest"
+     worker_thread: "sstorm"
+     name: "basic_zmq_signal_storm"
+     config_file: "configs/srsran/sstorm.conf"
+     rf:
+       type: "b200"
