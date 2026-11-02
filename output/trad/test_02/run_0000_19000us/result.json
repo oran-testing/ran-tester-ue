@@ -1,0 +1,8 @@
+{
+  "run_index": 0,
+  "burst_interval_us": 19000,
+  "periodicity_ms": 20,
+  "spoofer_id": "trad_ssb_0000_19000us",
+  "rtue_id": "trad_ue_0000_19000us",
+  "error": "gnb: Command '['docker', 'pull', 'ghcr.io/cueltschey/srsgnb']' timed out after 180 seconds"
+}

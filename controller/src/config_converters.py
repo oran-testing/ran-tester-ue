@@ -361,6 +361,75 @@ class JammerConfigConverter(ConfigConverter):
         return yaml.dump(config_data, sort_keys=False, indent=2)
 
 
+class OfhConfigConverter(ConfigConverter):
+    """Converts JSON to TOML format for OFH attacker"""
+
+    REQUIRED_KEYS = ['id']
+
+    SCHEMA = {
+        "id": str,
+        "injection_points": list,
+        "pcap_dir": str,
+        "pcap_list": list,
+        "du": str,
+        "ru": str,
+        "attacker_dir": str,
+        "results_dir": str,
+        "duration_seconds": (int, float),
+        "tcpreplay_topspeed": int,
+        "tcpreplay_mbps": (int, float),
+        "tcpreplay_loop": int,
+        "keep_history": str,
+    }
+
+    def validate(self, json_obj: dict) -> list:
+        errors = []
+
+        for key in self.REQUIRED_KEYS:
+            if key not in json_obj:
+                errors.append(f"Missing required key: '{key}'")
+
+        for key, value in json_obj.items():
+            if key in self.SCHEMA:
+                expected_type = self.SCHEMA[key]
+                if not isinstance(value, expected_type):
+                    errors.append(
+                        f"Invalid type for '{key}': expected {expected_type}, got {type(value).__name__}"
+                    )
+
+        if 'tcpreplay_topspeed' in json_obj:
+            ts = json_obj['tcpreplay_topspeed']
+            if ts not in (0, 1):
+                errors.append("tcpreplay_topspeed must be 0 or 1")
+
+        if 'tcpreplay_mbps' in json_obj:
+            mbps = json_obj['tcpreplay_mbps']
+            if mbps <= 0:
+                errors.append("tcpreplay_mbps must be > 0")
+
+        if 'duration_seconds' in json_obj and json_obj['duration_seconds'] <= 0:
+            errors.append("duration_seconds must be > 0")
+
+        if 'injection_points' in json_obj:
+            ips = json_obj['injection_points']
+            if not isinstance(ips, list) or not ips:
+                errors.append("injection_points must be a non-empty list")
+            else:
+                for ip in ips:
+                    if ip not in ("DU", "RU"):
+                        errors.append(f"injection_points item '{ip}' must be 'DU' or 'RU'")
+
+        return errors
+
+    def from_json(self, json_obj: dict) -> str:
+        errors = self.validate(json_obj)
+        if errors:
+            raise ValueError(f"Validation failed: {'; '.join(errors)}")
+
+        config_data = {k: v for k, v in json_obj.items() if k != 'id'}
+        return toml.dumps(config_data)
+
+
 CONFIG_CONVERTERS = {
     "rtue": RTUEConfigConverter(),
     "sniffer": SnifferConfigConverter(),
@@ -369,4 +438,5 @@ CONFIG_CONVERTERS = {
     "ssb_spoofer": Sni5gectConfigConverter(),
     "uuagent": RTUEConfigConverter(),
     "sstorm": SstormConfigConverter(),
+    "ofh": OfhConfigConverter(),
 }

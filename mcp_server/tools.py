@@ -63,7 +63,7 @@ Notes:
             "properties": {
                 "component_type": {
                     "type": "string",
-                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "sstorm"],
+                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "sstorm", "ofh"],
                     "description": "Type of component to start"
                 },
                 "config_json": {
@@ -299,7 +299,7 @@ def create_validate_config_tool(adapter):
             "properties": {
                 "component_type": {
                     "type": "string",
-                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "sstorm"]
+                    "enum": ["rtue", "sniffer", "sni5gect", "jammer", "ssb_spoofer", "uuagent", "sstorm", "ofh"]
                 },
                 "config_json": {
                     "type": "object",

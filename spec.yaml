@@ -30,6 +30,7 @@ api_auth:
       - "schemas/ssb_spoofer"
       - "schemas/uuagent"
       - "schemas/sstorm"
+      - "schemas/ofh"
       - "list"
       - "status"
       - "stop"
@@ -37,7 +38,7 @@ api_auth:
       - "health"
     # Component types this token may start. "sstorm" is the type name used by the
     # MCP tools; it maps to the cueltschey/sstorm-rectest repository below.
-    allowed_components: ["rtue", "sniffer", "jammer", "sni5gect", "ssb_spoofer", "uuagent", "sstorm"]
+    allowed_components: ["rtue", "sniffer", "jammer", "sni5gect", "ssb_spoofer", "uuagent", "sstorm", "ofh_attacker", "ofh"]
 
 # Images are pulled here at controller startup. The worker thread is fetched from
 # https://raw.githubusercontent.com/<component>/<branch>/worker_thread.py and
@@ -47,13 +48,16 @@ build_spec:
   - component: "cueltschey/sstorm-rectest"
     branch: "master"
     pull: true
+  - component: "oran-testing/ssb-spoofer"
+    branch: "main"
+    pull: true
+  - component: "oran-testing/rtue"
+    branch: "main"
+    pull: true
+  - component: "oran-testing/dos-attacker"
+    branch: "master"
+    pull: true
 
 # Intentionally empty: sstorm is started through MCP, not by the controller.
 # The equivalent controller entry (for reference only) is:
-run_spec:
-   - component: "cueltschey/sstorm-rectest"
-     worker_thread: "sstorm"
-     name: "basic_zmq_signal_storm"
-     config_file: "configs/srsran/sstorm.conf"
-     rf:
-       type: "b200"
+run_spec: []

@@ -1,0 +1,12 @@
+injection_points = [ "DU",]
+pcap_dir = "Traffic/"
+pcap_list = []
+du = "lo"
+ru = "lo"
+attacker_dir = "/attack_env"
+results_dir = "./attack_results"
+duration_seconds = 10
+tcpreplay_topspeed = 1
+tcpreplay_loop = 0
+keep_history = "0"
+tcpreplay_mbps = 100

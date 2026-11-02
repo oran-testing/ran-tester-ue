@@ -1,0 +1,5 @@
+step,run_id,burst_interval_us,periodicity_ms,tx_gain_db,burst_length_ms,pss_sss_correlation_peak_ratio,pbch_block_error_rate,coreset0_blind_decode_failure_rate,sib1_decode_timeout_count,attach_denial_pct,attach_denied_observed,attach_attempts_observed,time_to_camp_ms,cell_barred_detected,mib_crc_err,coreset0_out_of_bounds
+1,ssb_spoofer_sweep_1_19000us,19000,20,60.0,1,,,,,,0,0,,0,0,0
+2,ssb_spoofer_sweep_2_9000us,9000,10,60.0,1,,,,,,0,0,,0,0,0
+3,ssb_spoofer_sweep_3_4000us,4000,5,60.0,1,,,,,,0,0,,0,0,0
+4,ssb_spoofer_sweep_4_2000us,2000,3,60.0,1,,,,,,0,0,,0,0,0

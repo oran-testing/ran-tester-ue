@@ -15,7 +15,8 @@ class ConfigConverter:
         "jammer": "yaml",
         "ssb_spoofer": "yaml",
         "uuagent": "conf",
-        "sstorm": "conf"
+        "sstorm": "conf",
+        "ofh": "toml"
     }
 
     # The controller registers worker threads under the GitHub repository name
@@ -27,7 +28,8 @@ class ConfigConverter:
         "sni5gect": "cueltschey/sni5gect-compact",
         "ssb_spoofer": "oran-testing/ssb-spoofer",
         "ra_spoof": "oran-testing/ra-spoof",
-        "sstorm": "cueltschey/sstorm-rectest"
+        "sstorm": "cueltschey/sstorm-rectest",
+        "ofh": "oran-testing/dos-attacker"
     }
 
     @staticmethod
@@ -100,6 +102,11 @@ def convert_yaml_config(json_obj: Dict[str, Any]) -> str:
     return yaml.dump(config_data, sort_keys=False, indent=2)
 
 
+def convert_toml_config(json_obj: dict) -> str:
+    config_data = {k: v for k, v in json_obj.items() if k != 'id'}
+    return toml.dumps(config_data)
+
+
 CONVERTERS = {
     "rtue": convert_rtue,
     "uuagent": convert_rtue,
@@ -107,5 +114,6 @@ CONVERTERS = {
     "sniffer": convert_sniffer,
     "sni5gect": convert_yaml_config,
     "jammer": convert_yaml_config,
-    "ssb_spoofer": convert_yaml_config
+    "ssb_spoofer": convert_yaml_config,
+    "ofh": convert_toml_config,
 }

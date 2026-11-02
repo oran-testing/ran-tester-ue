@@ -1,0 +1,174 @@
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mmodify CORESET0: yes
+[2026-10-22T21:02:41+00:00] [34m[2026-10-22 21:02:41] DEBUG: [0m  --------------------------------------------------------
+[2026-10-22T21:02:41+00:00] RF device 'UHD' successfully opened
+[2026-10-22T21:02:40+00:00] [INFO] [B200] Performing register loopback test...
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mmodify cell_barred: yes
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mburst length: 1 ms
+[2026-10-22T21:07:21+00:00] SSB processor configured successfully
+[2026-10-22T21:02:41+00:00] Sample rate: 23.04 MHz
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mdevice: uhd
+[2026-10-22T21:02:42+00:00] None
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0m[Burst Control]
+[2026-10-22T21:02:41+00:00] Initializing SSB processor...
+[2026-10-22T21:02:41+00:00] SSB frequency: 1842.05 MHz
+[2026-10-22T21:07:19+00:00] Active RF plugins: libsrsran_rf_uhd.so libsrsran_rf_zmq.so
+[2026-10-22T21:02:40+00:00] [INFO] [LOGGING] Fastpath logging disabled at runtime.
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mRX gain: 40.00 dB
+[2026-10-22T21:03:12+00:00] [31m[2026-10-22 21:03:11] ERROR: [0m    - Check RF configuration (frequency, gain, etc.)
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mmax bursts: unlimited
+[2026-10-22T21:02:39+00:00] ========================================================================
+[2026-10-22T21:02:42+00:00] SSB processor configured successfully
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mmax bursts: unlimited
+[2026-10-22T21:07:20+00:00] Configuring SSB processor...
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0margs: type=b200,serial=318898A
+[2026-10-22T21:02:40+00:00] [INFO] [B200] Performing register loopback test...
+[2026-10-22T21:02:40+00:00] Inactive RF plugins:
+[2026-10-22T21:02:41+00:00] Center frequency: 1842.05 MHz
+[2026-10-22T21:07:19+00:00] [INFO] [B200] Initialize CODEC control...
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mTX freq: 1842.050 MHz
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mpattern: A
+[2026-10-22T21:07:19+00:00] [INFO] [B200] Detected Device: B210
+[2026-10-22T21:03:12+00:00] [31m[2026-10-22 21:03:11] ERROR: [0m --------------------------------------------------------
+[2026-10-22T21:07:20+00:00] [INFO] [B200] Actually got clock rate 23.040000 MHz.
+[2026-10-22T21:07:19+00:00] Inactive RF plugins:
+[2026-10-22T21:02:40+00:00] [INFO] [B200] Asking for clock rate 23.040000 MHz...
+[2026-10-22T21:07:20+00:00] Sample rate: 23.04 MHz
+[2026-10-22T21:02:42+00:00] ======================================================================
+[2026-10-22T21:07:20+00:00] Setting RX sample rate: 23.04 MHz
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mRX freq: 1842.050 MHz
+[2026-10-22T21:02:39+00:00] WARNING: For authorized security research and testing only!
+[2026-10-22T21:02:41+00:00] Actual TX frequency: 1842.05 MHz
+[2026-10-22T21:02:41+00:00] Setting RX sample rate: 23.04 MHz
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0m---- Configuration ----
+[2026-10-22T21:07:19+00:00] [34m[2026-10-22 21:07:19] DEBUG: [0m            Initializing RF Device
+[2026-10-22T21:07:20+00:00] Center frequency: 1842.05 MHz
+[2026-10-22T21:07:20+00:00] [34m[2026-10-22 21:07:20] DEBUG: [0m            Initializing SSB Processor
+[2026-10-22T21:07:19+00:00] 5G NR SSB Spoofer v1.0
+[2026-10-22T21:02:40+00:00] [INFO] [B200] Initialize CODEC control...
+[2026-10-22T21:02:40+00:00] Opening RF device...
+[2026-10-22T21:07:19+00:00] [INFO] [B200] Operating over USB 3.
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mdevice: uhd
+[2026-10-22T21:02:41+00:00] Subcarrier spacing: 15 kHz
+[2026-10-22T21:07:19+00:00] ========================================================================
+[2026-10-22T21:07:20+00:00] Setting TX gain: 60 dB
+[2026-10-22T21:03:12+00:00] [31m[2026-10-22 21:03:11] ERROR: [0m    - Verify target gNB is transmitting
+[2026-10-22T21:03:12+00:00] [31m[2026-10-22 21:03:11] ERROR: [0m  --------------------------------------------------------
+[2026-10-22T21:07:20+00:00] Supported RF device list: UHD zmq file
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mcontinuous TX: yes
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mTX gain: 60.00 dB
+[2026-10-22T21:02:39+00:00] None
+[2026-10-22T21:07:21+00:00] None
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0m[Burst Control]
+[2026-10-22T21:07:21+00:00] [*] Initializing receiver... Ready!
+[2026-10-22T21:03:12+00:00] [31m[2026-10-22 21:03:11] ERROR: [0m    - Try increasing scan duration
+[2026-10-22T21:02:42+00:00] SSB SCAN | PCI: 1 | Duration: 30s | RX Buffer: 23040 samples
+[2026-10-22T21:07:19+00:00] [34m[2026-10-22 21:07:19] DEBUG: [0m --------------------------------------------------------
+[2026-10-22T21:02:40+00:00] [INFO] [B200] Initialize Radio control...
+[2026-10-22T21:07:21+00:00] SSB SCAN | PCI: 1 | Duration: 30s | RX Buffer: 23040 samples
+[2026-10-22T21:02:40+00:00] [INFO] [B200] Register loopback test passed
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mcontinuous TX: yes
+[2026-10-22T21:07:20+00:00] RF device initialized successfully
+[2026-10-22T21:02:41+00:00] Setting RX frequency: 1842.05 MHz
+[2026-10-22T21:02:41+00:00] Trying to open RF device 'UHD'
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mscan for target: yes
+[2026-10-22T21:07:20+00:00] Actual RX sample rate: 23.04 MHz
+[2026-10-22T21:02:41+00:00] Opening USRP channels=1, args: type=b200,serial=318898A,master_clock_rate=23.04e6
+[2026-10-22T21:02:41+00:00] Setting TX frequency: 1842.05 MHz
+[2026-10-22T21:07:20+00:00] SSB pattern: A
+[2026-10-22T21:07:19+00:00] None
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0msrate: 23.040 MHz
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0m[SSB]
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mburst interval: 9000 us
+[2026-10-22T21:07:20+00:00] Setting RX frequency: 1842.05 MHz
+[2026-10-22T21:07:20+00:00] [INFO] [B200] Register loopback test passed
+[2026-10-22T21:07:19+00:00] ========================================================================
+[2026-10-22T21:07:19+00:00] [INFO] [UHD] linux; GNU C++ version 14.2.0; Boost_108400; UHD_4.7.0.0
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0m[RF]
+[2026-10-22T21:07:20+00:00] [INFO] [B200] Initialize Radio control...
+[2026-10-22T21:02:41+00:00] [INFO] [B200] Actually got clock rate 23.040000 MHz.
+[2026-10-22T21:02:41+00:00] Supported RF device list: UHD zmq file
+[2026-10-22T21:02:40+00:00] [INFO] [B200] Operating over USB 3.
+[2026-10-22T21:02:42+00:00] None
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mmodify CORESET0: yes
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0m---- Configuration ----
+[2026-10-22T21:02:41+00:00] Setting RX gain: 40 dB
+[2026-10-22T21:02:42+00:00] ======================================================================
+[2026-10-22T21:07:19+00:00] Active RF plugins: libsrsran_rf_uhd.so libsrsran_rf_zmq.so
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0msrate: 23.040 MHz
+[2026-10-22T21:02:40+00:00] [INFO] [UHD RF] RF UHD Generic instance constructed
+[2026-10-22T21:02:39+00:00] ========================================================================
+[2026-10-22T21:07:20+00:00] RF device 'UHD' successfully opened
+[2026-10-22T21:07:20+00:00] Initializing SSB processor...
+[2026-10-22T21:02:41+00:00] SSB pattern: A
+[2026-10-22T21:02:41+00:00] Actual RX sample rate: 23.04 MHz
+[2026-10-22T21:02:41+00:00] Configuring SSB processor...
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mperiod: 10 ms
+[2026-10-22T21:02:39+00:00] Active RF plugins: libsrsran_rf_uhd.so libsrsran_rf_zmq.so
+[2026-10-22T21:07:19+00:00] [34m[2026-10-22 21:07:19] DEBUG: [0m>> Loading configuration from: /spoofer.yaml
+[2026-10-22T21:02:41+00:00] Actual RX frequency: 1842.05 MHz
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mRX gain: 40.00 dB
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0m[Attack]
+[2026-10-22T21:02:39+00:00] [34m[2026-10-22 21:02:39] DEBUG: [0m>> Loading configuration from: /spoofer.yaml
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mmodify cell_barred: yes
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mtarget PCI: 1
+[2026-10-22T21:02:42+00:00] [*] Initializing receiver... Ready!
+[2026-10-22T21:07:20+00:00] Setting TX frequency: 1842.05 MHz
+[2026-10-22T21:02:39+00:00] [34m[2026-10-22 21:02:39] DEBUG: [0m --------------------------------------------------------
+[2026-10-22T21:07:20+00:00] Setting RX gain: 40 dB
+[2026-10-22T21:07:19+00:00] Opening RF device...
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mRX freq: 1842.050 MHz
+[2026-10-22T21:02:39+00:00] None
+[2026-10-22T21:07:19+00:00] None
+[2026-10-22T21:07:19+00:00] [INFO] [UHD RF] RF UHD Generic instance constructed
+[2026-10-22T21:02:40+00:00] [INFO] [B200] Detected Device: B210
+[2026-10-22T21:07:20+00:00] [34m[2026-10-22 21:07:20] DEBUG: [0m --------------------------------------------------------
+[2026-10-22T21:02:41+00:00] Setting TX gain: 60 dB
+[2026-10-22T21:02:40+00:00] [34m[2026-10-22 21:02:39] DEBUG: [0m            Initializing RF Device
+[2026-10-22T21:02:40+00:00] [INFO] [UHD] linux; GNU C++ version 14.2.0; Boost_108400; UHD_4.7.0.0
+[2026-10-22T21:07:21+00:00] ======================================================================
+[2026-10-22T21:03:12+00:00] [31m[2026-10-22 21:03:11] ERROR: [0m  --------------------------------------------------------
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mSCS: 15 kHz
+[2026-10-22T21:07:21+00:00] None
+[2026-10-22T21:03:11+00:00] Received signal 15, shutting down...
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mperiod: 10 ms
+[2026-10-22T21:02:40+00:00] [INFO] [B200] Register loopback test passed
+[2026-10-22T21:07:20+00:00] [INFO] [B200] Performing register loopback test...
+[2026-10-22T21:02:41+00:00] [34m[2026-10-22 21:02:41] DEBUG: [0m --------------------------------------------------------
+[2026-10-22T21:07:20+00:00] Trying to open RF device 'UHD'
+[2026-10-22T21:03:12+00:00] [31m[2026-10-22 21:03:11] ERROR: [0m    Suggestions:
+[2026-10-22T21:07:20+00:00] SSB frequency: 1842.05 MHz
+[2026-10-22T21:07:20+00:00] [INFO] [B200] Asking for clock rate 23.040000 MHz...
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mscan for target: yes
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mtarget PCI: 1
+[2026-10-22T21:07:20+00:00] Actual TX frequency: 1842.05 MHz
+[2026-10-22T21:03:12+00:00] [31m[2026-10-22 21:03:11] ERROR: [0m            Failed to find target SSB
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mSCS: 15 kHz
+[2026-10-22T21:07:20+00:00] Actual RX frequency: 1842.05 MHz
+[2026-10-22T21:07:20+00:00] Subcarrier spacing: 15 kHz
+[2026-10-22T21:02:39+00:00] 5G NR SSB Spoofer v1.0
+[2026-10-22T21:02:41+00:00] [34m[2026-10-22 21:02:41] DEBUG: [0m            Initializing SSB Processor
+[2026-10-22T21:07:20+00:00] [INFO] [B200] Performing register loopback test...
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0m[RF]
+[2026-10-22T21:07:19+00:00] ========================================================================
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0m[Attack]
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mTX gain: 60.00 dB
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0m[SSB]
+[2026-10-22T21:02:40+00:00] [34m[2026-10-22 21:02:39] DEBUG: [0m  --------------------------------------------------------
+[2026-10-22T21:07:19+00:00] WARNING: For authorized security research and testing only!
+[2026-10-22T21:07:20+00:00] [INFO] [B200] Register loopback test passed
+[2026-10-22T21:02:39+00:00] Inactive RF plugins:
+[2026-10-22T21:07:20+00:00] [34m[2026-10-22 21:07:20] DEBUG: [0m  --------------------------------------------------------
+[2026-10-22T21:02:41+00:00] RF device initialized successfully
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mTX freq: 1842.050 MHz
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mburst length: 1 ms
+[2026-10-22T21:07:19+00:00] [34m[2026-10-22 21:07:19] DEBUG: [0m  --------------------------------------------------------
+[2026-10-22T21:02:39+00:00] [32m[2026-10-22 21:02:39] INFO : [0mpattern: A
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0margs: type=b200,serial=318898A
+[2026-10-22T21:07:19+00:00] Inactive RF plugins:
+[2026-10-22T21:03:11+00:00] [    |    ] Scanning SSB... 0.1s / 30.0s      [   /     ] Scanning SSB... 0.2s / 30.0s      [  --     ] Scanning SSB... 0.3s / 30.0s      [ \       ] Scanning SSB... 0.4s / 30.0s      [    |    ] Scanning SSB... 0.5s / 30.0s      [     \   ] Scanning SSB... 0.6s / 30.0s      [      -- ] Scanning SSB... 0.7s / 30.0s      [       / ] Scanning SSB... 0.7s / 30.0s      [    |    ] Scanning SSB... 0.8s / 30.0s      [   /     ] Scanning SSB... 0.9s / 30.0s      [  --     ] Scanning SSB... 1.0s / 30.0s      [ \       ] Scanning SSB... 1.1s / 30.0s      [    |    ] Scanning SSB... 1.2s / 30.0s      [   /     ] Scanning SSB... 1.2s / 30.0s      [  --     ] Scanning SSB... 1.4s / 30.0s      [ \       ] Scanning SSB... 1.4s / 30.0s      [    |    ] Scanning SSB... 1.5s / 30.0s      [     \   ] Scanning SSB... 1.6s / 30.0s      [      -- ] Scanning SSB... 1.7s / 30.0s      [       / ] Scanning SSB... 1.8s / 30.0s      [    |    ] Scanning SSB... 1.9s / 30.0s      [   /     ] Scanning SSB... 2.0s / 30.0s      [  --     ] Scanning SSB... 2.0s / 30.0s      [ \       ] Scanning SSB... 2.1s / 30.0s      [    |    ] Scanning SSB... 2.2s / 30.0s      [   /     ] Scanning SSB... 2.3s / 30.0s      [  --     ] Scanning SSB... 2.4s / 30.0s      [ \       ] Scanning SSB... 2.5s / 30.0s      [    |    ] Scanning SSB... 2.6s / 30.0s      [     \   ] Scanning SSB... 2.6s / 30.0s      [      -- ] Scanning SSB... 2.7s / 30.0s      [       / ] Scanning SSB... 2.8s / 30.0s      [    |    ] Scanning SSB... 2.9s / 30.0s      [   /     ] Scanning SSB... 3.0s / 30.0s      [  --     ] Scanning SSB... 3.1s / 30.0s      [ \       ] Scanning SSB... 3.2s / 30.0s      [    |    ] Scanning SSB... 3.3s / 30.0s      [   /     ] Scanning SSB... 3.3s / 30.0s      [  --     ] Scanning SSB... 3.4s / 30.0s      [ \       ] Scanning SSB... 3.5s / 30.0s      [    |    ] Scanning SSB... 3.6s / 30.0s      [     \   ] Scanning SSB... 3.7s / 30.0s      [      -- ] Scanning SSB... 3.8s / 30.0s      [       / ] Scanning SSB... 3.9s / 30.0s      [    |    ] Scanning SSB... 4.0s / 30.0s      [   /     ] Scanning SSB... 4.1s / 30.0s      [  --     ] Scanning SSB... 4.1s / 30.0s      [ \       ] Scanning SSB... 4.2s / 30.0s      [    |    ] Scanning SSB... 4.3s / 30.0s      [   /     ] Scanning SSB... 4.4s / 30.0s      [  --     ] Scanning SSB... 4.5s / 30.0s      [ \       ] Scanning SSB... 4.6s / 30.0s      [    |    ] Scanning SSB... 4.7s / 30.0s      [     \   ] Scanning SSB... 4.7s / 30.0s      [      -- ] Scanning SSB... 4.8s / 30.0s      [       / ] Scanning SSB... 4.9s / 30.0s      [    |    ] Scanning SSB... 5.0s / 30.0s      [   /     ] Scanning SSB... 5.1s / 30.0s      [  --     ] Scanning SSB... 5.2s / 30.0s      [ \       ] Scanning SSB... 5.3s / 30.0s      [    |    ] Scanning SSB... 5.4s / 30.0s      [   /     ] Scanning SSB... 5.4s / 30.0s      [  --     ] Scanning SSB... 5.5s / 30.0s      [ \       ] Scanning SSB... 5.6s / 30.0s      [    |    ] Scanning SSB... 5.7s / 30.0s      [     \   ] Scanning SSB... 5.8s / 30.0s      [      -- ] Scanning SSB... 5.9s / 30.0s      [       / ] Scanning SSB... 6.0s / 30.0s      [    |    ] Scanning SSB... 6.1s / 30.0s      [   /     ] Scanning SSB... 6.1s / 30.0s      [  --     ] Scanning SSB... 6.2s / 30.0s      [ \       ] Scanning SSB... 6.3s / 30.0s      [    |    ] Scanning SSB... 6.4s / 30.0s      [   /     ] Scanning SSB... 6.5s / 30.0s      [  --     ] Scanning SSB... 6.6s / 30.0s      [ \       ] Scanning SSB... 6.6s / 30.0s      [    |    ] Scanning SSB... 6.7s / 30.0s      [     \   ] Scanning SSB... 6.8s / 30.0s      [      -- ] Scanning SSB... 6.9s / 30.0s      [       / ] Scanning SSB... 7.0s / 30.0s      [    |    ] Scanning SSB... 7.1s / 30.0s      [   /     ] Scanning SSB... 7.2s / 30.0s      [  --     ] Scanning SSB... 7.3s / 30.0s      [ \       ] Scanning SSB... 7.4s / 30.0s      [    |    ] Scanning SSB... 7.4s / 30.0s      [   /     ] Scanning SSB... 7.5s / 30.0s      [  --     ] Scanning SSB... 7.6s / 30.0s      [ \       ] Scanning SSB... 7.7s / 30.0s      [    |    ] Scanning SSB... 7.8s / 30.0s      [     \   ] Scanning SSB... 7.9s / 30.0s      [      -- ] Scanning SSB... 8.0s / 30.0s      [       / ] Scanning SSB... 8.1s / 30.0s      [    |    ] Scanning SSB... 8.2s / 30.0s      [   /     ] Scanning SSB... 8.2s / 30.0s      [  --     ] Scanning SSB... 8.3s / 30.0s      [ \       ] Scanning SSB... 8.4s / 30.0s      [    |    ] Scanning SSB... 8.5s / 30.0s      [   /     ] Scanning SSB... 8.6s / 30.0s      [  --     ] Scanning SSB... 8.7s / 30.0s      [ \       ] Scanning SSB... 8.8s / 30.0s      [    |    ] Scanning SSB... 8.9s / 30.0s      [     \   ] Scanning SSB... 9.0s / 30.0s      [      -- ] Scanning SSB... 9.1s / 30.0s      [       / ] Scanning SSB... 9.1s / 30.0s      [    |    ] Scanning SSB... 9.2s / 30.0s      [   /     ] Scanning SSB... 9.3s / 30.0s      [  --     ] Scanning SSB... 9.4s / 30.0s      [ \       ] Scanning SSB... 9.5s / 30.0s      [    |    ] Scanning SSB... 9.6s / 30.0s      [   /     ] Scanning SSB... 9.6s / 30.0s      [  --     ] Scanning SSB... 9.7s / 30.0s      [ \       ] Scanning SSB... 9.8s / 30.0s      [    |    ] Scanning SSB... 9.9s / 30.0s      [     \   ] Scanning SSB... 10.0s / 30.0s      [      -- ] Scanning SSB... 10.1s / 30.0s      [       / ] Scanning SSB... 10.2s / 30.0s      [    |    ] Scanning SSB... 10.2s / 30.0s      [   /     ] Scanning SSB... 10.3s / 30.0s      [  --     ] Scanning SSB... 10.4s / 30.0s      [ \       ] Scanning SSB... 10.5s / 30.0s      [    |    ] Scanning SSB... 10.6s / 30.0s      [   /     ] Scanning SSB... 10.7s / 30.0s      [  --     ] Scanning SSB... 10.8s / 30.0s      [ \       ] Scanning SSB... 10.8s / 30.0s      [    |    ] Scanning SSB... 10.9s / 30.0s      [     \   ] Scanning SSB... 11.0s / 30.0s      [      -- ] Scanning SSB... 11.1s / 30.0s      [       / ] Scanning SSB... 11.2s / 30.0s      [    |    ] Scanning SSB... 11.3s / 30.0s      [   /     ] Scanning SSB... 11.4s / 30.0s      [  --     ] Scanning SSB... 11.5s / 30.0s      [ \       ] Scanning SSB... 11.6s / 30.0s      [    |    ] Scanning SSB... 11.6s / 30.0s      [   /     ] Scanning SSB... 11.7s / 30.0s      [  --     ] Scanning SSB... 11.8s / 30.0s      [ \       ] Scanning SSB... 11.9s / 30.0s      [    |    ] Scanning SSB... 12.0s / 30.0s      [     \   ] Scanning SSB... 12.1s / 30.0s      [      -- ] Scanning SSB... 12.2s / 30.0s      [       / ] Scanning SSB... 12.3s / 30.0s      [    |    ] Scanning SSB... 12.4s / 30.0s      [   /     ] Scanning SSB... 12.4s / 30.0s      [  --     ] Scanning SSB... 12.5s / 30.0s      [ \       ] Scanning SSB... 12.6s / 30.0s      [    |    ] Scanning SSB... 12.7s / 30.0s      [   /     ] Scanning SSB... 12.8s / 30.0s      [  --     ] Scanning SSB... 12.9s / 30.0s      [ \       ] Scanning SSB... 13.0s / 30.0s      [    |    ] Scanning SSB... 13.1s / 30.0s      [     \   ] Scanning SSB... 13.2s / 30.0s      [      -- ] Scanning SSB... 13.2s / 30.0s      [       / ] Scanning SSB... 13.3s / 30.0s      [    |    ] Scanning SSB... 13.4s / 30.0s      [   /     ] Scanning SSB... 13.5s / 30.0s      [  --     ] Scanning SSB... 13.6s / 30.0s      [ \       ] Scanning SSB... 13.7s / 30.0s      [    |    ] Scanning SSB... 13.8s / 30.0s      [   /     ] Scanning SSB... 13.9s / 30.0s      [  --     ] Scanning SSB... 14.0s / 30.0s      [ \       ] Scanning SSB... 14.1s / 30.0s      [    |    ] Scanning SSB... 14.2s / 30.0s      [     \   ] Scanning SSB... 14.3s / 30.0s      [      -- ] Scanning SSB... 14.4s / 30.0s      [       / ] Scanning SSB... 14.5s / 30.0s      [    |    ] Scanning SSB... 14.6s / 30.0s      [   /     ] Scanning SSB... 14.7s / 30.0s      [  --     ] Scanning SSB... 14.7s / 30.0s      [ \       ] Scanning SSB... 14.8s / 30.0s      [    |    ] Scanning SSB... 14.9s / 30.0s      [   /     ] Scanning SSB... 15.0s / 30.0s      [  --     ] Scanning SSB... 15.1s / 30.0s      [ \       ] Scanning SSB... 15.2s / 30.0s      [    |    ] Scanning SSB... 15.3s / 30.0s      [     \   ] Scanning SSB... 15.4s / 30.0s      [      -- ] Scanning SSB... 15.5s / 30.0s      [       / ] Scanning SSB... 15.6s / 30.0s      [    |    ] Scanning SSB... 15.7s / 30.0s      [   /     ] Scanning SSB... 15.8s / 30.0s      [  --     ] Scanning SSB... 15.9s / 30.0s      [ \       ] Scanning SSB... 16.0s / 30.0s      [    |    ] Scanning SSB... 16.1s / 30.0s      [   /     ] Scanning SSB... 16.2s / 30.0s      [  --     ] Scanning SSB... 16.3s / 30.0s      [ \       ] Scanning SSB... 16.3s / 30.0s      [    |    ] Scanning SSB... 16.4s / 30.0s      [     \   ] Scanning SSB... 16.5s / 30.0s      [      -- ] Scanning SSB... 16.6s / 30.0s      [       / ] Scanning SSB... 16.7s / 30.0s      [    |    ] Scanning SSB... 16.8s / 30.0s      [   /     ] Scanning SSB... 16.9s / 30.0s      [  --     ] Scanning SSB... 17.0s / 30.0s      [ \       ] Scanning SSB... 17.1s / 30.0s      [    |    ] Scanning SSB... 17.2s / 30.0s      [   /     ] Scanning SSB... 17.3s / 30.0s      [  --     ] Scanning SSB... 17.4s / 30.0s      [ \       ] Scanning SSB... 17.5s / 30.0s      [    |    ] Scanning SSB... 17.6s / 30.0s      [     \   ] Scanning SSB... 17.7s / 30.0s      [      -- ] Scanning SSB... 17.8s / 30.0s      [       / ] Scanning SSB... 17.9s / 30.0s      [    |    ] Scanning SSB... 18.0s / 30.0s      [   /     ] Scanning SSB... 18.1s / 30.0s      [  --     ] Scanning SSB... 18.2s / 30.0s      [ \       ] Scanning SSB... 18.3s / 30.0s      [    |    ] Scanning SSB... 18.4s / 30.0s      [   /     ] Scanning SSB... 18.5s / 30.0s      [  --     ] Scanning SSB... 18.6s / 30.0s      [ \       ] Scanning SSB... 18.7s / 30.0s      [    |    ] Scanning SSB... 18.8s / 30.0s      [     \   ] Scanning SSB... 18.9s / 30.0s      [      -- ] Scanning SSB... 19.0s / 30.0s      [       / ] Scanning SSB... 19.0s / 30.0s      [    |    ] Scanning SSB... 19.1s / 30.0s      [   /     ] Scanning SSB... 19.2s / 30.0s      [  --     ] Scanning SSB... 19.3s / 30.0s      [ \       ] Scanning SSB... 19.4s / 30.0s      [    |    ] Scanning SSB... 19.5s / 30.0s      [   /     ] Scanning SSB... 19.6s / 30.0s      [  --     ] Scanning SSB... 19.7s / 30.0s      [ \       ] Scanning SSB... 19.8s / 30.0s      [    |    ] Scanning SSB... 19.9s / 30.0s      [     \   ] Scanning SSB... 20.0s / 30.0s      [      -- ] Scanning SSB... 20.1s / 30.0s      [       / ] Scanning SSB... 20.2s / 30.0s      [    |    ] Scanning SSB... 20.3s / 30.0s      [   /     ] Scanning SSB... 20.3s / 30.0s      [  --     ] Scanning SSB... 20.4s / 30.0s      [ \       ] Scanning SSB... 20.5s / 30.0s      [    |    ] Scanning SSB... 20.6s / 30.0s      [   /     ] Scanning SSB... 20.7s / 30.0s      [  --     ] Scanning SSB... 20.8s / 30.0s      [ \       ] Scanning SSB... 20.9s / 30.0s      [    |    ] Scanning SSB... 21.0s / 30.0s      [     \   ] Scanning SSB... 21.1s / 30.0s      [      -- ] Scanning SSB... 21.2s / 30.0s      [       / ] Scanning SSB... 21.3s / 30.0s      [    |    ] Scanning SSB... 21.4s / 30.0s      [   /     ] Scanning SSB... 21.5s / 30.0s      [  --     ] Scanning SSB... 21.6s / 30.0s      [ \       ] Scanning SSB... 21.6s / 30.0s      [    |    ] Scanning SSB... 21.7s / 30.0s      [   /     ] Scanning SSB... 21.8s / 30.0s      [  --     ] Scanning SSB... 21.9s / 30.0s      [ \       ] Scanning SSB... 22.0s / 30.0s      [    |    ] Scanning SSB... 22.1s / 30.0s      [     \   ] Scanning SSB... 22.2s / 30.0s      [      -- ] Scanning SSB... 22.3s / 30.0s      [       / ] Scanning SSB... 22.4s / 30.0s      [    |    ] Scanning SSB... 22.5s / 30.0s      [   /     ] Scanning SSB... 22.6s / 30.0s      [  --     ] Scanning SSB... 22.7s / 30.0s      [ \       ] Scanning SSB... 22.8s / 30.0s      [    |    ] Scanning SSB... 22.9s / 30.0s      [   /     ] Scanning SSB... 22.9s / 30.0s      [  --     ] Scanning SSB... 23.0s / 30.0s      [ \       ] Scanning SSB... 23.1s / 30.0s      [    |    ] Scanning SSB... 23.2s / 30.0s      [     \   ] Scanning SSB... 23.4s / 30.0s      [      -- ] Scanning SSB... 23.4s / 30.0s      [       / ] Scanning SSB... 23.5s / 30.0s      [    |    ] Scanning SSB... 23.6s / 30.0s      [   /     ] Scanning SSB... 23.7s / 30.0s      [  --     ] Scanning SSB... 23.8s / 30.0s      [ \       ] Scanning SSB... 23.9s / 30.0s      [    |    ] Scanning SSB... 24.0s / 30.0s      [   /     ] Scanning SSB... 24.1s / 30.0s      [  --     ] Scanning SSB... 24.2s / 30.0s      [ \       ] Scanning SSB... 24.3s / 30.0s      [    |    ] Scanning SSB... 24.4s / 30.0s      [     \   ] Scanning SSB... 24.5s / 30.0s      [      -- ] Scanning SSB... 24.6s / 30.0s      [       / ] Scanning SSB... 24.7s / 30.0s      [    |    ] Scanning SSB... 24.8s / 30.0s      [   /     ] Scanning SSB... 24.9s / 30.0s      [  --     ] Scanning SSB... 25.0s / 30.0s      [ \       ] Scanning SSB... 25.1s / 30.0s      [    |    ] Scanning SSB... 25.2s / 30.0s      [   /     ] Scanning SSB... 25.3s / 30.0s      [  --     ] Scanning SSB... 25.4s / 30.0s      [ \       ] Scanning SSB... 25.5s / 30.0s      [    |    ] Scanning SSB... 25.6s / 30.0s      [     \   ] Scanning SSB... 25.7s / 30.0s      [      -- ] Scanning SSB... 25.8s / 30.0s      [       / ] Scanning SSB... 25.9s / 30.0s      [    |    ] Scanning SSB... 26.0s / 30.0s      [   /     ] Scanning SSB... 26.1s / 30.0s      [  --     ] Scanning SSB... 26.1s / 30.0s      [ \       ] Scanning SSB... 26.2s / 30.0s      [    |    ] Scanning SSB... 26.3s / 30.0s      [   /     ] Scanning SSB... 26.4s / 30.0s      [  --     ] Scanning SSB... 26.5s / 30.0s      [ \       ] Scanning SSB... 26.6s / 30.0s      [    |    ] Scanning SSB... 26.7s / 30.0s      [     \   ] Scanning SSB... 26.8s / 30.0s      [      -- ] Scanning SSB... 26.9s / 30.0s      [       / ] Scanning SSB... 27.0s / 30.0s      [    |    ] Scanning SSB... 27.1s / 30.0s      [   /     ] Scanning SSB... 27.2s / 30.0s      [  --     ] Scanning SSB... 27.3s / 30.0s      [ \       ] Scanning SSB... 27.4s / 30.0s      [    |    ] Scanning SSB... 27.5s / 30.0s      [   /     ] Scanning SSB... 27.5s / 30.0s      [  --     ] Scanning SSB... 27.6s / 30.0s      [ \       ] Scanning SSB... 27.7s / 30.0s      [    |    ] Scanning SSB... 27.8s / 30.0s      [     \   ] Scanning SSB... 27.9s / 30.0s      [      -- ] Scanning SSB... 28.0s / 30.0s      [       / ] Scanning SSB... 28.1s / 30.0s      [    |    ] Scanning SSB... 28.2s / 30.0s      [   /     ] Scanning SSB... 28.3s / 30.0s      [  --     ] Scanning SSB... 28.4s / 30.0s      [ \       ] Scanning SSB... 28.5s / 30.0s      [    |    ] Scanning SSB... 28.6s / 30.0s      [   /     ] Scanning SSB... 28.7s / 30.0s      [  --     ] Scanning SSB... 28.8s / 30.0s      [ \       ] Scanning SSB... 28.9s / 30.0s      [    |    ] Scanning SSB... 29.0s / 30.0s      [     \   ] Scanning SSB... 29.1s / 30.0s      [      -- ] Scanning SSB... 29.2s / 30.0s      [       / ] Scanning SSB... 29.3s / 30.0s      [    |    ] Scanning SSB... 29.4s / 30.0s      [   /     ] Scanning SSB... 29.5s / 30.0s      [  --     ] Scanning SSB... 29.6s / 30.0s
+[2026-10-22T21:07:19+00:00] [INFO] [LOGGING] Fastpath logging disabled at runtime.
+[2026-10-22T21:02:39+00:00] ========================================================================
+[2026-10-22T21:07:19+00:00] [32m[2026-10-22 21:07:19] INFO : [0mburst interval: 9000 us
+[2026-10-22T21:07:20+00:00] Opening USRP channels=1, args: type=b200,serial=318898A,master_clock_rate=23.04e6
+[2026-10-22T21:02:40+00:00] Active RF plugins: libsrsran_rf_uhd.so libsrsran_rf_zmq.so
+[2026-10-22T21:07:21+00:00] ======================================================================

@@ -38,9 +38,15 @@ RUN cd 3rd-party/ && git clone https://github.com/zeromq/czmq.git --depth=1 && c
 RUN cd 3rd-party/ && git clone https://github.com/json-c/json-c.git --depth=1 && cd json-c && \
     mkdir -p build && cd build && cmake ../ && make -j && make install && ldconfig
 RUN curl https://raw.githubusercontent.com/jckarter/tbb/refs/heads/master/include/tbb/tbb_stddef.h -o /usr/include/tbb/tbb_stddef.h
+
+
+
 RUN sed -i 's/\blong[[:space:]]\+gettid()/__pid_t gettid()/g' /root/wdissector/src/MiscUtils.hpp && \
     sed -i 's/\bif\s*(\s*SWIG_EXIST\s*)/if(NOT SWIG_EXIST)/g' /root/wdissector/CMakeLists.txt && \
     sed -i 's/exit 1/# exit 1/' /root/wdissector/build.sh 
+
+
+
 RUN cd /root/wdissector && ./build.sh all
 
 FROM wdissector AS sni5gect

@@ -1,0 +1,22 @@
+[project]
+name = "ssb-sweep"
+version = "0.1.0"
+description = "Automated security tests for NTIA RAN Tester UE (rtUE)"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31.0",
+    "PyYAML>=6.0",
+    "mcp>=1.0.0,<2.0.0",
+    "toml>=0.10.2",
+]
+
+[project.scripts]
+ssb-spoofer-sweep = "ssb_sweep.cli:main"
+ofh-sweep = "ofh_sweep.trad_run:main"
+
+[dependency-groups]
+dev = []
+
+[build-system]
+requires = ["uv_build"]
+build-backend = "uv_build"

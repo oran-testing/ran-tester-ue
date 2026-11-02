@@ -317,6 +317,9 @@ class SystemControlHandler(http.server.SimpleHTTPRequestHandler):
             "permissions": [],
         }
 
+        if "image_name" in payload:
+            new_process_config["image_name"] = payload["image_name"]
+
         Globals.thread_manager.start(new_process_config)
 
         self._set_headers()

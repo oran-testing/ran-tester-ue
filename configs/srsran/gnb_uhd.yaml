@@ -13,7 +13,7 @@ cu_cp:
 
 ru_sdr:
   device_driver: uhd
-  device_args: type=b200
+  device_args: type=b200,serial=32BBA59
   clock: external
   srate: 23.04
   tx_gain: 70

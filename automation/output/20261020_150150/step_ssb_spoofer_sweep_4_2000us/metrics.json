@@ -1,0 +1,19 @@
+{
+  "step": 4,
+  "run_id": "ssb_spoofer_sweep_4_2000us",
+  "burst_interval_us": 2000,
+  "periodicity_ms": 3,
+  "tx_gain_db": 60.0,
+  "burst_length_ms": 1,
+  "pss_sss_correlation_peak_ratio": null,
+  "pbch_block_error_rate": null,
+  "coreset0_blind_decode_failure_rate": null,
+  "sib1_decode_timeout_count": null,
+  "attach_denial_pct": null,
+  "attach_denied_observed": 0,
+  "attach_attempts_observed": 0,
+  "time_to_camp_ms": null,
+  "cell_barred_detected": 0,
+  "mib_crc_err": 0,
+  "coreset0_out_of_bounds": 0
+}

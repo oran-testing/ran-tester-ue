@@ -1,0 +1,17 @@
+{
+  "injection_points": [
+    "DU"
+  ],
+  "pcap_dir": "Traffic/",
+  "pcap_list": [],
+  "du": "lo",
+  "ru": "lo",
+  "attacker_dir": "/attack_env",
+  "results_dir": "./attack_results",
+  "duration_seconds": 10,
+  "tcpreplay_topspeed": 0,
+  "tcpreplay_loop": 0,
+  "keep_history": "0",
+  "id": "ofh_sweep_0001_ts0_100mbps_DU",
+  "tcpreplay_mbps": 100
+}

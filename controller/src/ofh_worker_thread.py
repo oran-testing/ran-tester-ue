@@ -3,7 +3,7 @@ import os
 
 class ofh_attacker(WorkerThread):
     def start(self):
-        self.config.image_name = "ghcr.io/oran-testing/ofh"
+        self.config.image_name = "ghcr.io/oran-testing/dos-attacker"
         self.cleanup_old_containers()
         self.setup_env()
         self.setup_networks()

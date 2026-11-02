@@ -1,0 +1,20 @@
+{
+  "run_id": "trad_ssb_0016_19000us",
+  "pss_sss_correlation_peak_ratio": null,
+  "pbch_block_error_rate": null,
+  "coreset0_blind_decode_failure_rate": null,
+  "sib1_decode_timeout_count": null,
+  "attach_denial_pct": null,
+  "attach_denied_observed": 0,
+  "attach_attempts_observed": 0,
+  "time_to_camp_ms": null,
+  "cell_barred_detected": 0,
+  "mib_crc_err": 0,
+  "coreset0_out_of_bounds": 0,
+  "signature_counts": {
+    "CELL_BARRED_DETECTED": 0,
+    "MIB_CRC_ERR": 0,
+    "CORESET0_OUT_OF_BOUNDS": 0
+  },
+  "parse_note": "PSS/SSS ratio, PBCH BLER, CORESET0 decode failure rate, SIB1 timeout, and time-to-camp require instrumented receiver/UE data not present in automation-captured logs; attach-denial % and signatures are best-effort regex tallies over available logs."
+}

@@ -1,0 +1,12 @@
+{
+  "run_index": 0,
+  "spoofer_id": "trad_ssb_spoofer_0",
+  "rtue_id": "trad_victim_ue_0",
+  "spoofer_start": {
+    "msg": "process started: trad_ssb_spoofer_0"
+  },
+  "rtue_start": "{\"error\": \"Configuration validation failed\", \"details\": \"Validation failed: Invalid type for 'rf_freq_offset': expected <class 'int'>, got str; Invalid type for 'rf_nof_antennas': expected <class 'int'>, got str; Invalid type for 'rf_time_adv_nsamples': expected <class 'int'>, got str; Invalid type for 'log_all_hex_limit': expected <class 'int'>, got str; Invalid type for 'log_file_max_size': expected <class 'int'>, got str; Invalid type for 'rrc_release': expected <class 'int'>, got str; Invalid type for 'rrc_ue_category': expected <class 'int'>, got str; Invalid type for 'gui_enable': expected <class 'bool'>, got str; Invalid type for 'general_metrics_influxdb_enable': expected <class 'bool'>, got str; Invalid type for 'general_metrics_influxdb_port': expected <class 'int'>, got str; Invalid type for 'general_metrics_period_secs': expected <class 'float'>, got str\"}",
+  "spoofer_logs": "",
+  "rtue_logs": "",
+  "error": "rtue start error: rtue start failed: {\"error\": \"Configuration validation failed\", \"details\": \"Validation failed: Invalid type for 'rf_freq_offset': expected <class 'int'>, got str; Invalid type for 'rf_nof_antennas': expected <class 'int'>, got str; Invalid type for 'rf_time_adv_nsamples': expected <class 'int'>, got str; Invalid type for 'log_all_hex_limit': expected <class 'int'>, got str; Invalid type for 'log_file_max_size': expected <class 'int'>, got str; Invalid type for 'rrc_release': expected <class 'int'>, got str; Invalid type for 'rrc_ue_category': expected <class 'int'>, got str; Invalid type for 'gui_enable': expected <class 'bool'>, got str; Invalid type for 'general_metrics_influxdb_enable': expected <class 'bool'>, got str; Invalid type for 'general_metrics_influxdb_port': expected <class 'int'>, got str; Invalid type for 'general_metrics_period_secs': expected <class 'float'>, got str\"}"
+}

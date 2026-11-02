@@ -87,6 +87,10 @@ class WorkerThread:
         self.config.host_network = bool(process_config.get("host_network", False))
 
     def cleanup_old_containers(self):
+        override = self.config.process_config.get("image_name")
+        if override:
+            self.config.image_name = override
+
         # Verify Image
         image_exists = False
         for img in self.config.docker_client.images.list():

@@ -41,3 +41,4 @@ class ApiInterface:
             return False, {"error": response.text}
         except requests.exceptions.RequestException as e:
             return False, {"error":str(e)}
+

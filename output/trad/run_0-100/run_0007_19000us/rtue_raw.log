@@ -1,0 +1,29 @@
+[2026-10-23T18:34:51+00:00] [INFO] [LOGGING] Fastpath logging disabled at runtime.
+[2026-10-23T18:35:18+00:00] .........................................................................................................................
+[2026-10-23T18:34:51+00:00] [INFO] [UHD RF] RF UHD Generic instance constructed
+[2026-10-23T18:34:52+00:00] [INFO] [B200] Performing register loopback test...
+[2026-10-23T18:34:51+00:00] Reading configuration file /ue.conf...
+[2026-10-23T18:34:52+00:00] [INFO] [B200] Register loopback test passed
+[2026-10-23T18:34:52+00:00] [INFO] [B200] Register loopback test passed
+[2026-10-23T18:34:51+00:00] Opening 1 channels in RF device=uhd with args=type=b200,serial=32C74B3
+[2026-10-23T18:34:51+00:00] [INFO] [B200] Detected Device: B210
+[2026-10-23T18:35:03+00:00] .RF status: O=1, U=0, L=0
+[2026-10-23T18:34:51+00:00] [INFO] [B200] Operating over USB 3.
+[2026-10-23T18:35:03+00:00] Attaching UE...
+[2026-10-23T18:34:52+00:00] [INFO] [B200] Performing register loopback test...
+[2026-10-23T18:34:51+00:00] [INFO] [B200] Initialize CODEC control...
+[2026-10-23T18:35:03+00:00] Closing stdin thread.
+[2026-10-23T18:34:52+00:00] [INFO] [B200] Actually got clock rate 23.040000 MHz.
+[2026-10-23T18:34:52+00:00] [INFO] [B200] Asking for clock rate 23.040000 MHz...
+[2026-10-23T18:34:51+00:00] WARNING: cpu0 scaling governor is not set to performance mode. Realtime processing could be compromised. Consider setting it to performance mode before running the application.
+[2026-10-23T18:34:51+00:00] [INFO] [UHD] linux; GNU C++ version 13.2.0; Boost_108300; UHD_4.6.0.0+ds1-5.1ubuntu0.24.04.1
+[2026-10-23T18:34:51+00:00] Built in Release mode using 23.04.0.
+[2026-10-23T18:34:51+00:00] None
+[2026-10-23T18:34:51+00:00] None
+[2026-10-23T18:34:51+00:00] Active RF plugins: libsrsran_rf_uhd.so libsrsran_rf_zmq.so
+[2026-10-23T18:34:52+00:00] Opening USRP channels=1, args: type=b200,serial=32C74B3,master_clock_rate=23.04e6
+[2026-10-23T18:35:03+00:00] Waiting PHY to initialize ... done!
+[2026-10-23T18:35:03+00:00] Setting manual TX/RX offset to 300 samples
+[2026-10-23T18:34:51+00:00] [INFO] [B200] Initialize Radio control...
+[2026-10-23T18:34:51+00:00] Inactive RF plugins:
+[2026-10-23T18:34:52+00:00] Supported RF device list: UHD zmq file

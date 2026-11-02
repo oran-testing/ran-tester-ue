@@ -1,0 +1,79 @@
+# SSB spoofer sweep config for the llm_worker.
+#
+# Generated dynamically by automation's `--mode llm` backend
+# (ssb_sweep.llm_backend.build_llm_config). Keep this file in sync with that
+# function; it is the committed, reviewable copy. The user_prompt encodes the
+# burst_interval_us sweep and the fixed attack flags from the results paragraph.
+model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
+results_dir: ssb_spoofer_sweep_logs
+nof_plan_attempts: 10
+planner: |-
+  You are a plan generator for the rtUE controller. Produce ONE JSON array of
+  actions. Each action is an object with keys 'id','type','desc','endpoint','rf'.
+  endpoint in {start,stop,logs,list,health}. For a start action, 'type' is the
+  component type (e.g. 'ssb_spoofer') and 'rf' is 'b200' or 'zmq' or 'none'.
+  Return the full JSON array inside a ```json fenced block.
+executor: >-
+  Generate exactly the component configuration the controller expects for the
+  requested endpoint.
+ssb_spoofer: |-
+  You are configuring an SSB spoofer. Return a JSON object with an "id" plus
+  nested objects.
+
+  Fields from the reference guardrail config (keep values realistic for a B210,
+  max center freq 6 GHz, max sample rate 61.44 MHz):
+
+  rf:
+    device_name: uhd
+    device_args: "type=b200"
+    rx_freq_hz: 1842050000            # band 3 downlink center
+    tx_freq_hz: 1842050000
+    srate_hz: 23040000
+    rx_gain_db: 40.0
+    tx_gain_db: 60.0                  # fixed by test
+
+  ssb:
+    pattern: A
+    scs_khz: 15
+    periodicity_ms: 10
+    ssb_freq_offset_hz: 0
+    beta_pss: 1.0
+    beta_sss: 1.0
+    beta_pbch: 1.0
+    beta_pbch_dmrs: 1.0
+
+  attack:                             # all of these must be present and valid
+    target_pci: 1
+    scan_for_target: true
+    modify_cell_barred: true
+    cell_barred_value: true
+    modify_coreset0_idx: true
+    coreset0_idx_value: 15
+    modify_ss0_idx: true
+    ss0_idx_value: 15
+    modify_intra_freq_resel: false
+    intra_freq_resel_value: false
+    tx_power_offset_db: 0.0
+    continuous_tx: true
+    max_bursts: 0
+    burst_interval_us: <sweep value, one of 19000, 9000, 4000, 2000>
+    burst_length_ms: 1
+
+  operation:
+    scan_duration_sec: 30.0
+    log_level: info
+    log_file: ssb_spoofer.log
+    save_samples: false
+    samples_file: rx_samples.dat
+
+  Return ONLY valid JSON in a ```json fenced block. Do not include the top-level
+  "id" twice; the id belongs at top level.
+user_prompt: >-
+  Run an SSB spoofer attack sweep against the gNB. For each step, start an
+  ssb_spoofer component and then report health. Use the following fixed settings
+  for every step: rf.tx_gain_db = 60.0, attack.modify_cell_barred = true,
+  attack.modify_coreset0_idx = true, attack.modify_ss0_idx = true,
+  attack.burst_length_ms = 1. Sweep attack.burst_interval_us over these values in
+  this order: 19000, 9000, 4000, 2000. Effective periodicity ms =
+  burst_length_ms + (burst_interval_us/1000). Name each component id like
+  ssb_spoofer_sweep_1_19000us, ssb_spoofer_sweep_2_9000us, and so on.

@@ -182,6 +182,10 @@ class ComponentManager:
             logging.critical(f"Error in component: component required in build_spec\n{component}")
             sys.exit(1)
 
+        component_branch = component.get("branch", "main")
+        worker_thread_url = component.get("worker_thread_url", f"https://raw.githubusercontent.com/{component_path}/{component_branch}/worker_thread.py")
+        self._load_worker_thread_from_url(worker_thread_url, component_path)
+
         docker_image = component.get("docker_image", None)
         if docker_image is None:
             docker_image = f"ghcr.io/{component_path}"
