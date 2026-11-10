@@ -10,3 +10,4 @@ uvicorn[standard]>=0.29.0
 toml
 sentence-transformers
 chromadb
+requests>=2.31.0

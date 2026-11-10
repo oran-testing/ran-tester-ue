@@ -17,6 +17,7 @@ from plan_validator import PlanValidator
 from uu_agent_validator import UuagentValidator
 from sstorm_validator import SStormValidator
 from ssb_spoofer_validator import SSBSpooferValidator
+from ofh_validator import OfhValidator
 
 from llm_wrapper import LLMWrapper
 from executor import Executor
@@ -41,9 +42,6 @@ class Config:
 def configure():
     if os.geteuid() != 0:
         raise RuntimeError("The LLM worker must be run as root.")
-
-    if not torch.cuda.is_available():
-        raise RuntimeError("No available GPU in the LLM container")
 
     control_token = os.getenv("CONTROL_TOKEN")
     if not control_token:
@@ -78,6 +76,13 @@ def configure():
 
     with open(str(args.config), 'r') as file:
         Config.options = yaml.safe_load(file)
+
+    if (Config.options or {}).get("provider") == "openrouter":
+        if not os.getenv("OPENROUTER_API_KEY"):
+            raise RuntimeError("OPENROUTER_API_KEY is not set in environment")
+        logging.info("Using OpenRouter provider (no GPU required)")
+    elif not torch.cuda.is_available():
+        raise RuntimeError("No available GPU in the LLM container and no provider configured")
 
     return control_token
 
@@ -661,77 +666,6 @@ def run_send_step(component: str, control_url: str, auth_header: str):
         VALIDATED_BY_COMP[component] = new_validated
 
 
-if __name__ == '__main__':
-    control_ip, control_port, control_token = verify_env()
-    configure()
-    control_url = f"https://{control_ip}:{control_port}"
-    auth_header = f"Bearer {control_token}"
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-    # --- Model Setup ---
-    model_str = Config.options.get("model", None)
-    if not model_str:
-        logging.error("Model not specified")
-        sys.exit(1)
-    logging.debug(f"using model: {model_str}")
-    model = AutoModelForCausalLM.from_pretrained(model_str, torch_dtype=torch.bfloat16, device_map="auto")
-    tokenizer = AutoTokenizer.from_pretrained(model_str)
-
-    kb = KnowledgeAugmentor()  # instantiate augmentor once
-
-    # using llm for plan determination
-    plan_output = get_plan()
-
-    for config_type in intent_output:
-        logging.info(f"Intent component: {config_type}")
-        user_prompt = Config.options.get("user_prompt", "")
-        system_prompt = Config.options.get(config_type, "")
-        original_prompt_content = system_prompt + user_prompt  # preserved for logs/validator context
-
-        # prompt structuring
-        system_instructions = system_prompt.split("### USER REQUEST:")[0] if "### USER REQUEST:" in system_prompt else system_prompt
-
-        retrieval_query = f"Rules, constraints, and known-good examples for a '{config_type}' configuration to fulfill: {user_prompt}"
-
-        retrieved_context = kb.retrieve_context_for_component(config_type, retrieval_query)
-
-        # construct the final augmented prompt.
-        prompt_to_use = KnowledgeAugmentor.build_augmented_prompt(
-            context=retrieved_context,
-            system_prompt_block=system_instructions,
-            user_request=user_prompt
-        )
-
-        # ---Initial Generation ---
-        logging.info("=" * 20 + " EXECUTING PROMPT " + "=" * 20)
-        current_response_text = generate_response(model, tokenizer, False, prompt_to_use)
-        logging.info("=" * 20 + " MODEL GENERATED OUTPUT " + "=" * 20)
-        logging.info(f"'{current_response_text}'")
-        logging.info("=" * 20 + " END OF MODEL OUTPUT " + "=" * 20)
-
-        # --- Validation and Self-Correction Loop (with immediate RL selection) ---
-        validated_data = response_validation_loop(current_response_text, config_type, original_prompt_content)
-        if validated_data is None:
-            logging.error(f"Validation failed for {config_type}.")
-            continue
-
-        is_valid_plan, val_res = plan_validator.validate(raw_plan)
-        if not is_valid_plan:
-            errors = val_res
-            logging.info(f"PLANNER OUTPUT: {raw_plan}")
-            logging.error(f"Encountered errors in plan validation: {val_res}")
-            continue
-
-        logging.debug(f"PLAN:\n{json.dumps(val_res, indent=4)}")
-
-        with open(os.path.join(Config.results_dir, "plan.json"), "w") as f:
-            json.dump(val_res, f, indent=4)
-        return val_res
-
-    logging.critical("Failed to create valid plan")
-    sys.exit(0)
-
-
 def run_exec_loop(executor, current_validator, plan_item):
     is_successful, is_valid_plan = False, False
     exec_attempt = 0
@@ -1047,6 +981,8 @@ if __name__ == '__main__':
                 current_validator = UuagentValidator()
             elif component_type == "ssb_spoofer":
                 current_validator = SSBSpooferValidator()
+            elif component_type == "ofh":
+                current_validator = OfhValidator()
             api_payload = run_exec_loop(executor, current_validator, plan_item)
             if plan_item.get("rf") == "b200":
                 api_payload["rf"] = {"type": "b200"}

@@ -13,6 +13,7 @@ dependencies = [
 [project.scripts]
 ssb-spoofer-sweep = "ssb_sweep.cli:main"
 ofh-sweep = "ofh_sweep.trad_run:main"
+ofh-sweep-cli = "ofh_sweep.cli:main"
 
 [dependency-groups]
 dev = []

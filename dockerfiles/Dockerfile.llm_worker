@@ -17,7 +17,7 @@ COPY requirements.txt .
 
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY ../llm_worker .
+COPY llm_worker .
 
 ENTRYPOINT ["sh", "-c", "python3 build_vector.py && python3 main.py --config /llm.yaml --log-level INFO"]
 # ENTRYPOINT ["python3", "main.py", "--config", "/llm.yaml", "--log-level", "INFO"]

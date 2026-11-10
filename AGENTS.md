@@ -618,3 +618,72 @@ so an `ssb_spoofer` start currently fails until the controller spec also
 registers `oran-testing/ssb-spoofer` (see `configs/ssb-spoofer.yaml` for a
 reference with a full ssb-spoofer + victim-UE run_spec). Do not point a live
 ssb_spoofer start at this controller until that is configured.
+
+---
+
+## 10. OFH DoS attacker sweep (`automation/src/ofh_sweep/`)
+
+The OFH sweep automates the **oran-testing/dos-attacker** — an Open Fronthaul
+DoS attacker that floods eCPRI frames at a DU or RU interface (host network).
+No USRP hardware is needed (rf.type=none always).
+
+### Modes (new CLI)
+
+```
+uv run python3 -m ofh_sweep.cli --help
+uv run python3 -m ofh_sweep.cli --mode config   # direct HTTP
+uv run python3 -m ofh_sweep.cli --mode mcp      # via MCP stdio client
+uv run python3 -m ofh_sweep.cli --mode llm --apply-spec  # llm_worker config
+uv run python3 -m ofh_sweep.cli --mode collect --output /tmp/ofh_logs  # debug logs
+```
+
+or via the pyproject.toml registered console script:
+```
+uv run ofh-sweep-cli --mode config
+```
+
+### Sweep semantics
+Sweeps `tcpreplay_topspeed` ∈ {0, 1} × `tcpreplay_mbps` ∈ {100, 500, 1000, 5000, 10000} ×
+`injection_points` ∈ {DU, RU} = 20 sweep steps + 2 baselines.
+
+Component IDs: `ofh_sweep_<idx>_ts<ts>_<mbps>mbps_<DU|RU>`.
+
+### File layout
+
+| Path | Purpose |
+|------|---------|
+| `automation/src/ofh_sweep/spec.py` | Sweep constants, steps generation |
+| `automation/src/ofh_sweep/metrics.py` | Log parsing: eCPRI loss, PTP, deadline miss, OTA drops + OCUDU patterns (RU eCPRI stats, PTP offset, gNB deadline miss, UL BLER) |
+| `automation/src/ofh_sweep/controller_client.py` | Direct HTTP client (config mode) |
+| `automation/src/ofh_sweep/mcp_backend.py` | MCP stdio backend |
+| `automation/src/ofh_sweep/llm_backend.py` | LLM worker config generator |
+| `automation/src/ofh_sweep/output.py` | Per-step output dirs, CSV/JSON tables |
+| `automation/src/ofh_sweep/cli.py` | CLI entry (all 4 modes) |
+| `automation/src/ofh_sweep/trad_run.py` | Legacy direct-run (kept for compatibility) |
+
+### OFH Validator (`llm_worker/ofh_validator.py`)
+Created in both `ran-tester-ue/llm_worker/` and `../llm_worker/`:
+- `OfhValidator(Validator)` validates TOML schema
+- `REQUIRED_KEYS = ['id']`, schema covers injection_points, pcap_dir, du/ru interfaces,
+  duration_seconds, tcpreplay_topspeed (0 or 1), tcpreplay_mbps (>0), etc.
+- Dispatched by `component_type == "ofh"` in both copies of `main.py`
+
+### Debug log collection (`--mode collect`)
+Fetches logs from ru_emulator and gNB Docker containers via:
+1. `docker logs --tail 500 <container>` — recent stdout/stderr
+2. `docker exec <container> cat /tmp/ru.log|gnb_emu.log|debug.log|app.log`
+3. Attempts to cat `/var/log/ru.log` etc.
+
+Target container names (searched in order):
+- RU: `ru_emulator`, `ocudu-ru`, `ru-emulator`
+- gNB: `gnb_emulator`, `ocudu-gnb`, `gnb-emulator`
+
+All output goes to `debug_logs/` subdirectory under the timestamped output dir.
+Non-fatal; any missing containers are silently skipped.
+
+### Connection to llm_worker
+- `llm_worker/ofh_validator.py` provides the `OfhValidator` class.
+- `main.py` (both copies) imports and dispatches `component_type == "ofh"`.
+- Prompts in `llm_backend.py` describe the flat TOML schema with validation rules.
+- The planner prompt explicitly forbids `b200`/`zmq` rf types for OFH.
+- Config template is written to `configs/llm/ofh_sweep.yaml`.

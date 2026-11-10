@@ -1,0 +1,36 @@
+model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
+results_dir: ofh_sweep_logs
+nof_plan_attempts: 10
+planner: "You are a plan generator for the rtUE controller. Produce ONE JSON array\
+  \ of actions. Each action is an object with keys 'id','type','desc','endpoint','rf'.\
+  \ endpoint \u2208 {start,stop,logs,list,health}. For a start action, 'type' is the\
+  \ component type (e.g. 'ofh') and 'rf' is 'none'. Do NOT use 'b200' or 'zmq' for\
+  \ OFH components; the attacker uses host network mode with no RF hardware. Return\
+  \ the full JSON array inside a ```json fenced block."
+executor: Generate exactly the component configuration the controller expects for
+  the requested endpoint.
+ofh: "You are configuring an OFH DoS attacker. Return a JSON object with an \"id\"\
+  \ plus\nflat keys matching the TOML schema.\n\nSchema (all at top level):\n  injection_points:\
+  \ list of strings, one of: \"DU\", \"RU\"  (e.g. [\"DU\"])\n  pcap_dir: str (default\
+  \ \"Traffic/\")\n  pcap_list: list (usually [])\n  du: str, network interface for\
+  \ DU injection (e.g. \"lo\" or \"enp5s0f1\")\n  ru: str, network interface for RU\
+  \ injection (e.g. \"lo\" or \"enp8s0f0np0\")\n  attacker_dir: str (default \"/attack_env\"\
+  )\n  results_dir: str (default \"./attack_results\")\n  duration_seconds: int/float,\
+  \ >0 (how long to run)\n  tcpreplay_topspeed: int, 0 or 1 (0=paced, 1=maximum speed)\n\
+  \  tcpreplay_mbps: int/float, >0 (pacing rate in Mbps)\n  tcpreplay_loop: int (0\
+  \ = infinite loop)\n  keep_history: str (\"0\" = don't keep history)\n\nValidation\
+  \ rules:\n  - injection_points must be a non-empty list with items \"DU\" or \"\
+  RU\"\n  - tcpreplay_topspeed must be 0 or 1\n  - tcpreplay_mbps must be > 0\n  -\
+  \ duration_seconds must be > 0\n\nExample valid config:\n  {\n    \"id\": \"ofh_sweep_0000_ts0_100mbps_DU\"\
+  ,\n    \"injection_points\": [\"DU\"],\n    \"pcap_dir\": \"Traffic/\",\n    \"\
+  pcap_list\": [],\n    \"du\": \"lo\",\n    \"ru\": \"lo\",\n    \"attacker_dir\"\
+  : \"/attack_env\",\n    \"results_dir\": \"./attack_results\",\n    \"duration_seconds\"\
+  : 10,\n    \"tcpreplay_topspeed\": 0,\n    \"tcpreplay_mbps\": 100,\n    \"tcpreplay_loop\"\
+  : 0,\n    \"keep_history\": \"0\"\n  }\n\nReturn ONLY valid JSON in a ```json fenced\
+  \ block. Do not include the top-level\n\"id\" twice; the id belongs at top level."
+user_prompt: Run an OFH DoS attacker sweep against the gNB and RU. For each step,
+  start an ofh component and then check its health and fetch logs. Sweep tcpreplay_topspeed
+  over {0, 1}, tcpreplay_mbps over {100, 500, 1000, 5000, 10000} Mbps, and injection_points
+  over {DU, RU}. That is 20 total steps. Name each component id like 'ofh_sweep_0000_ts0_100mbps_DU',
+  'ofh_sweep_0001_ts0_100mbps_RU', and so on. Use rf type 'none' for all components
+  since OFH operates on host network.
