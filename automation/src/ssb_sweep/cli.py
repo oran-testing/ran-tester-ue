@@ -11,11 +11,17 @@ Usage examples::
     # Generate an llm_worker config (and optionally inject spec.yaml run_spec)
     # that will run the sweep via the LLM worker.
     python -m ssb_sweep.cli --mode llm --apply-spec
+
+    # Generate a config for sushant-XD/llm_worker (sushant branch) that runs
+    # the sweep through the LLM worker with OpenRouter (no GPU needed),
+    # including a victim UE for debug log collection.
+    python -m ssb_sweep.cli --mode sushant --apply-spec
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -31,6 +37,11 @@ from ssb_sweep.spec import (
     DEFAULT_BASE_CONFIG,
     build_steps,
     load_base_config,
+)
+from ssb_sweep.sushant_backend import (
+    build_log_collection_config,
+    inject_sushant_run_spec,
+    write_sushant_config,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -164,13 +175,87 @@ def run_llm_mode(args: argparse.Namespace, out: OutputDir):
     print("\n".join(lines))
 
 
+def run_sushant_mode(args: argparse.Namespace, out: OutputDir):
+    """Sushant LLM mode: generate config, inject run_spec, print instructions."""
+    repo_root = PROJECT_ROOT
+    cfg_path = write_sushant_config(repo_root)
+    result = inject_sushant_run_spec(
+        spec_path=repo_root / "spec.yaml",
+        apply=args.apply_spec,
+        out_dir=repo_root,
+    )
+
+    sweep_steps = build_log_collection_config()
+    lines = [
+        f"Sushant LLM config written to: {cfg_path}",
+        "",
+        "This config uses the JSON-array action format supported by the",
+        "sushant-XD/llm_worker (sushant branch). It starts a victim rtue with",
+        "debug logging enabled (log_all_level=debug) and sweeps the",
+        "ssb_spoofer burst_interval_us over the standard values.",
+        "",
+        "The sweep plan:",
+        "  1. Start victim UE (victim_ue_001) with debug logging",
+        "  2. For each burst_interval_us value, start an ssb_spoofer,",
+        "     monitor it, fetch logs, then stop it",
+        "  3. Stop the victim UE after all steps",
+        "",
+        f"Victim UE id: {sweep_steps['victim_ue_id']}",
+        f"Spoofer sweep ids: {sweep_steps['spoofer_ids']}",
+        f"Burst values (us): {sweep_steps['burst_values']}",
+        "",
+        "To build the llm_worker image and run:",
+    ]
+    if result["applied"]:
+        lines += [
+            "",
+            "Step 1 - Build the llm_worker Docker image from the local copy:",
+            "    docker build -f dockerfiles/Dockerfile.llm_worker \\",
+            "        -t ghcr.io/sushant-XD/llm_worker .",
+            "",
+            "Step 2 - Restart the controller to pick up the new run_spec:",
+            "    sudo docker compose up -d --force-recreate controller",
+            "",
+            "Step 3 - Monitor the llm_worker:",
+            "    docker logs -f ran-tester-ue-controller-1",
+            "",
+            "Step 4 - After the sweep completes, collect UE debug logs:",
+            "    curl -H 'Authorization: Bearer default_changeme' \\",
+            "        -X POST -H 'Content-Type: application/json' \\",
+            '        -d \'{"id": "' + sweep_steps['victim_ue_id'] + '", "type": "rtue"}\' \\',
+            f"        http://localhost:1343/logs > {out.root / 'victim_ue_debug.log'}",
+            "",
+            "Step 5 - Collect spoofer logs for each sweep step:",
+        ]
+        for sid in sweep_steps['spoofer_ids']:
+            lines.append(
+                f'    curl ... -d \'{{"id": "{sid}", "type": "ssb_spoofer"}}\' '
+                f'http://localhost:1343/logs > {out.root / f"{sid}.log"}'
+            )
+        lines += [
+            "",
+            f"Backup of previous spec.yaml: {result['backup']}",
+        ]
+    else:
+        lines += ["", "Run spec injection was NOT applied (use --apply-spec)."]
+        lines += ["", result["instructions"]]
+    lines += [
+        "",
+        "UE debug logs are collected because the rtue prompt includes",
+        "log_all_level=debug. After the sweep, query the controller's",
+        "/logs endpoint to retrieve them.",
+    ]
+    out.write_summary("\n".join(lines))
+    print("\n".join(lines))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="ssb-spoofer-sweep",
         description="Run the SSB spoofer burst-interval sweep (L1/L2/L3 metrics).",
     )
-    parser.add_argument("--mode", choices=["config", "mcp", "llm"], default="config",
-                        help="Run strategy: direct controller API (config), MCP server (mcp), or llm_worker (llm)")
+    parser.add_argument("--mode", choices=["config", "mcp", "llm", "sushant"], default="config",
+                        help="Run strategy: direct controller API (config), MCP server (mcp), llm_worker (llm), or sushant llm_worker (sushant)")
     parser.add_argument("--base-config", type=Path, default=DEFAULT_BASE_CONFIG,
                         help="Base YAML to mutate (default: configs/ssb_spoofer/srs_band3.yaml)")
     parser.add_argument("--controller-url", default="http://localhost:1343",
@@ -204,6 +289,8 @@ def main(argv: list[str] | None = None) -> int:
             run_mcp_mode(args, out, rf)
         elif args.mode == "llm":
             run_llm_mode(args, out)
+        elif args.mode == "sushant":
+            run_sushant_mode(args, out)
     except Exception as exc:  # noqa: BLE001
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
