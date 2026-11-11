@@ -108,6 +108,7 @@ Return ONLY valid JSON in a ```json fenced block. Do not include the top-level
 "id" twice; the id belongs at top level.""".lstrip()
 
     return {
+        "provider": "openrouter",
         "model": "deepseek-ai/DeepSeek-Coder-6.7B-Instruct",
         "results_dir": "ofh_sweep_logs",
         "nof_plan_attempts": 10,

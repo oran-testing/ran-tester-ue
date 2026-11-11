@@ -1,0 +1,43 @@
+enable_cli: true
+autorun: false
+api_auth:
+- name: mcp-server
+  token: default_changeme
+  scopes:
+  - start_from_json
+  - start
+  - schemas/rtue
+  - schemas/sniffer
+  - schemas/jammer
+  - schemas/sni5gect
+  - schemas/ssb_spoofer
+  - schemas/uuagent
+  - schemas/sstorm
+  - schemas/ofh
+  - list
+  - status
+  - stop
+  - logs
+  - health
+  allowed_components:
+  - rtue
+  - sniffer
+  - jammer
+  - sni5gect
+  - ssb_spoofer
+  - uuagent
+  - sstorm
+  - ofh_attacker
+  - ofh
+build_spec:
+- component: oran-testing/dos-attacker
+  branch: master
+  pull: true
+run_spec:
+- component: oran-testing/llm_worker
+  worker_thread: llm_worker
+  name: llm_worker
+  config_file: configs/llm/ofh_sweep.yaml
+  results_dir: ofh_sweep_logs
+  rf:
+    type: none

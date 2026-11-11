@@ -1,0 +1,26 @@
+# Local override, auto-merged by docker compose (no protected files touched).
+#
+# The DOCKER_SYSTEM_DIRECTORY entry in .env carries a trailing inline comment,
+# which docker compose does not strip when interpolating ${DOCKER_SYSTEM_DIRECTORY}
+# in docker-compose.yml volumes ("service controller refers to undefined volume
+# <run ./scripts/system_setup.sh>: invalid compose project"). The same mangled
+# value would also be injected into the controller container via env_file,
+# breaking config_file path resolution in component_manager.py.
+#
+# This override pins the correct path for this host (the value
+# scripts/system_setup.sh would set) for both the volume mounts and the
+# in-container environment. environment: takes precedence over env_file.
+
+services:
+  controller:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp:/tmp
+      - /root/.docker:/root/.docker
+      - /home/charles/ran-tester-ue:/host:rw
+      - /usr/share:/usr/share:ro
+    environment:
+      DOCKER_SYSTEM_DIRECTORY: /home/charles/ran-tester-ue
+  mcp-server:
+    volumes:
+      - /home/charles/ran-tester-ue/configs:/host/configs:ro

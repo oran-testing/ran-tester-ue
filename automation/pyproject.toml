@@ -15,6 +15,11 @@ ssb-spoofer-sweep = "ssb_sweep.cli:main"
 ofh-sweep = "ofh_sweep.trad_run:main"
 ofh-sweep-cli = "ofh_sweep.cli:main"
 
+[tool.uv]
+# NixOS: uv-managed CPython builds are dynamically linked for generic Linux
+# and fail to start (exit 127, stub-ld). Force uv onto the system interpreter.
+python-preference = "only-system"
+
 [dependency-groups]
 dev = []
 

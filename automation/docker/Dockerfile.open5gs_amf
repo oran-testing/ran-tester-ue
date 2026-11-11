@@ -1,0 +1,32 @@
+FROM ubuntu:24.04
+
+# Ubuntu mirrors reachable from this environment (archive.ubuntu.com is not).
+RUN sed -i 's|http://archive.ubuntu.com|http://ubuntu.osuosl.org|g; s|https://archive.ubuntu.com|http://ubuntu.osuosl.org|g; s|http://security.ubuntu.com|http://ubuntu.osuosl.org|g; s|https://security.ubuntu.com|http://ubuntu.osuosl.org|g' /etc/apt/sources.list.d/*.sources \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        build-essential cmake pkg-config curl ca-certificates netbase \
+        python3-pip python3-setuptools python3-wheel ninja-build flex bison \
+        libsctp-dev libgnutls28-dev libgcrypt-dev libssl-dev libmongoc-dev libbson-dev \
+        libyaml-dev libmicrohttpd-dev libcurl4-gnutls-dev libnghttp2-dev libtins-dev \
+        libtalloc-dev libc-ares-dev libidn11-dev meson iproute2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# git clone is silently stubbed in this environment; use the codeload tarball.
+RUN mkdir -p /src/open5gs \
+    && curl -sSL https://codeload.github.com/open5gs/open5gs/tar.gz/refs/heads/main | tar xz --strip-components=1 -C /src/open5gs
+
+# Pre-seed the prometheus-client-c meson subproject (its .wrap wants git).
+RUN mkdir -p /src/open5gs/subprojects/prometheus-client-c \
+    && curl -sSL https://codeload.github.com/open5gs/prometheus-client-c/tar.gz/refs/heads/open5gs | tar xz --strip-components=1 -C /src/open5gs/subprojects/prometheus-client-c
+
+# Pre-seed the freeDiameter meson subproject (unconditional in open5gs).
+RUN mkdir -p /src/open5gs/subprojects/freeDiameter \
+    && curl -sSL https://codeload.github.com/open5gs/freeDiameter/tar.gz/refs/heads/r1.5.0 | tar xz --strip-components=1 -C /src/open5gs/subprojects/freeDiameter
+
+WORKDIR /src/open5gs
+RUN meson setup build \
+    && ninja -C build \
+    && ninja -C build install \
+    && ldconfig
+
+CMD ["open5gs-amfd", "-c", "/amf.yml"]

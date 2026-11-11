@@ -1,0 +1,36 @@
+# Victim testbed image for the OFH DoS attacker sweep.
+#
+# Builds srsRAN Project (upstream, main branch) from source so the binaries
+# target the build host's CPU (the prebuilt ghcr.io/cueltschey/srsgnb image
+# requires AVX-512, which this host does not have).
+#
+# Produces /usr/local/bin/{gnb,ru_emulator}. The DU (gnb) and the RU
+# (ru_emulator) pair over an L2 interface using the O-RAN 7.2x fronthaul.
+#
+# Note: git clone against github.com is silently stubbed on this network
+# (empty clone, exit 0), so the source is fetched as a codeload tarball
+# instead. archive.ubuntu.com is also unreachable; use a reachable mirror.
+FROM ubuntu:24.04
+
+RUN sed -i 's|http://archive.ubuntu.com|http://ubuntu.osuosl.org|g; s|http://security.ubuntu.com|http://ubuntu.osuosl.org|g' /etc/apt/sources.list.d/*.sources && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        build-essential cmake pkg-config curl ca-certificates \
+        libfftw3-dev libmbedtls-dev libsctp-dev libyaml-cpp-dev libgtest-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN curl -sSL -o /tmp/src.tar.gz \
+        https://codeload.github.com/srsran/srsRAN_Project/tar.gz/refs/heads/main && \
+    mkdir -p /src/srsRAN_Project && \
+    tar xzf /tmp/src.tar.gz -C /src/srsRAN_Project --strip-components=1 && \
+    rm /tmp/src.tar.gz
+
+WORKDIR /src/srsRAN_Project
+RUN mkdir build && cd build && \
+    cmake .. -DENABLE_UHD=OFF -DENABLE_ZEROMQ=OFF -DENABLE_MKL=OFF && \
+    make -j"$(nproc)" && \
+    make install && \
+    ldconfig
+
+WORKDIR /
+CMD ["/bin/bash"]

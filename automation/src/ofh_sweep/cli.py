@@ -38,6 +38,7 @@ from ofh_sweep.spec import (
     generate_steps,
     load_base_config,
 )
+from ofh_sweep import testbed
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -54,8 +55,15 @@ def _post_to_controller(client: ControllerClient, cfg: dict, rf: dict) -> dict:
 def run_config_mode(args: argparse.Namespace, out: OutputDir, client: ControllerClient, rf: dict):
     rows = []
     base_cfg = load_base_config(args.base_config)
+    print("Ensuring victim testbed (ru_emulator + gnb_emulator containers)...")
+    states = testbed.ensure_testbed()
+    print(f"  testbed: {states}")
     for step in generate_steps(base_cfg):
         out.write_step_config(step.run_id, step.config_toml)
+        # Restart RU/DU victims fresh so each step starts with clean KPI counters
+        testbed.ensure_victim_alive()
+        testbed.wait_ru_kpi_rows()
+        step_start = time.time()
         try:
             res = _post_to_controller(client, step.config, rf)
             (out.step_dir(step.run_id) / "start.txt").write_text(
@@ -94,10 +102,13 @@ def run_config_mode(args: argparse.Namespace, out: OutputDir, client: Controller
             logs = f"log fetch error: {exc}"
         out.write_raw_log(step.run_id, logs)
 
+        victim_logs = testbed.collect_victim_logs(out.step_dir(step.run_id), step_start)
+        combined_logs = logs + "\n" + victim_logs
+
         result_row = {"run_index": step.index, "run_id": step.run_id,
                        "topspeed": step.topspeed, "mbps": step.mbps,
                        "injection_point": step.injection_point, "error": None}
-        matched = parse_metrics(step.run_id, logs)
+        matched = parse_metrics(step.run_id, combined_logs)
         result_row.update(matched)
         out.write_step_metrics(step.run_id, result_row)
         rows.append(result_row)
@@ -112,21 +123,29 @@ def run_config_mode(args: argparse.Namespace, out: OutputDir, client: Controller
         f"steps: {len(rows)}",
         f"metrics: {csv_path}",
         f"metrics json: {json_path}",
-        "note: eCPRI loss, switch drops, PTP phase/out-of-lock, baseband deadline",
-        "miss, and OTA frame drop require instrumented logs (ru.log, gnb_emu.log,",
-        "attacker results). Values recorded as None when unavailable.",
+        "victim testbed: srsRAN ru_emulator (ru.log) and gnb DU (du.log)",
+        "containers run on host network lo with VLAN 33; their docker logs",
+        "are captured per step alongside the attacker raw.log.",
     ]
     out.write_summary("\n".join(summary))
 
 
 def run_mcp_mode(args: argparse.Namespace, out: OutputDir, rf: dict):
     dbg = out.root / MCP_DEBUG_FILE
-    backend = McpBackend(project_dir=PROJECT_ROOT, stderr_log=dbg, use_sudo=args.sudo)
+    # docker-compose.yml lives at the repo root, not under automation/
+    backend = McpBackend(project_dir=PROJECT_ROOT.parent, stderr_log=dbg, use_sudo=args.sudo)
 
     rows = []
     base_cfg = load_base_config(args.base_config)
+    print("Ensuring victim testbed (ru_emulator + gnb_emulator containers)...")
+    states = testbed.ensure_testbed()
+    print(f"  testbed: {states}")
     for step in generate_steps(base_cfg):
         out.write_step_config(step.run_id, step.config_toml)
+        # Restart RU/DU victims fresh so each step starts with clean KPI counters
+        testbed.ensure_victim_alive()
+        testbed.wait_ru_kpi_rows()
+        step_start = time.time()
         try:
             start_text = backend.start(step.config, rf)
             (out.step_dir(step.run_id) / "start.txt").write_text(start_text, encoding="utf-8")
@@ -151,10 +170,13 @@ def run_mcp_mode(args: argparse.Namespace, out: OutputDir, rf: dict):
         logs = backend.logs(step.run_id)
         out.write_raw_log(step.run_id, logs)
 
+        victim_logs = testbed.collect_victim_logs(out.step_dir(step.run_id), step_start)
+        combined_logs = logs + "\n" + victim_logs
+
         result_row = {"run_index": step.index, "run_id": step.run_id,
                        "topspeed": step.topspeed, "mbps": step.mbps,
                        "injection_point": step.injection_point, "error": None}
-        matched = parse_metrics(step.run_id, logs)
+        matched = parse_metrics(step.run_id, combined_logs)
         result_row.update(matched)
         out.write_step_metrics(step.run_id, result_row)
         rows.append(result_row)
@@ -170,6 +192,8 @@ def run_mcp_mode(args: argparse.Namespace, out: OutputDir, rf: dict):
         f"metrics: {csv_path}",
         f"metrics json: {json_path}",
         f"mcp server stderr: {out.root / MCP_DEBUG_FILE}",
+        "victim testbed: srsRAN ru_emulator (ru.log) and gnb DU (du.log)",
+        "docker logs captured per step alongside the attacker raw.log.",
     ]
     out.write_summary("\n".join(summary))
 

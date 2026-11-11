@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -49,14 +50,27 @@ class McpBackend:
             args=self._cmd()[1:],
             cwd=str(self.project_dir),
         )
+        errlog = sys.stderr
+        close_errlog = False
+        if self.stderr_log is not None:
+            self.stderr_log.parent.mkdir(parents=True, exist_ok=True)
+            errlog = self.stderr_log.open("a", encoding="utf-8")
+            close_errlog = True
         try:
-            async with stdio_client(params) as (read, write):
+            try:
+                client_cm = stdio_client(params, errlog=errlog)
+            except TypeError:  # older mcp SDKs without the errlog kwarg
+                client_cm = stdio_client(params)
+            async with client_cm as (read, write):
                 async with ClientSession(read, write) as session:
                     await session.initialize()
                     text = await self._run_tool(session, tool, tool_args)
                     return text
         except Exception as exc:  # noqa: BLE001
             raise RuntimeError(f"MCP client failure for tool '{tool}': {exc}") from exc
+        finally:
+            if close_errlog:
+                errlog.close()
 
     def start(self, config: dict[str, Any], rf: dict[str, Any]) -> str:
         args = {

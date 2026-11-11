@@ -1,3 +1,4 @@
+provider: openrouter
 model: deepseek-ai/DeepSeek-Coder-6.7B-Instruct
 results_dir: ofh_sweep_logs
 nof_plan_attempts: 10
@@ -30,7 +31,6 @@ ofh: "You are configuring an OFH DoS attacker. Return a JSON object with an \"id
   \ block. Do not include the top-level\n\"id\" twice; the id belongs at top level."
 user_prompt: Run an OFH DoS attacker sweep against the gNB and RU. For each step,
   start an ofh component and then check its health and fetch logs. Sweep tcpreplay_topspeed
-  over {0, 1}, tcpreplay_mbps over {100, 500, 1000, 5000, 10000} Mbps, and injection_points
-  over {DU, RU}. That is 20 total steps. Name each component id like 'ofh_sweep_0000_ts0_100mbps_DU',
-  'ofh_sweep_0001_ts0_100mbps_RU', and so on. Use rf type 'none' for all components
-  since OFH operates on host network.
+  over {0}, tcpreplay_mbps over {100} Mbps, and injection_points over {DU, RU}. That
+  is 2 total steps. Name each component id like 'ofh_sweep_0000_ts0_100mbps_DU', 'ofh_sweep_0001_ts0_100mbps_RU',
+  and so on. Use rf type 'none' for all components since OFH operates on host network.

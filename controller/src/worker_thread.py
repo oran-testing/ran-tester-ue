@@ -148,6 +148,9 @@ class WorkerThread:
 
         if self.config.rf_type == RfType.B200:
             self.config.container_env["UHD_IMAGES_DIR"] = "/usr/local/share/uhd"
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        if openrouter_key:
+            self.config.container_env["OPENROUTER_API_KEY"] = openrouter_key
 
     def setup_networks(self):
         self.config.container_networks.append(
